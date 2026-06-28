@@ -1,0 +1,16 @@
+/* Tailwind v4 (CSS-first) + Roots tokens + Harbor site theme.
+   Order matters: Harbor must import AFTER Roots' tokens.css so its semantic
+   overrides win the cascade. */
+@import 'tailwindcss';
+@import '@rogueoak/roots/tokens.css';
+@import '@rogueoak/roots/tailwind-preset.css';
+@import './theme-harbor.css';
+
+/* Self-hosted brand fonts (install @fontsource-variable/figtree +
+   @fontsource-variable/geist-mono). Roots ships only the family names. */
+@import '@fontsource-variable/figtree';
+@import '@fontsource-variable/geist-mono';
+
+/* Enable the rare explicit `dark:` utility; whole-UI theming is automatic via
+   the semantic vars when `.dark` is on a root element. */
+@custom-variant dark (&:where(.dark, .dark *));
