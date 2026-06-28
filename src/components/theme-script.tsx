@@ -4,9 +4,10 @@
  * theme. Reads localStorage.theme first (explicit user choice wins), otherwise
  * falls back to the OS prefers-color-scheme setting. Dependency-free.
  */
-const script = `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d);}catch(e){}})();`;
+import { themeScriptSource } from "@/lib/theme";
 
 export function ThemeScript() {
-  // Runs before hydration; intentionally not a React effect.
-  return <script dangerouslySetInnerHTML={{ __html: script }} />;
+  // Runs before hydration; intentionally not a React effect. The source lives in
+  // src/lib/theme.js so the resolution logic is unit-tested (tests/theme.test.mjs).
+  return <script dangerouslySetInnerHTML={{ __html: themeScriptSource }} />;
 }

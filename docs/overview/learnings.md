@@ -20,3 +20,10 @@ Capture lessons as you go.
 - **Standalone smoke test.** The route smoke test assembles the standalone artifact the way the
   Dockerfile does (copy `.next/static` + `public` next to `server.js`) and runs the real
   `server.js`, rather than `next start` (which warns under `output: 'standalone'`).
+- **Assert what the unit uniquely produces, not shared chrome.** A test that checks text present in
+  the header/footer on every page passes on the layout alone - it will not catch a blank or wrong
+  body. Assert the route-unique `<title>`/`<h1>`, not nav labels. (feedback 0001)
+- **Cover every named acceptance criterion.** Behavior called out in the spec (e.g. the theme
+  toggle's system-default + persisted-override rule) needs a test. If the logic is trapped in a
+  JSX string or a client component, extract a plain-module seam (`src/lib/theme.js`) so it is
+  testable. (feedback 0001)

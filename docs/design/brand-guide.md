@@ -64,23 +64,19 @@ inherited from Roots unchanged. Dark mode re-maps every role onto deep slate via
 
 ## Typography
 
-### Headings: DM Sans
+Fonts come from the Roots tokens (`--font-sans`, `--font-mono`); the site self-hosts them via
+`@fontsource-variable/*`. The values below are authoritative because they match what ships.
 
-- Friendly geometric sans-serif with slightly rounded terminals
-- Feels approachable without being childish — warmer than Inter
-- Weight: 700 (Bold) for h1/h2, 600 (Semi-Bold) for h3/h4
+### Headings & Body: Figtree
 
-### Body: DM Sans
+- Friendly geometric variable sans-serif - approachable without being childish
+- Used for both headings and body (one family, set via `--font-sans`)
+- Weights: 700 (Bold) for h1/h2, 600 (Semi-Bold) for h3/h4, 500 (Medium) emphasis, 400 body
 
-- Same family for consistency
-- Weight: 400 (Regular) for body, 500 (Medium) for emphasis
-- Line-height: 1.7 for comfortable reading
+### Code: Geist Mono
 
-### Code: JetBrains Mono
-
-- Monospace font for code blocks and inline code
+- Monospace family for code blocks and inline code (`--font-mono`)
 - Weight: 400
-- Ligatures enabled
 
 ### Font Scale
 

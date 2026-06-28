@@ -21,7 +21,7 @@ export default function ContactPage() {
     >
       <div className="grid gap-10 lg:grid-cols-2">
         <section>
-          <h2 className="text-h3 font-semibold text-text">Find me online</h2>
+          <h2 className="text-h2 font-semibold text-text">Find me online</h2>
           <ul className="mt-4 flex flex-col gap-3">
             <li>
               <a

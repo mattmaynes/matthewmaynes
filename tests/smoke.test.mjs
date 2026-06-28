@@ -1,6 +1,10 @@
 // Lightweight smoke test: boots the production server and asserts every route
-// pattern in the site map renders (HTTP 200 + its expected heading text).
-// Run via `npm test`. Builds first only if no build is present.
+// pattern in the site map renders the RIGHT page (HTTP 200 + its route-unique
+// <title> + a rendered <h1> body). We assert the page-unique <title> rather than
+// nav/footer text, which appears on every page via the shared layout - otherwise
+// a blank or wrong page body would still pass (review feedback 0001).
+// Run via `npm test`. Builds first only if no build is present; CI does a clean
+// build, so the stale-artifact risk is limited to manual local re-runs.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -13,14 +17,16 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
 const BASE = `http://127.0.0.1:${PORT}`;
 
+// `title` is the route-unique <title> text (layout template is "%s - Matthew
+// Maynes"; home overrides it). Asserting it proves the correct route rendered.
 const routes = [
-  { path: "/", expect: "Matthew Maynes" },
-  { path: "/about", expect: "About" },
-  { path: "/resume", expect: "Resume" },
-  { path: "/projects", expect: "Projects" },
-  { path: "/blog", expect: "Blog" },
-  { path: "/blog/hello-world", expect: "hello-world" },
-  { path: "/contact", expect: "Contact" },
+  { path: "/", title: "Matthew Maynes - Engineering Director" },
+  { path: "/about", title: "About - Matthew Maynes" },
+  { path: "/resume", title: "Resume - Matthew Maynes" },
+  { path: "/projects", title: "Projects - Matthew Maynes" },
+  { path: "/blog", title: "Blog - Matthew Maynes" },
+  { path: "/blog/hello-world", title: "hello-world - Blog - Matthew Maynes" },
+  { path: "/contact", title: "Contact - Matthew Maynes" },
 ];
 
 let server;
@@ -76,13 +82,20 @@ after(() => {
 });
 
 for (const route of routes) {
-  test(`GET ${route.path} renders`, async () => {
+  test(`GET ${route.path} renders the right page`, async () => {
     const res = await fetch(BASE + route.path);
     assert.equal(res.status, 200, `expected 200 for ${route.path}`);
     const html = await res.text();
+    // Route-unique title: proves this exact route's metadata rendered.
     assert.ok(
-      html.includes(route.expect),
-      `expected ${route.path} to contain "${route.expect}"`,
+      html.includes(`<title>${route.title}</title>`),
+      `expected ${route.path} to render <title>${route.title}</title>`,
+    );
+    // Body actually rendered (not just <head> on an error shell).
+    assert.match(
+      html,
+      /<h1[\s>]/,
+      `expected ${route.path} to render an <h1>`,
     );
   });
 }

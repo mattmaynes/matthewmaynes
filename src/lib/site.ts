@@ -9,7 +9,9 @@ export const site = {
   title: "Engineering Director",
   tagline: "Engineering leader that loves the outdoors.",
   location: "Ontario, Canada",
-  url: process.env.SITE_URL ?? "https://matthewmaynes.com",
+  // Read at build time for static metadata (metadataBase). Use `||` (not `??`) so
+  // an empty-string SITE_URL falls back instead of throwing in new URL("").
+  url: process.env.SITE_URL || "https://matthewmaynes.com",
   social: {
     linkedin: "https://www.linkedin.com/in/matthew-maynes/",
     github: "https://github.com/mattmaynes",
