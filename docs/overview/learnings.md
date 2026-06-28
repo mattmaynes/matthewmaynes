@@ -1,3 +1,29 @@
 # Learnings
 
 Capture lessons as you go.
+
+## Scaffold (spec 0001)
+
+- **Canopy needs a client boundary.** `@rogueoak/canopy`'s published `dist` does not carry
+  `"use client"` directives, and its barrels evaluate React context at module scope (e.g.
+  `FormField`). Importing Canopy directly into a Server Component fails the production build with
+  `createContext is not a function`. Fix: re-export the components we use through one
+  `"use client"` module (`src/components/ui.ts`) and import Canopy from there, never from
+  `@rogueoak/canopy/*` directly.
+- **Canopy ships classNames, not CSS.** Its utilities are only emitted if Tailwind scans the
+  package source. `src/app/globals.css` adds `@source '../../node_modules/@rogueoak/canopy'`;
+  without it the components render unstyled.
+- **No-flash theming is dependency-free.** A tiny pre-paint inline script in `<head>` sets `.dark`
+  on `<html>` from `localStorage.theme` (falling back to `prefers-color-scheme`). The toggle uses
+  `useSyncExternalStore` over a `MutationObserver` on the class, which avoids the
+  `set-state-in-effect` lint error and hydration mismatch hacks.
+- **Standalone smoke test.** The route smoke test assembles the standalone artifact the way the
+  Dockerfile does (copy `.next/static` + `public` next to `server.js`) and runs the real
+  `server.js`, rather than `next start` (which warns under `output: 'standalone'`).
+- **Assert what the unit uniquely produces, not shared chrome.** A test that checks text present in
+  the header/footer on every page passes on the layout alone - it will not catch a blank or wrong
+  body. Assert the route-unique `<title>`/`<h1>`, not nav labels. (feedback 0001)
+- **Cover every named acceptance criterion.** Behavior called out in the spec (e.g. the theme
+  toggle's system-default + persisted-override rule) needs a test. If the logic is trapped in a
+  JSX string or a client component, extract a plain-module seam (`src/lib/theme.js`) so it is
+  testable. (feedback 0001)

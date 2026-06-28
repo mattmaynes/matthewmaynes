@@ -1,0 +1,10 @@
+/* The authoritative Harbor theme lives in src/styles/globals.css.
+   This entry point (which create-next-app wires into the root layout) re-exports
+   it so the import order defined there is preserved verbatim. */
+@import '../styles/globals.css';
+
+/* Canopy ships className strings, not a prebuilt stylesheet. Point Tailwind's
+   source scanner at the package so its component utilities are emitted into our
+   build; without this, Canopy components render unstyled. Path is relative to
+   this file. */
+@source '../../node_modules/@rogueoak/canopy';

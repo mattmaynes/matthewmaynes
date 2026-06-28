@@ -1,0 +1,119 @@
+/**
+ * Harbor — matthewmaynes.com palette
+ * ------------------------------------------------------------------
+ * A site-specific theme layered on top of @rogueoak/roots. Roots ships a
+ * nature palette (moss/bark/stone/amber); Harbor keeps Roots' architecture
+ * but re-points the semantic roles onto a bluer + slate set while holding a
+ * warm gold accent so the result stays inviting, not corporate-cold.
+ *
+ * What changes vs. Roots defaults:
+ *   - primary  : moss (green)        -> harbor (ocean-steel blue)   [NEW ramp]
+ *   - neutrals : stone (warm gray)   -> slate (cool blue-gray)      [NEW ramp]
+ *   - accent   : amber (warm gold)   -> UNCHANGED (inherited from Roots)
+ *   - secondary: bark (warm brown)   -> UNCHANGED (inherited; adds warmth)
+ *   - status   : success/warning/danger/info -> UNCHANGED
+ *
+ * Import order (in globals.css):
+ *   @import 'tailwindcss';
+ *   @import '@rogueoak/roots/tokens.css';
+ *   @import '@rogueoak/roots/tailwind-preset.css';
+ *   @import './theme-harbor.css';   <- must come AFTER tokens.css to win
+ *
+ * Only semantic vars are overridden; components (which read semantics only)
+ * re-theme with zero per-component code. Dark theme re-maps under `.dark`.
+ */
+
+:root {
+  /* --- new primitive ramps ------------------------------------------------ */
+
+  /* harbor — ocean-steel blue (primary). Muted, professional, not neon. */
+  --color-harbor-50: #eef3f8;
+  --color-harbor-100: #d6e3ef;
+  --color-harbor-200: #b0c8de;
+  --color-harbor-300: #82a6c8;
+  --color-harbor-400: #5685ae;
+  --color-harbor-500: #3a6a95;
+  --color-harbor-600: #2c557b; /* primary default */
+  --color-harbor-700: #254765;
+  --color-harbor-800: #223c54;
+  --color-harbor-900: #1f3447;
+  --color-harbor-950: #14222f;
+
+  /* slate — cool blue-gray neutrals (bg / surface / text / border). */
+  --color-slate-50: #f6f7f9;
+  --color-slate-100: #eceef2;
+  --color-slate-200: #dce0e7;
+  --color-slate-300: #c0c7d1;
+  --color-slate-400: #98a3b2;
+  --color-slate-500: #717e90;
+  --color-slate-600: #586475;
+  --color-slate-700: #47515f;
+  --color-slate-800: #39414c;
+  --color-slate-900: #2a313a; /* default body text */
+  --color-slate-950: #1a1f25;
+
+  /* --- semantic remap (light) --------------------------------------------- */
+  /* Mirrors Roots' :root semantics, swapping moss->harbor, stone->slate.
+     amber accent and bark secondary are intentionally NOT redefined here, so
+     they keep their Roots values and AA-validated relationships. */
+
+  --color-bg: var(--color-slate-50);
+  --color-surface: var(--color-base-white);
+  --color-surface-raised: var(--color-base-white);
+  --color-overlay: var(--color-slate-900);
+
+  --color-text: var(--color-slate-900);
+  --color-text-muted: var(--color-slate-600);
+  --color-text-subtle: var(--color-slate-500);
+  --color-text-inverted: var(--color-slate-50);
+
+  --color-border: var(--color-slate-200);
+  --color-border-strong: var(--color-slate-300);
+
+  --color-ring: var(--color-harbor-600);
+  --color-ring-offset: var(--color-base-white);
+
+  --color-primary: var(--color-harbor-600);
+  --color-primary-foreground: var(--color-harbor-50);
+  --color-primary-hover: var(--color-harbor-700);
+  --color-primary-active: var(--color-harbor-800);
+
+  --color-muted: var(--color-slate-100);
+  --color-muted-foreground: var(--color-slate-600);
+  --color-muted-raised: var(--color-slate-100);
+
+  --color-disabled: var(--color-slate-100);
+  --color-disabled-foreground: var(--color-slate-400);
+}
+
+/* dark theme — semantic remap. Toggle by adding `dark` to a root element.
+   Primitives (the ramps above) are shared and NOT repeated. */
+.dark {
+  --color-bg: var(--color-slate-950);
+  --color-surface: var(--color-slate-900);
+  --color-surface-raised: var(--color-slate-800);
+  --color-overlay: var(--color-slate-950);
+
+  --color-text: var(--color-slate-50);
+  --color-text-muted: var(--color-slate-300);
+  --color-text-subtle: var(--color-slate-400);
+  --color-text-inverted: var(--color-slate-900);
+
+  --color-border: var(--color-slate-700);
+  --color-border-strong: var(--color-slate-600);
+
+  --color-ring: var(--color-harbor-400);
+  --color-ring-offset: var(--color-slate-950);
+
+  --color-primary: var(--color-harbor-400);
+  --color-primary-foreground: var(--color-harbor-950);
+  --color-primary-hover: var(--color-harbor-300);
+  --color-primary-active: var(--color-harbor-500);
+
+  --color-muted: var(--color-slate-900);
+  --color-muted-foreground: var(--color-slate-300);
+  --color-muted-raised: var(--color-slate-700);
+
+  --color-disabled: var(--color-slate-800);
+  --color-disabled-foreground: var(--color-slate-600);
+}
