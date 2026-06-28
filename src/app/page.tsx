@@ -48,7 +48,14 @@ export default function HomePage() {
             <Button asChild variant="primary" size="lg">
               <Link href="/about">About me</Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            {/* Outline variant is dark-text-on-light by design; recolor it for the
+                dark hero overlay so the label stays legible on the photo. */}
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="border-base-white text-base-white hover:bg-base-white/10 active:bg-base-white/20"
+            >
               <Link href="/projects">See projects</Link>
             </Button>
           </div>

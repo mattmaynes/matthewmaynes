@@ -6,10 +6,12 @@ import type { SiteImage } from "@/lib/site";
 
 export const metadata: Metadata = { title: "About" };
 
-const personal: { image: SiteImage; caption: string }[] = [
+const personal: { image: SiteImage; caption: string; position?: string }[] = [
   { image: images.family, caption: "Family time outdoors." },
   { image: images.sasha, caption: "Sasha, the best dog ever." },
-  { image: images.babyMatthew, caption: "Where it started." },
+  // Face sits in the upper half of this tall portrait; pin the 4:3 crop to the
+  // top so the full face stays on the card.
+  { image: images.babyMatthew, caption: "Where it started.", position: "object-top" },
 ];
 
 export default function AboutPage() {
@@ -45,7 +47,7 @@ export default function AboutPage() {
           Life outside of work: family, the property, and one very good dog.
         </p>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {personal.map(({ image, caption }) => (
+          {personal.map(({ image, caption, position }) => (
             <figure
               key={image.src}
               className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
@@ -56,7 +58,7 @@ export default function AboutPage() {
                 width={image.width}
                 height={image.height}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
-                className="aspect-[4/3] w-full object-cover"
+                className={`aspect-[4/3] w-full object-cover ${position ?? ""}`}
               />
               <figcaption className="px-4 py-3 text-caption text-text-muted">
                 {caption}
