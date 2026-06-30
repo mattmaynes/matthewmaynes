@@ -55,8 +55,14 @@ per-component code. Already implemented in `src/styles/`.
 - **Images:** built off-host and pulled from GHCR (`ghcr.io/mattmaynes/matthewmaynes`, public), so
   the small server never runs a Next build. Tagged `latest` + immutable `sha-<commit>` for rollback.
 - **CI/CD:** `.github/workflows/deploy.yml` - push to `main` runs verify (lint/build/test) →
-  build+push to GHCR → SSH deploy to the server (`git pull`, `compose pull && up -d`). GHCR push
-  uses the built-in `GITHUB_TOKEN`; the only repo secrets are the deploy SSH credentials.
+  build+push to GHCR → SSH deploy to the server (`git pull`, `compose pull && up -d`) → **prewarm**.
+  GHCR push uses the built-in `GITHUB_TOKEN`; the only repo secrets are the deploy SSH credentials.
+- **Image cache pre-warm (spec 0006):** the `prewarm` job runs after a healthy deploy and hits the
+  live site (`node scripts/prewarm-images.mjs $SITE_URL`, via Caddy to the fresh container) to
+  populate the on-demand `next/image` optimizer cache, so the first real visitor gets cache HITs
+  instead of waiting on encodes. Best-effort: it only fails if the site is wholly unreachable.
+  Browser-side caching needs no help - optimized images are content-hashed and returned
+  `Cache-Control: public, max-age=315360000, immutable`, so repeat visits never re-fetch.
 - **Deploy layout:** all deploy artifacts live under `deploy/docker/`, leaving room for a future
   `deploy/helm/` or `deploy/terraform/` beside it.
 
