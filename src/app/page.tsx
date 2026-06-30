@@ -15,7 +15,9 @@ export default function HomePage() {
             fill
             priority
             sizes="100vw"
-            className="object-cover"
+            // Centered by default (portrait/mobile); nudged up ~50px only in
+            // landscape so the focal point sits a touch higher on wide screens.
+            className="object-cover landscape:object-[center_calc(50%_-_50px)]"
           />
           <div className="absolute inset-0 bg-overlay/60" />
         </div>
