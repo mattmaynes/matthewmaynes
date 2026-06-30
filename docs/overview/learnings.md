@@ -43,3 +43,8 @@ Capture lessons as you go.
   fly = MITM TOFU); **pin dependencies** to commit SHAs (mutable Action tags + `packages: write` =
   supply-chain RCE) and keep elevated tokens job-scoped. Also pin the deployed image tag for
   auditable rollback rather than chasing `:latest`. (feedback 0002)
+- **Test on the runtime's Node version, not just your local one.** `node --test "tests/**/*.glob"`
+  (quoted) needs Node 21+ glob support; on the pinned Node 20 (matching `node:20-alpine`) it found
+  nothing and reddened the first CI run, despite passing locally on a newer Node. Use a
+  shell-expanded glob (`tests/*.test.mjs`) for portable discovery, and run the suite on the pinned
+  Node (a `node:20-alpine` container) before trusting green. (feedback 0003)
