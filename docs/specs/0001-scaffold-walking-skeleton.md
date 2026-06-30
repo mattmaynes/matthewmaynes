@@ -51,7 +51,7 @@ When done, a developer can:
 - Real resume content + PDF generation (own spec; uses the print-stylesheet approach).
 - Working contact form / server-side mail + spam protection (own spec).
 - MDX pipeline, real blog posts, project data, tag filtering.
-- CI/CD and the actual DigitalOcean deploy.
+- CI/CD and the actual production deploy.
 
 ## Approach
 

@@ -20,7 +20,7 @@ not just the resume.
    the fuller, more personal story.
 3. **Blog** — write about technical topics, leadership, nature, and life.
 4. **Personal brand** — a consistent, professional identity built on the Harbor palette.
-5. **Self-hosted** — containerized, runs locally today, deploys to DigitalOcean later.
+5. **Self-hosted** — containerized, runs locally today, deploys to a Linux VM later.
 
 ## Non-goals (v1)
 
@@ -45,4 +45,4 @@ assets (photos, headshots) and final copy come later.
 ## Production
 
 - Domain: `https://matthewmaynes.com` (owned).
-- Target host: DigitalOcean (App Platform or a Droplet running the container).
+- Target host: a self-hosted Linux VM running the container.
