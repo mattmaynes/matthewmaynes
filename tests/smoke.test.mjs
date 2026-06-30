@@ -28,7 +28,7 @@ const routes = [
   {
     path: "/about",
     title: "About - Matthew Maynes",
-    contains: ["never stopped building", "The whole crew, Shea included."],
+    contains: ["never stopped building", "The whole crew."],
     absent: ["Placeholder"],
   },
   { path: "/resume", title: "Resume - Matthew Maynes" },

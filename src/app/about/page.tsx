@@ -7,7 +7,7 @@ import type { SiteImage } from "@/lib/site";
 export const metadata: Metadata = { title: "About" };
 
 const personal: { image: SiteImage; caption: string; position?: string }[] = [
-  { image: images.family, caption: "The whole crew, Shea included." },
+  { image: images.family, caption: "The whole crew." },
   { image: images.sasha, caption: "Sasha, the best dog ever." },
   // Face sits in the upper half of this tall portrait; pin the 4:3 crop to the
   // top so the full face stays on the card.
@@ -29,7 +29,7 @@ export default function AboutPage() {
             className="w-full max-w-xs rounded-lg border border-border object-cover shadow-sm"
           />
         </div>
-        <p className="max-w-2xl self-center text-body text-text-muted">
+        <p className="self-center text-body text-text-muted">
           I&apos;m an engineering director who never stopped building. The way I see
           the job is simple: bring the right people and the right technology together
           around a problem, then find the solution that delivers the most value the
@@ -41,7 +41,7 @@ export default function AboutPage() {
 
       <section className="mt-16">
         <h2 className="text-h2 font-semibold text-text">What I&apos;m actually good at</h2>
-        <p className="mt-3 max-w-2xl text-body text-text-muted">
+        <p className="mt-3 text-body text-text-muted">
           I get obsessed with problems. I like to understand a system all the way down,
           then explain it to someone who has never read a line of code and turn that
           conversation into a problem worth solving. The wins I chase are the creative
@@ -54,7 +54,7 @@ export default function AboutPage() {
 
       <section className="mt-16">
         <h2 className="text-h2 font-semibold text-text">A leader who still builds</h2>
-        <p className="mt-3 max-w-2xl text-body text-text-muted">
+        <p className="mt-3 text-body text-text-muted">
           Being a director is a constant negotiation with myself: do this one, or coach
           someone else through it? I lean toward staying close to the work, because
           grounded advice beats theory every time. And the obsession does not switch off
@@ -66,7 +66,7 @@ export default function AboutPage() {
 
       <section className="mt-16">
         <h2 className="text-h2 font-semibold text-text">Titles don&apos;t make leaders</h2>
-        <p className="mt-3 max-w-2xl text-body text-text-muted">
+        <p className="mt-3 text-body text-text-muted">
           I don&apos;t put much stock in titles. A leader is anyone who can pull people
           around a problem and find a way through, whether they manage a team or own a
           single ticket. I&apos;d rather be measured by the problems we solved together
@@ -76,7 +76,7 @@ export default function AboutPage() {
 
       <section className="mt-16">
         <h2 className="text-h2 font-semibold text-text">Beyond the Code</h2>
-        <div className="mt-3 max-w-2xl space-y-4 text-body text-text-muted">
+        <div className="mt-3 space-y-4 text-body text-text-muted">
           <p>
             When I&apos;m not in the code or the org chart, I&apos;m usually outside. My
             wife Sarah and I live on five acres in rural Ontario with our golden doodle,
@@ -113,7 +113,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <p className="mt-16 max-w-2xl text-caption text-text-muted">
+      <p className="mt-16 text-caption text-text-muted">
         Want the professional detail? The{" "}
         <Link href="/resume" className="text-primary underline-offset-4 hover:underline">
           resume
