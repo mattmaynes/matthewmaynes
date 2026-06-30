@@ -71,3 +71,12 @@ Capture lessons as you go.
   `.next/standalone/server.js` path missed and the suite never ran in a worktree. `findServerJs()`
   now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
   real `server.js`. (feedback 0005)
+
+## Content pages (spec 0003)
+
+- **A placeholder route that gains real content needs a tighter smoke assertion in the same PR.**
+  The generic per-route check (route-unique `<title>` + "an `<h1>` exists") is a resolve probe the
+  old `PagePlaceholder` already satisfied, so a blank body or a reverted placeholder would still
+  pass. The smoke table now takes optional `contains`/`absent` body substrings; assert a
+  route-unique phrase is present (and any placeholder badge is gone) when shipping real copy. This
+  recurred from feedback 0001's "assert what the unit uniquely produces" lesson. (feedback 0006)
