@@ -1,8 +1,16 @@
 /**
  * Single source of truth for site-wide constants: identity, navigation, social
- * links, and the staged image metadata (real pixel dimensions, so next/image
- * reserves space and avoids layout shift). No PII lives here by design.
+ * links, and the staged image metadata. Images are static-imported so next/image
+ * gets real pixel dimensions (no layout shift) and a build-time blurDataURL for
+ * `placeholder="blur"` (no pop-in flicker). No PII lives here by design.
  */
+import type { StaticImageData } from "next/image";
+import areaILive from "../../public/images/area-i-live.png";
+import headshotImg from "../../public/images/headshot.png";
+import familyImg from "../../public/images/family.png";
+import sashaImg from "../../public/images/sasha-best-dog-ever.png";
+import babyMatthewImg from "../../public/images/baby-matthew.png";
+import eagleSnapImg from "../../public/images/eagle-snap.png";
 
 export const site = {
   name: "Matthew Maynes",
@@ -39,49 +47,36 @@ export const nav: readonly NavItem[] = [
   { href: "/contact", label: "Contact" },
 ] as const;
 
-export type SiteImage = {
-  src: string;
-  width: number;
-  height: number;
-  alt: string;
-};
+/**
+ * A staged image: the static import (carries src, width, height, and the
+ * generated blurDataURL) plus its alt text. Pass the whole object as a
+ * next/image `src` to get auto dimensions and `placeholder="blur"`.
+ */
+export type SiteImage = StaticImageData & { alt: string };
 
-/** Real dimensions captured from the optimized PNGs (sips -Z + pngquant). */
 export const images = {
   areaILive: {
-    src: "/images/area-i-live.png",
-    width: 1800,
-    height: 1350,
+    ...areaILive,
     alt: "Forested property at golden hour, the kind of place Matthew lives and plants trees.",
   },
   headshot: {
-    src: "/images/headshot.png",
-    width: 845,
-    height: 900,
+    ...headshotImg,
     alt: "Professional headshot of Matthew Maynes.",
   },
   family: {
-    src: "/images/family.png",
-    width: 786,
-    height: 1100,
+    ...familyImg,
     alt: "Matthew Maynes with his family outdoors.",
   },
   sasha: {
-    src: "/images/sasha-best-dog-ever.png",
-    width: 975,
-    height: 1300,
+    ...sashaImg,
     alt: "Sasha, the golden doodle, looking like the best dog ever.",
   },
   babyMatthew: {
-    src: "/images/baby-matthew.png",
-    width: 790,
-    height: 1200,
+    ...babyMatthewImg,
     alt: "Matthew Maynes as a small child.",
   },
   eagleSnap: {
-    src: "/images/eagle-snap.png",
-    width: 800,
-    height: 400,
+    ...eagleSnapImg,
     alt: "Eagle SNAP project banner.",
   },
 } satisfies Record<string, SiteImage>;

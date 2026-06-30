@@ -8,7 +8,7 @@ pending) · 📋 planned.
 | Route | Status | Purpose |
 |---|---|---|
 | `/` | 🚧 | Home. Hero (name, title, tagline, nature photo), short blended bio, featured projects, latest posts, social links. |
-| `/about` | 🚧 | The "whole person" story — leadership philosophy + career narrative, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
+| `/about` | ✅ | The "whole person" story in first person: how Matthew works (problem solver, leader who still builds), a leadership belief, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
 | `/resume` | 🚧 | Detailed professional resume rendered as a page (more depth than the PDF), with a **download PDF** button. |
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. |
 | `/blog` | 🚧 | Blog listing with previews (title, date, excerpt, tags) and tag filtering. |
@@ -38,7 +38,10 @@ pending) · 📋 planned.
 
 Six metadata-scrubbed PNGs in `public/images/`, served via `next/image`: `area-i-live` (home hero
 nature shot), `headshot` (portrait), `family` / `sasha-best-dog-ever` / `baby-matthew` (about
-"Beyond the Code"), `eagle-snap` (projects). All EXIF/GPS stripped — no location leaks.
+"Beyond the Code"), `eagle-snap` (projects). All EXIF/GPS stripped — no location leaks. They are
+static-imported through the `images` map in `src/lib/site.ts`, so each gets a build-time
+`blurDataURL` (rendered with `placeholder="blur"` — no pop-in flicker) and is served AVIF/WebP
+(`images.formats` in `next.config.ts`); above-the-fold images use `priority`.
 
 ## Resume page
 

@@ -54,6 +54,15 @@ Capture lessons as you go.
   status; and prefer no cross-run build cache (`no-cache: true`) on a small app, or a cache keyed
   so a source change always busts the copy+build layers. (feedback 0004)
 
+## Content pages (spec 0003)
+
+- **A placeholder route that gains real content needs a tighter smoke assertion in the same PR.**
+  The generic per-route check (route-unique `<title>` + "an `<h1>` exists") is a resolve probe the
+  old `PagePlaceholder` already satisfied, so a blank body or a reverted placeholder would still
+  pass. The smoke table now takes optional `contains`/`absent` body substrings; assert a
+  route-unique phrase is present (and any placeholder badge is gone) when shipping real copy. This
+  recurred from feedback 0001's "assert what the unit uniquely produces" lesson. (feedback 0006)
+
 ## SEO & sharing (spec 0004)
 
 - **`next/og` (satori) cannot read woff2.** `@fontsource-variable/figtree` ships woff2 only, so
@@ -78,3 +87,21 @@ Capture lessons as you go.
 - **No new dependency for the icon set.** macOS `sips` resizes and a ~40-line stdlib ICO packer
   (`scripts/build-icons.mjs`) writes a multi-res `favicon.ico` with PNG payloads. Reproducible from
   one master (`public/brand/logo-m.png`), no ImageMagick.
+
+## Images (spec 0005)
+
+- **`next/image` alone does not stop flicker.** It reserves space and optimizes bytes, but an
+  image with no `placeholder` still renders blank then pops in after decode. For locally-bundled
+  images, **static-import them** (carry them as imports in the `src/lib/site.ts` `images` map, not
+  string paths) so `placeholder="blur"` gets an auto-generated `blurDataURL` for free; pass the
+  whole import as `src`. Reserve `priority` for above-the-fold images so they are not lazy-loaded,
+  and set `images.formats = ["image/avif","image/webp"]` (default is WebP-only) - AVIF cut the
+  640px hero from a ~1 MB PNG to ~30 KB. (feedback 0005)
+- **A cosmetic change still needs a guard, and the smoke test must boot in a worktree.** The blur
+  treatment passed every existing smoke assertion (200 + title + h1) even when reverted, so it
+  could regress silently. The smoke test now asserts image-bearing routes inline a
+  `data:image/...;base64,` blur placeholder. It also had to be taught to *find* `server.js`: the
+  two-lockfile quirk nests it under `.next/standalone/.worktrees/<slug>/`, so the old hard-coded
+  `.next/standalone/server.js` path missed and the suite never ran in a worktree. `findServerJs()`
+  now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
+  real `server.js`. (feedback 0005)
