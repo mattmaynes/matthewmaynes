@@ -33,7 +33,7 @@ export function Footer() {
     <footer className="mt-16 border-t border-border bg-surface">
       <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
         <p className="text-caption text-text-muted">
-          &copy; {new Date().getFullYear()} {site.name}. Built by {site.name}.
+          &copy; {new Date().getFullYear()} {site.name}.
         </p>
         <div className="flex items-center gap-4">
           <a
