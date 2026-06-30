@@ -14,10 +14,12 @@ export default function ResumePage() {
     >
       <div className="flex flex-col gap-8 rounded-lg border border-border bg-surface p-6 shadow-sm sm:flex-row sm:items-center">
         <Image
-          src={images.headshot.src}
+          src={images.headshot}
           alt={images.headshot.alt}
           width={120}
           height={120}
+          priority
+          placeholder="blur"
           className="h-28 w-28 rounded-full border border-border object-cover"
         />
         <div className="flex flex-col gap-2">

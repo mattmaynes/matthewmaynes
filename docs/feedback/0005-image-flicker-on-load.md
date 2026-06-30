@@ -26,9 +26,14 @@ Two gaps, neither of them a missing `next/image` (every image already uses it):
   data). `SiteImage` becomes `StaticImageData & { alt }`; real width/height now
   come from the import, not hand-captured numbers.
 - Pass the static object as `src` and add `placeholder="blur"` on every `<Image>`
-  in `src/app/page.tsx` and `src/app/about/page.tsx`.
-- Add `priority` to the above-the-fold about-page headshot.
+  across all four image-bearing pages: `page.tsx` (home), `about/page.tsx`,
+  `projects/page.tsx`, and `resume/page.tsx`.
+- Add `priority` to each above-the-fold image (the home hero + every headshot,
+  the projects banner) so they are not lazy-loaded.
 - Add `images.formats = ["image/avif", "image/webp"]` to `next.config.ts`.
+- Lock it in: `tests/smoke.test.mjs` now asserts those four routes inline a
+  `data:image/...;base64,` blur placeholder, and finds the standalone `server.js`
+  even when the two-lockfile worktree quirk nests it.
 
 ## Learning
 
