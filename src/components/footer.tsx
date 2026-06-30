@@ -1,4 +1,5 @@
 import { site } from "@/lib/site";
+import { Button } from "@/components/ui";
 
 function GitHubIcon() {
   return (
@@ -49,34 +50,22 @@ export function Footer() {
         <p className="text-caption text-text-muted">
           &copy; {new Date().getFullYear()} {site.name}.
         </p>
-        <div className="flex items-center gap-4">
-          <a
-            href={site.social.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Matthew Maynes on LinkedIn"
-            className="text-text-muted transition-colors hover:text-primary"
-          >
-            <LinkedInIcon />
-          </a>
-          <a
-            href={site.social.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Matthew Maynes on GitHub"
-            className="text-text-muted transition-colors hover:text-primary"
-          >
-            <GitHubIcon />
-          </a>
-          <a
-            href={site.social.x}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Matthew Maynes on X"
-            className="text-text-muted transition-colors hover:text-primary"
-          >
-            <XIcon />
-          </a>
+        <div className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="icon" aria-label="Matthew Maynes on LinkedIn">
+            <a href={site.social.linkedin} target="_blank" rel="noopener noreferrer">
+              <LinkedInIcon />
+            </a>
+          </Button>
+          <Button asChild variant="ghost" size="icon" aria-label="Matthew Maynes on GitHub">
+            <a href={site.social.github} target="_blank" rel="noopener noreferrer">
+              <GitHubIcon />
+            </a>
+          </Button>
+          <Button asChild variant="ghost" size="icon" aria-label="Matthew Maynes on X">
+            <a href={site.social.x} target="_blank" rel="noopener noreferrer">
+              <XIcon />
+            </a>
+          </Button>
         </div>
       </div>
     </footer>
