@@ -198,3 +198,23 @@ Capture lessons as you go.
 - **A required check needs branch protection to actually block.** `main` had no protection at all,
   so even a red check would not stop a merge. Adding the workflow is only half the fix; the
   `verify / verify` check must be marked required in branch protection on `main`.
+
+## Site chrome on Canopy TopNav (refactor 0009)
+
+- **The site header/footer/theme-toggle now render from Canopy, not hand-rolled markup.** The header
+  is Canopy's `TopNav` Branch (`TopNavBrand`/`TopNavLinks`/`TopNavLink`/`TopNavActions`/
+  `TopNavMenuButton`); the theme toggle and the footer social links are Canopy `Button`s
+  (`variant="ghost" size="icon"`, the social links via `asChild` over an `<a>`). All Canopy
+  imports go through the `src/components/ui.ts` client boundary (learnings 0001), so the
+  Server-Component footer can still render them.
+- **`TopNav` gives mobile hamburger-on-the-left for free (Canopy >= 0.2.1).** `TopNavMenuButton`
+  carries `order-first`, so the toggle sits at the left of the bar with no per-consumer CSS. This is
+  why the fix belonged in Canopy, not in a local override: the site's OLD custom header put the
+  hamburger on the right, and only swapping to `TopNav` inherits the design-system behaviour.
+- **`TopNav` is a full-width bar, not a max-width container.** The old custom header centered its
+  content in `max-w-[1200px]`; `TopNav` renders a full-bleed `<header><nav>` (border + bg span the
+  viewport) with `px` gutters and no inner width cap. Overrides land via `className` +
+  tailwind-merge (e.g. `bg-surface/95 backdrop-blur ... px-6` win over the bar defaults), but the
+  1200px centering is intentionally dropped to stay Canopy-native. Accept the component's layout
+  rather than fighting it; if a capped width is ever required, that is a Canopy change, not a local
+  wrapper.
