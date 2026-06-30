@@ -1,6 +1,8 @@
 # Edge reverse proxy. Terminates TLS and routes by hostname to backends on the
 # shared `edge` network. This is the ONLY stack that publishes host ports.
 # Bring up once per droplet:  docker compose -f compose.proxy.yml up -d
+name: proxy # explicit project name so it never collides with the site stack
+
 services:
   caddy:
     image: caddy:2-alpine

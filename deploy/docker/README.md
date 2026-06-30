@@ -43,6 +43,10 @@ systemctl enable --now docker
 docker --version && docker compose version
 ```
 
+`get.docker.com` is a root pipe-to-shell. If you would rather not trust it blind, eyeball the
+script first (`curl -fsSL https://get.docker.com -o get-docker.sh && less get-docker.sh && sh
+get-docker.sh`) or install Docker from the distro packages instead.
+
 ### 1c. Git (needed by the deploy step)
 
 ```bash
@@ -68,12 +72,19 @@ Verify from your laptop (this is exactly what CI does):
 ssh -i ~/.ssh/gha_deploy deploy@<droplet-ip> 'whoami && groups'   # -> deploy ... docker
 ```
 
+**Trust note:** membership in the `docker` group is root-equivalent (it can mount the host
+filesystem via a container), so a leaked deploy key effectively grants host root. The trade is
+deliberate for a single-operator personal site. To tighten it, restrict the key with a forced
+command in `authorized_keys` (`command="..." ssh-ed25519 ...`) so it can only run the redeploy, or
+move to rootless Docker.
+
 ### 1e. Firewall
 
 ```bash
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp
+ufw allow 443/udp   # HTTP/3 (QUIC) - the proxy publishes 443/udp
 ufw --force enable
 ```
 
@@ -95,7 +106,8 @@ sudo -u deploy git clone https://github.com/mattmaynes/matthewmaynes.git /home/d
 
 1. **Make the GHCR package public** so the droplet pulls without a login: after the first image is
    pushed, open the package at `ghcr.io/mattmaynes/matthewmaynes` -> Package settings -> change
-   visibility to **Public**.
+   visibility to **Public**. Public means every image layer is world-pullable, which is fine here:
+   the build bakes in no secrets or build args, and `SITE_URL` is public.
 2. **Get the first image into GHCR.** Easiest: push any commit to `main` and let the pipeline build
    it. Or build/push manually from your laptop (see section 5).
 3. **Bring up the stacks** (as `deploy`, from the clone):
@@ -104,7 +116,7 @@ sudo -u deploy git clone https://github.com/mattmaynes/matthewmaynes.git /home/d
    cd ~/matthewmaynes/deploy/docker
    docker compose -f compose.proxy.yml up -d
    docker compose -f compose.site.yml pull
-   docker compose -f compose.site.yml up -d
+   docker compose -f compose.site.yml up -d --wait   # waits for the HEALTHCHECK to pass
    docker ps   # caddy publishes 80/443; site shows 3000 only as internal
    ```
 
@@ -130,8 +142,9 @@ within a minute; `https://matthewmaynes.com` goes live and `www` + `http` redire
 ## 4. Ongoing deploys (automatic)
 
 Every push to `main` runs `.github/workflows/deploy.yml`: **verify** (lint, build, test) ->
-**build** (push `latest` + a `sha-<commit>` tag to GHCR) -> **deploy** (SSH in, `git pull`,
-`compose ... pull && up -d`). A failed verify or build never deploys. Nothing to do by hand.
+**build** (push `latest` + a full-SHA `sha-<commit>` tag to GHCR) -> **deploy** (SSH in,
+`git fetch` + `reset --hard origin/main`, then `compose pull && up -d --wait` pinned to that
+commit's image). A failed verify, build, or health check never lands a release. Nothing to do by hand.
 
 GitHub repo secrets the pipeline needs (Settings -> Secrets and variables -> Actions):
 
@@ -140,6 +153,7 @@ GitHub repo secrets the pipeline needs (Settings -> Secrets and variables -> Act
 | `DROPLET_HOST` | droplet public IPv4 |
 | `DROPLET_USER` | `deploy` |
 | `DROPLET_SSH_KEY` | the **private** deploy key (`~/.ssh/gha_deploy`) |
+| `DROPLET_KNOWN_HOSTS` | the droplet's host keys, so CI authenticates it instead of trust-on-first-use. Generate with `ssh-keyscan -t ed25519,rsa <droplet-ip>` and confirm the fingerprint against the DigitalOcean console. |
 
 ---
 
@@ -157,25 +171,32 @@ Pull on the droplet (as `deploy`):
 
 ```bash
 cd ~/matthewmaynes/deploy/docker
-docker compose -f compose.site.yml pull && docker compose -f compose.site.yml up -d
+docker compose -f compose.site.yml pull && docker compose -f compose.site.yml up -d --wait
 ```
 
-**Roll back** to a known-good commit using its immutable `sha` tag:
+**Roll back** to a known-good commit by pinning its immutable `sha` tag (the compose file reads
+`IMAGE_TAG`, default `latest`):
 
 ```bash
-docker pull ghcr.io/mattmaynes/matthewmaynes:sha-<commit>
-docker tag  ghcr.io/mattmaynes/matthewmaynes:sha-<commit> ghcr.io/mattmaynes/matthewmaynes:latest
-docker compose -f compose.site.yml up -d
+cd ~/matthewmaynes/deploy/docker
+IMAGE_TAG=sha-<full-commit-sha> docker compose -f compose.site.yml pull
+IMAGE_TAG=sha-<full-commit-sha> docker compose -f compose.site.yml up -d --wait
 ```
 
 ---
 
 ## 6. Adding a second cohosted site later
 
-1. Add its service to a new `compose.<name>.yml` on the `edge` network (expose its port, no host
-   publish).
+1. Add its service to a new `compose.<name>.yml` with its own `name:`, on the `edge` network
+   (expose its port, no host publish).
 2. Add a hostname block to the `Caddyfile`: `name.example.com { reverse_proxy <service>:<port> }`.
-3. `docker compose -f deploy/docker/compose.proxy.yml restart` to reload routes.
+3. Reload Caddy **without dropping connections** (do not `compose restart` - that bounces 80/443
+   for every hosted site):
+
+   ```bash
+   docker compose -f compose.proxy.yml exec caddy \
+     caddy reload --config /etc/caddy/Caddyfile
+   ```
 
 No change to the site stack. If RAM gets tight, resize the droplet to 1GB (RAM/CPU-only resize is
 reversible).

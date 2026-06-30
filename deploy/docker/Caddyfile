@@ -6,6 +6,9 @@
 # Apex: serve the site, proxying to the standalone Next server on the edge network.
 matthewmaynes.com {
 	encode zstd gzip
+	# HSTS belongs at the TLS terminator. The app sets the other security headers
+	# (X-Frame-Options, X-Content-Type-Options, ...) in next.config.ts.
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	reverse_proxy site:3000
 }
 

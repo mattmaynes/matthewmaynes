@@ -37,3 +37,9 @@ Capture lessons as you go.
   (fresh single-lockfile checkout) and the Docker build (single lockfile in `/app`) are fine. To
   verify the smoke test while building in a worktree, run it from a clean single-root export
   (`git archive HEAD | tar -x -C /tmp/...`), or set `outputFileTracingRoot` in `next.config.ts`.
+- **A CD/SSH deploy is not done when the happy path works.** Model the failure paths: gate on
+  container **health** (`compose up -d --wait`), not creation, or a crash-looping image ships
+  green; **authenticate** the target host (pin a `known_hosts` secret, never `ssh-keyscan` on the
+  fly = MITM TOFU); **pin dependencies** to commit SHAs (mutable Action tags + `packages: write` =
+  supply-chain RCE) and keep elevated tokens job-scoped. Also pin the deployed image tag for
+  auditable rollback rather than chasing `:latest`. (feedback 0002)
