@@ -53,3 +53,18 @@ Capture lessons as you go.
   HTML - every job green. Verify deploys against the *running container's* output, not the job
   status; and prefer no cross-run build cache (`no-cache: true`) on a small app, or a cache keyed
   so a source change always busts the copy+build layers. (feedback 0004)
+
+## Images (spec 0005)
+
+- **`next/image` alone does not stop flicker.** It reserves space and optimizes bytes, but an
+  image with no `placeholder` still renders blank then pops in after decode. For locally-bundled
+  images, **static-import them** (carry them as imports in the `src/lib/site.ts` `images` map, not
+  string paths) so `placeholder="blur"` gets an auto-generated `blurDataURL` for free; pass the
+  whole import as `src`. Reserve `priority` for above-the-fold images so they are not lazy-loaded,
+  and set `images.formats = ["image/avif","image/webp"]` (default is WebP-only) - AVIF cut the
+  640px hero from a ~1 MB PNG to ~30 KB. (feedback 0005)
+- **Verify image work from the running standalone server, not the smoke test, in a worktree.** The
+  two-lockfile quirk nests `server.js` under `.next/standalone/.worktrees/<slug>/`, so the smoke
+  test's `.next/standalone/server.js` path misses. Assemble static+public next to the nested
+  `server.js`, boot it, and `curl` for the inlined `data:image/...;base64` blur placeholders and an
+  `image/avif` content-type on a `/_next/image?...` URL. (feedback 0005)
