@@ -1,0 +1,22 @@
+# Pull-request gate for matthewmaynes.com. Runs the SAME verify job the deploy
+# pipeline runs (lint, resume PDF freshness, build, test), but on pull_request,
+# so a red check blocks the merge instead of only surfacing post-merge in deploy
+# where it is too late. Require the "verify / verify" check in branch protection
+# to enforce it.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to a PR supersedes the in-flight run for that PR.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify.yml
