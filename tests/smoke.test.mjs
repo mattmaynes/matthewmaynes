@@ -119,6 +119,19 @@ after(() => {
   if (server) server.kill("SIGTERM");
 });
 
+// The resume PDF is a committed static asset under public/, generated from the
+// /resume page (npm run resume:pdf). Assert it is served so a missing file or a
+// misrouted download is caught.
+test("GET /resume.pdf serves the downloadable PDF", async () => {
+  const res = await fetch(BASE + "/resume.pdf");
+  assert.equal(res.status, 200, "expected 200 for /resume.pdf");
+  assert.equal(
+    res.headers.get("content-type"),
+    "application/pdf",
+    "expected /resume.pdf to be served as application/pdf",
+  );
+});
+
 for (const route of routes) {
   test(`GET ${route.path} renders the right page`, async () => {
     const res = await fetch(BASE + route.path);

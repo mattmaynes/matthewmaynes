@@ -71,3 +71,13 @@ Capture lessons as you go.
   `.next/standalone/server.js` path missed and the suite never ran in a worktree. `findServerJs()`
   now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
   real `server.js`. (feedback 0005)
+
+## Resume page + PDF (spec 0005)
+
+- **Do not hash rendered Next HTML to detect content changes.** The plan was to gate PDF
+  regeneration on a hash of the served `/resume` HTML; in practice Next embeds per-build asset
+  hashes and RSC payloads, so the same content yields different HTML every build - the gate would
+  fire constantly. Hash the **source inputs** instead (`resume.ts`, the page, the print CSS): it is
+  deterministic and is literally "regenerate when the resume changes". The committed PDF + a
+  source-hash sidecar also lets CI verify freshness with a pure hash compare - no browser in CI or
+  Docker, only on the developer's machine when they run `npm run resume:pdf`.

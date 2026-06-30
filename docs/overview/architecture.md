@@ -53,10 +53,12 @@ per-component code. Already implemented in `src/styles/`.
 
 - `src/app/` — App Router routes and layouts.
 - `src/components/` — UI and layout components.
-- `src/lib/` — content loading (blog, projects).
-- `src/styles/` — `globals.css` + `theme-harbor.css` (Harbor palette).
+- `src/lib/` — content loading (blog, projects) + scrubbed `resume.ts` data.
+- `src/styles/` — `globals.css` + `theme-harbor.css` (Harbor palette; includes the `@media print`
+  block that forces the light palette for the resume PDF).
+- `scripts/` — build/authoring tools (e.g. `generate-resume-pdf.mjs`).
 - `content/` — authored blog/project content (tracked; contains no PII).
-- `public/` — static assets; generated `resume.pdf`.
+- `public/` — static assets; the **committed** `resume.pdf` + `resume.pdf.hash`.
 - `context/` — **git-ignored** local planning notes and the private resume source.
 - `docs/` — Spectra specs/plans/feedback/overview + `docs/design/` brand guide.
 
@@ -69,3 +71,13 @@ per-component code. Already implemented in `src/styles/`.
 - **Resume privacy by construction** — the page and generated PDF are built from a source that
   omits phone/email/exact address; the real destination for the contact form lives only in server
   env vars.
+- **Resume PDF: committed artifact, rendered from the page.** `npm run resume:pdf` boots the
+  standalone server and drives **headless system Chrome** (`--print-to-pdf`, no npm browser
+  dependency) to render `/resume` with its `@media print` styles into `public/resume.pdf`, writing
+  a sidecar `resume.pdf.hash` of the resume source files. The PDF is committed, so Docker/runtime
+  serve a static file and never run a browser. Regeneration is gated on the source hash (no-op when
+  unchanged); CI runs `resume:pdf:check` (a pure hash compare, no browser) and fails if the resume
+  changed without the PDF being regenerated. The page is the single source of truth for both.
+- **`outputFileTracingRoot` pinned to the project** (`next.config.ts`) so `output: standalone`
+  emits `server.js` at the standalone root even inside the nested `.worktrees/` checkout; a no-op
+  in CI/Docker. Both the smoke test and the PDF generator boot that server. (learnings 0002)
