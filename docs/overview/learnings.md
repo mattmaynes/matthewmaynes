@@ -27,3 +27,13 @@ Capture lessons as you go.
   toggle's system-default + persisted-override rule) needs a test. If the logic is trapped in a
   JSX string or a client component, extract a plain-module seam (`src/lib/theme.js`) so it is
   testable. (feedback 0001)
+
+## Deploy (spec 0002)
+
+- **`output: standalone` builds break inside the nested `.worktrees/` checkout.** With two
+  lockfiles in the tree (the main checkout's and the worktree's), Next infers the *outer* repo as
+  the workspace root and emits `server.js` at `.next/standalone/.worktrees/<slug>/server.js`, so
+  the standalone smoke test (which expects `.next/standalone/server.js`) fails - even though CI
+  (fresh single-lockfile checkout) and the Docker build (single lockfile in `/app`) are fine. To
+  verify the smoke test while building in a worktree, run it from a clean single-root export
+  (`git archive HEAD | tar -x -C /tmp/...`), or set `outputFileTracingRoot` in `next.config.ts`.

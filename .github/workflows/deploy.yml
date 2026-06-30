@@ -1,0 +1,88 @@
+# Continuous deployment for matthewmaynes.com.
+# Push to main -> verify (lint/build/test) -> build+push image to GHCR -> deploy
+# to the droplet over SSH. A red verify or build never reaches deploy.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Least privilege: read the repo, write packages (GHCR push uses GITHUB_TOKEN, no PAT).
+permissions:
+  contents: read
+  packages: write
+
+# Never run two deploys to the same droplet at once; let an in-flight one finish.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/mattmaynes/matthewmaynes
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # matches the Dockerfile runtime (node:20-alpine)
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+
+  build:
+    needs: verify
+    runs-on: ubuntu-latest # native amd64, so no QEMU emulation for the image build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          HOST: ${{ secrets.DROPLET_HOST }}
+          USER: ${{ secrets.DROPLET_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/deploy_key "$USER@$HOST" 'bash -se' <<'REMOTE'
+            set -euo pipefail
+            cd ~/matthewmaynes
+            git pull --ff-only
+            docker compose -f deploy/docker/compose.site.yml pull
+            docker compose -f deploy/docker/compose.site.yml up -d
+            docker image prune -f
+          REMOTE

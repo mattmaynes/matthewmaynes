@@ -1,0 +1,15 @@
+# Caddy routes by hostname and provisions/renews Let's Encrypt certs automatically
+# (needs ports 80/443 reachable and DNS pointing at this droplet first). HTTP is
+# redirected to HTTPS automatically. No ACME email is set on purpose: a personal
+# address must never live in a tracked file (see docs/overview/project.md privacy).
+
+# Apex: serve the site, proxying to the standalone Next server on the edge network.
+matthewmaynes.com {
+	encode zstd gzip
+	reverse_proxy site:3000
+}
+
+# www -> apex. Caddy still issues a cert for www so the redirect is served over HTTPS.
+www.matthewmaynes.com {
+	redir https://matthewmaynes.com{uri} permanent
+}

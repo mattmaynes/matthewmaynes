@@ -1,0 +1,28 @@
+# Edge reverse proxy. Terminates TLS and routes by hostname to backends on the
+# shared `edge` network. This is the ONLY stack that publishes host ports.
+# Bring up once per droplet:  docker compose -f compose.proxy.yml up -d
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 (QUIC)
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # ACME account + issued certs (must persist across restarts)
+      - caddy_config:/config
+    networks:
+      - edge
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+# Created once on the host: `docker network create edge`. Shared with every
+# site stack so Caddy can reach them by service name.
+networks:
+  edge:
+    external: true
