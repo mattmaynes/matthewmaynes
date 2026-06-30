@@ -149,3 +149,20 @@ Capture lessons as you go.
   `node_modules`; a symlink to the parent is rejected ("points out of the filesystem root"). Run
   `npm ci` in the worktree before `npm run build`. (The build/CI/Docker single-root path is
   unaffected.)
+
+## Image caching: two layers, two fixes (spec 0006)
+
+- **Separate the browser cache from the server optimizer cache before "fixing" image caching.**
+  They are independent and have different remedies. (1) Browser: `/_next/image` responses for
+  content-hashed static imports already return `Cache-Control: public, max-age=315360000, immutable`
+  - effectively permanent, with URL-hash busting on change, so no header tuning is ever needed for a
+  "keep it cached" ask. (2) Server: the on-demand optimizer encodes each variant on first request
+  (`X-Nextjs-Cache: MISS` -> `HIT`) and a fresh container starts cold - that, not the browser, is
+  what makes the first post-deploy visitor wait. The fix is a post-deploy **prewarm** that requests
+  each variant, not a cache-control change. When asked to "cache images longer," check which layer
+  the symptom is actually in.
+- **Warm by crawling the rendered pages, not a hardcoded URL list.** The optimized URLs encode a
+  content hash and the exact srcset widths from each image's `sizes`; only the live HTML knows them,
+  so a crawl stays correct as images/layouts change. Verify warming honestly with `X-Nextjs-Cache`
+  (and the same browser `Accept` header), the same way image encode timing must be measured
+  (feedback 0006).

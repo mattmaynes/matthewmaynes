@@ -44,7 +44,12 @@ EXIF/GPS stripped — no location leaks. They are static-imported through the `i
 `src/lib/site.ts`, so each gets a build-time `blurDataURL` (rendered with `placeholder="blur"` — no
 pop-in flicker) and is optimized to WebP (`images.formats` in `next.config.ts`, with a long
 `minimumCacheTTL`); above-the-fold images use `priority`. WebP-only (not AVIF) keeps first-paint
-encode fast for the first visitor after each deploy (feedback 0006).
+encode fast for the first visitor after each deploy (feedback 0006). Optimized images are
+content-hashed and returned `immutable` with a ~10-year `max-age`, so browsers cache them
+indefinitely and a changed image busts its own URL. To spare even the first post-deploy visitor the
+on-demand encode, a CD `prewarm` job (`npm run prewarm`, `scripts/prewarm-images.mjs`) crawls the
+image-bearing pages and pre-requests every `/_next/image` variant so the optimizer cache is hot
+before any real visit (spec 0006).
 
 ## Resume page
 
