@@ -15,6 +15,22 @@
 - **Content as data:** blog posts in `content/blog/*.mdx`, project data in `content/projects/`.
   No database, no runtime fetching.
 
+## Metadata & sharing (spec 0004)
+
+- **Next file conventions, not hand-rolled `<head>`:** `app/{favicon.ico,icon.png,apple-icon.png}`
+  for icons; `app/opengraph-image.tsx` (+ a re-exporting `twitter-image.tsx`) for the share card;
+  `app/{robots,sitemap,manifest}.ts` for the crawler/install surface. `layout.tsx` carries the
+  default Open Graph / Twitter / robots metadata, a `viewport` `themeColor`, and a JSON-LD `Person`.
+- **One source of truth:** identity/description/social come from `src/lib/site.ts`; sitemap routes
+  come from its `nav`. Nothing is duplicated across the meta tags, sitemap, JSON-LD, and manifest.
+- **Icons are generated, not hand-placed:** `scripts/build-icons.mjs` resizes the
+  `public/brand/logo-m.png` master with macOS `sips` and packs the multi-res `favicon.ico` with a
+  stdlib ICO writer - no ImageMagick, no npm dependency. Re-run it to refresh every size at once.
+- **OG image asset loading:** satori (the `next/og` engine) cannot read the woff2 that `@fontsource`
+  ships, so Figtree TTFs are colocated in `src/app/_og/` and loaded via
+  `new URL(..., import.meta.url)` (traced into the standalone output). The logo reads from
+  `public/`, which the standalone/Docker copy step deploys next to `server.js`.
+
 ## Styling layers (import order matters)
 
 `globals.css` imports, in order: `tailwindcss` → `@rogueoak/roots/tokens.css` →

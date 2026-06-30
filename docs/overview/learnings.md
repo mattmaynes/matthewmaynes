@@ -53,3 +53,24 @@ Capture lessons as you go.
   HTML - every job green. Verify deploys against the *running container's* output, not the job
   status; and prefer no cross-run build cache (`no-cache: true`) on a small app, or a cache keyed
   so a source change always busts the copy+build layers. (feedback 0004)
+
+## SEO & sharing (spec 0004)
+
+- **`next/og` (satori) cannot read woff2.** `@fontsource-variable/figtree` ships woff2 only, so
+  passing it to `ImageResponse` fails. Bundle a TTF/OTF/WOFF instead - we colocate Figtree TTFs in
+  `src/app/_og/` and load them with `new URL('./_og/figtree-NNN.ttf', import.meta.url)` so they are
+  traced into the `output: standalone` build (a `process.cwd()`-relative read of `src/` would not
+  be - `src/` is not deployed). Assets the OG route reads from `public/` are fine: the standalone
+  copy step puts `public/` next to `server.js`, so `join(process.cwd(), 'public/...')` resolves.
+- **Verify the generated OG image, do not assume it built.** A green `next build` only proves the
+  route compiled; a wrong font/logo path renders a blank or broken card. The smoke test fetches the
+  `og:image` URL's path on the local server and asserts a `200` + `image/png`, and the card was
+  eyeballed from `.next/server/app/opengraph-image.body` before commit.
+- **Turbopack rejects a cross-root `node_modules` symlink.** The clean-export trick for testing in a
+  worktree (build from a single-lockfile copy outside the repo) breaks if you *symlink* node_modules
+  into it (`Symlink ... points out of the filesystem root`). Hardlink-copy it instead
+  (`cp -al node_modules <export>/node_modules`) - fast on one APFS volume, and the build only writes
+  to `.next`.
+- **No new dependency for the icon set.** macOS `sips` resizes and a ~40-line stdlib ICO packer
+  (`scripts/build-icons.mjs`) writes a multi-res `favicon.ico` with PNG payloads. Reproducible from
+  one master (`public/brand/logo-m.png`), no ImageMagick.

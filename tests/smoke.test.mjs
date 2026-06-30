@@ -99,3 +99,68 @@ for (const route of routes) {
     );
   });
 }
+
+// SEO + sharing surface (spec 0004). One fetch of the home page <head>, then
+// assertions on the social/discovery tags and the routes they reference.
+test("home page exposes the sharing + SEO metadata", async () => {
+  const html = await (await fetch(BASE + "/")).text();
+
+  // Favicon link (Next emits one for app/icon.png and/or favicon.ico).
+  assert.match(html, /<link[^>]+rel="icon"/, "expected a favicon <link>");
+
+  // Open Graph + Twitter card.
+  const ogImage = html.match(
+    /<meta\s+property="og:image"\s+content="([^"]+)"/,
+  );
+  assert.ok(ogImage, "expected an og:image meta tag");
+  assert.match(html, /<meta\s+property="og:title"/, "expected og:title");
+  assert.match(
+    html,
+    /<meta\s+name="twitter:card"\s+content="summary_large_image"/,
+    "expected a summary_large_image twitter card",
+  );
+
+  // JSON-LD Person block.
+  assert.match(
+    html,
+    /<script type="application\/ld\+json">[^<]*"@type":"Person"/,
+    "expected a Person JSON-LD block",
+  );
+
+  // The generated OG image renders (catches font/logo load failures). The meta
+  // URL is absolute against metadataBase, so fetch its path on the test server.
+  const ogPath = new URL(ogImage[1]).pathname + new URL(ogImage[1]).search;
+  const ogRes = await fetch(BASE + ogPath);
+  assert.equal(ogRes.status, 200, "expected the og image route to 200");
+  assert.match(
+    ogRes.headers.get("content-type") ?? "",
+    /image\/png/,
+    "expected the og image to be a PNG",
+  );
+});
+
+test("robots, sitemap, and manifest are served", async () => {
+  const robots = await fetch(BASE + "/robots.txt");
+  assert.equal(robots.status, 200, "expected /robots.txt to 200");
+  assert.match(
+    await robots.text(),
+    /Sitemap:/i,
+    "expected robots.txt to reference the sitemap",
+  );
+
+  const sitemap = await fetch(BASE + "/sitemap.xml");
+  assert.equal(sitemap.status, 200, "expected /sitemap.xml to 200");
+  assert.match(
+    await sitemap.text(),
+    /<loc>/,
+    "expected sitemap.xml to list URLs",
+  );
+
+  const manifest = await fetch(BASE + "/manifest.webmanifest");
+  assert.equal(manifest.status, 200, "expected the manifest to 200");
+  const json = await manifest.json();
+  assert.ok(
+    Array.isArray(json.icons) && json.icons.length >= 2,
+    "expected the manifest to declare install icons",
+  );
+});
