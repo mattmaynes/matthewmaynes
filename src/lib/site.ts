@@ -5,11 +5,13 @@
  * `placeholder="blur"` (no pop-in flicker). No PII lives here by design.
  */
 import type { StaticImageData } from "next/image";
-import areaILive from "../../public/images/area-i-live.png";
-import headshotImg from "../../public/images/headshot.png";
-import familyImg from "../../public/images/family.png";
-import sashaImg from "../../public/images/sasha-best-dog-ever.png";
-import babyMatthewImg from "../../public/images/baby-matthew.png";
+// Photos are JPEG (smaller than PNG for photographic content); the eagle-snap
+// banner is a flat graphic and stays PNG (smaller than JPEG for that).
+import areaILive from "../../public/images/area-i-live.jpg";
+import headshotImg from "../../public/images/headshot.jpg";
+import familyImg from "../../public/images/family.jpg";
+import sashaImg from "../../public/images/sasha-best-dog-ever.jpg";
+import babyMatthewImg from "../../public/images/baby-matthew.jpg";
 import eagleSnapImg from "../../public/images/eagle-snap.png";
 
 export const site = {

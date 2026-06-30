@@ -31,9 +31,9 @@ async function loadAssets() {
     readFile(new URL("./_og/figtree-400.woff", import.meta.url)),
     readFile(new URL("./_og/figtree-600.woff", import.meta.url)),
     readFile(new URL("./_og/figtree-700.woff", import.meta.url)),
-    readFile(join(process.cwd(), "public/images/headshot.png")),
+    readFile(join(process.cwd(), "public/images/headshot.jpg")),
   ]);
-  const headshotSrc = `data:image/png;base64,${headshot.toString("base64")}`;
+  const headshotSrc = `data:image/jpeg;base64,${headshot.toString("base64")}`;
   return { regular, semibold, bold, headshotSrc };
 }
 

@@ -9,11 +9,22 @@ const nextConfig: NextConfig = {
   // the resume PDF generator (both boot the standalone server). No-op in CI and
   // Docker, where the app is the only root. (learnings 0002)
   outputFileTracingRoot: import.meta.dirname,
-  // Serve AVIF first (then WebP) so the heavy PNG sources ship far fewer bytes
-  // and decode sooner; the default is WebP-only. Static-imported images also
-  // carry a build-time blurDataURL for placeholder="blur" (see src/lib/site.ts).
+  // WebP-only (NOT AVIF) on purpose. next/image optimizes on demand, so the first
+  // visitor after each deploy pays the encode cost while the blur placeholder
+  // shows. AVIF files are ~35% smaller but encode modestly slower per image
+  // (measured ~0.05-0.12s/image here, more on the small deploy box) on top of a
+  // one-time sharp init; the heavy lifting that made this slow was the oversized
+  // PNG sources (now right-sized JPEG - see src/lib/site.ts). WebP is consistently
+  // a touch faster to encode and supported by ~all clients; next/image content-
+  // negotiates on the Accept header and falls back to the original source for the
+  // rare client without WebP, so it gives the snappiest first paint at a
+  // negligible size cost. minimumCacheTTL is long because the
+  // sources are content-hashed and immutable, so each variant is encoded once and
+  // reused. (feedback 0006 - re-adding "image/avif" trades first-paint latency for
+  // smaller files; only do it with deploy-time cache pre-warming.)
   images: {
-    formats: ["image/avif", "image/webp"],
+    formats: ["image/webp"],
+    minimumCacheTTL: 31536000,
   },
   // Conservative baseline security headers for a public static-content site.
   // No CSP yet: the pre-paint theme script is inline, so a future CSP must use a
