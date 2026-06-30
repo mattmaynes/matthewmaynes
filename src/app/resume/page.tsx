@@ -60,8 +60,8 @@ export default function ResumePage() {
               {resume.skills.map((skill) => (
                 <Badge
                   key={skill}
-                  variant="primary"
-                  className="bg-secondary text-secondary-foreground"
+                  variant="neutral"
+                  className="border-0 bg-secondary text-secondary-foreground"
                 >
                   {skill}
                 </Badge>
@@ -183,13 +183,12 @@ function Section({
   // Side sections are short - keep each whole. Main sections (Experience) span
   // pages, so let them break; their jobs carry their own break-inside-avoid and
   // break-after-avoid keeps a heading off a page bottom (cf. feedback 0007).
-  const heading = variant === "main" ? "text-body-sm" : "text-caption";
+  // One heading size across columns: same-level headings should match, and a
+  // small uppercase eyebrow stays clearly below the job-title size.
   const wrapper = variant === "side" ? "break-inside-avoid" : "";
   return (
     <section className={wrapper}>
-      <h2
-        className={`mb-3 break-after-avoid border-b border-border pb-1 font-semibold uppercase tracking-wider text-primary ${heading}`}
-      >
+      <h2 className="mb-3 break-after-avoid border-b border-border pb-1 text-caption font-semibold uppercase tracking-wider text-primary">
         {title}
       </h2>
       {children}
