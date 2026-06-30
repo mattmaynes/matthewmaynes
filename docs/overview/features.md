@@ -18,7 +18,7 @@ pending) · 📋 planned.
 ## Navigation
 
 - Top bar: Home · About · Resume · Projects · Blog · Contact (mobile: hamburger).
-- Footer: social links (LinkedIn, GitHub), copyright, "Built by Matthew Maynes".
+- Footer: social links (LinkedIn, GitHub), copyright.
 
 ## Global behaviors
 
