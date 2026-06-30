@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { images, site } from "@/lib/site";
 import type { SiteImage } from "@/lib/site";
 
@@ -16,7 +17,8 @@ const personal: { image: SiteImage; caption: string; position?: string }[] = [
 export default function AboutPage() {
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
-      <div className="grid gap-10 lg:grid-cols-[260px_1fr]">
+      <h1 className="text-h1 font-bold text-text">Hi, I&apos;m Matthew.</h1>
+      <div className="mt-6 grid gap-10 lg:grid-cols-[260px_1fr]">
         <div>
           <Image
             src={images.headshot.src}
@@ -27,17 +29,14 @@ export default function AboutPage() {
             className="w-full max-w-xs rounded-lg border border-border object-cover shadow-sm"
           />
         </div>
-        <div className="flex flex-col gap-4">
-          <h1 className="text-h1 font-bold text-text">Hi, I&apos;m Matthew.</h1>
-          <p className="max-w-2xl text-body text-text-muted">
-            I&apos;m an engineering director who never stopped building. The way I see
-            the job is simple: bring the right people and the right technology together
-            around a problem, then find the solution that delivers the most value the
-            fastest. I lead from the details and default to action. If I&apos;m not
-            living the same problem my team is, I have no business giving them advice
-            about it.
-          </p>
-        </div>
+        <p className="max-w-2xl self-center text-body text-text-muted">
+          I&apos;m an engineering director who never stopped building. The way I see
+          the job is simple: bring the right people and the right technology together
+          around a problem, then find the solution that delivers the most value the
+          fastest. I lead from the details and default to action. If I&apos;m not
+          living the same problem my team is, I have no business giving them advice
+          about it.
+        </p>
       </div>
 
       <section className="mt-16">
@@ -116,9 +115,9 @@ export default function AboutPage() {
 
       <p className="mt-16 max-w-2xl text-caption text-text-muted">
         Want the professional detail? The{" "}
-        <a href="/resume" className="text-primary underline-offset-4 hover:underline">
+        <Link href="/resume" className="text-primary underline-offset-4 hover:underline">
           resume
-        </a>{" "}
+        </Link>{" "}
         has the full work history. {site.name}, {site.title}, based in {site.location}.
       </p>
     </section>

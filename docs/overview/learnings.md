@@ -53,3 +53,12 @@ Capture lessons as you go.
   HTML - every job green. Verify deploys against the *running container's* output, not the job
   status; and prefer no cross-run build cache (`no-cache: true`) on a small app, or a cache keyed
   so a source change always busts the copy+build layers. (feedback 0004)
+
+## Content pages (spec 0003)
+
+- **A placeholder route that gains real content needs a tighter smoke assertion in the same PR.**
+  The generic per-route check (route-unique `<title>` + "an `<h1>` exists") is a resolve probe the
+  old `PagePlaceholder` already satisfied, so a blank body or a reverted placeholder would still
+  pass. The smoke table now takes optional `contains`/`absent` body substrings; assert a
+  route-unique phrase is present (and any placeholder badge is gone) when shipping real copy. This
+  recurred from feedback 0001's "assert what the unit uniquely produces" lesson. (feedback 0005)

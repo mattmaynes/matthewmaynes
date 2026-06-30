@@ -19,9 +19,18 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 // `title` is the route-unique <title> text (layout template is "%s - Matthew
 // Maynes"; home overrides it). Asserting it proves the correct route rendered.
+// `contains` are route-unique body substrings that prove the real content
+// rendered (not just <head> on an error shell, and not a reverted placeholder).
+// `absent` are substrings that must NOT appear (e.g. the "Placeholder" badge on
+// a page that has shipped real content) - see feedback 0001/0005.
 const routes = [
   { path: "/", title: "Matthew Maynes - Engineering Director" },
-  { path: "/about", title: "About - Matthew Maynes" },
+  {
+    path: "/about",
+    title: "About - Matthew Maynes",
+    contains: ["never stopped building", "The whole crew, Shea included."],
+    absent: ["Placeholder"],
+  },
   { path: "/resume", title: "Resume - Matthew Maynes" },
   { path: "/projects", title: "Projects - Matthew Maynes" },
   { path: "/blog", title: "Blog - Matthew Maynes" },
@@ -97,5 +106,19 @@ for (const route of routes) {
       /<h1[\s>]/,
       `expected ${route.path} to render an <h1>`,
     );
+    // Route-unique body content: proves the real page rendered, so a blank body
+    // or a reverted placeholder can't pass on the shared <h1> alone.
+    for (const needle of route.contains ?? []) {
+      assert.ok(
+        html.includes(needle),
+        `expected ${route.path} body to contain "${needle}"`,
+      );
+    }
+    for (const needle of route.absent ?? []) {
+      assert.ok(
+        !html.includes(needle),
+        `expected ${route.path} body to NOT contain "${needle}"`,
+      );
+    }
   });
 }
