@@ -67,7 +67,10 @@ const routes = [
     contains: ["never stopped building", "The whole crew."],
     absent: ["Placeholder"],
   },
-  { path: "/resume", title: "Resume - Matthew Maynes", hasBlur: true },
+  // No hasBlur: the resume is text-only (the avatar was dropped for the
+  // 2-column print layout). Its real content is asserted in the dedicated
+  // "renders the real resume with no contact PII" test above.
+  { path: "/resume", title: "Resume - Matthew Maynes" },
   { path: "/projects", title: "Projects - Matthew Maynes", hasBlur: true },
   { path: "/blog", title: "Blog - Matthew Maynes" },
   { path: "/blog/hello-world", title: "hello-world - Blog - Matthew Maynes" },
@@ -155,7 +158,7 @@ test("GET /resume.pdf serves a real, non-trivial PDF", async () => {
 // PII in the HTML, which covers the PDF too since it renders from this page.
 test("GET /resume renders the real resume with no contact PII", async () => {
   const html = await (await fetch(BASE + "/resume")).text();
-  for (const marker of ["How I Lead", "Work History", "Certifications"]) {
+  for (const marker of ["How I Lead", "Experience", "Certifications"]) {
     assert.ok(html.includes(marker), `expected /resume to render "${marker}"`);
   }
   assert.ok(
