@@ -45,8 +45,9 @@ Out:
   encode. Returns `{ urls, warmed, failed, pagesOk }`.
 - `scripts/prewarm-images.mjs` - thin entry: base URL from argv/`SITE_URL`
   (default the production URL), routes = the four image-bearing pages. Best-
-  effort: logs a summary; only exits non-zero if it could not reach the site at
-  all (individual image failures never fail the deploy).
+  effort: logs a summary and exits non-zero only on WHOLESALE failure (no page
+  reachable, or pages rendered image URLs yet none warmed); a partial warm stays
+  green. Each request has a timeout so a hung container can't stall the job.
 - `.github/workflows/deploy.yml` - a `prewarm` job (`needs: deploy`) checks out
   the repo, sets up Node, and runs the script against `SITE_URL`. No deps (Node
   built-in `fetch`), so no `npm ci`.

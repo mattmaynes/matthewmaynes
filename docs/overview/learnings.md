@@ -166,3 +166,18 @@ Capture lessons as you go.
   so a crawl stays correct as images/layouts change. Verify warming honestly with `X-Nextjs-Cache`
   (and the same browser `Accept` header), the same way image encode timing must be measured
   (feedback 0006).
+
+## Parallel test files share one build dir (review 0006)
+
+- **`node --test tests/*.test.mjs` runs files in PARALLEL, so two files that each lazily
+  `next build` into the same `.next` race and corrupt it.** Adding a second server-booting test
+  (the prewarm integration test alongside the smoke test) turned a clean-tree `npm test` red with
+  `next build failed`, while CI stayed green only because it builds before testing. Fix:
+  `--test-concurrency=1` in the `test` script so files run sequentially (the first builds, the rest
+  reuse). When adding a test that boots the standalone, remember it shares the lazy-build hook with
+  every other such file.
+- **Make a deploy-time best-effort step actually bounded.** A warmer/poller that fetches over the
+  network must cap each request (`AbortSignal.timeout`) AND its CD job (`timeout-minutes`); Node
+  `fetch` waits forever, and a stalled best-effort job coupled to a `concurrency`-serialized deploy
+  lane will queue the next deploy behind it. "Best-effort" means it also fails fast, not just that
+  it ignores errors. (spec 0006)

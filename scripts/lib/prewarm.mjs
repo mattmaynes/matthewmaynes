@@ -11,6 +11,12 @@
 // client negotiates (WebP today) rather than serving the original passthrough.
 const IMAGE_ACCEPT = "image/avif,image/webp,image/apng,*/*";
 
+// Per-request ceiling. Node's fetch waits forever by default, so a container
+// that accepts the connection but never responds (a real post-deploy failure
+// mode) would otherwise hang the warm until GitHub's 360-min job timeout. The
+// try/catch around each fetch absorbs the AbortError, keeping best-effort intact.
+const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+
 /**
  * Pull every `/_next/image?...` URL out of a page's HTML - from both `src` and
  * `srcset` (each srcset width is a distinct URL to warm). Unescapes `&amp;`,
@@ -23,7 +29,9 @@ const IMAGE_ACCEPT = "image/avif,image/webp,image/apng,*/*";
 export function extractImageUrls(html, origin = "") {
   const urls = new Set();
   // Stop at whitespace, quotes, or `>` so a srcset "url 640w, url 750w" yields
-  // each URL without its width descriptor or the comma separator.
+  // each URL without its width descriptor or the comma separator. Assumes Next's
+  // actual output: HTML-escaped as `&amp;` (not numeric entities) and srcset
+  // candidates separated by ", " (a space) - both always true for next/image.
   const re = /\/_next\/image\?[^"'\s>]+/g;
   let m;
   while ((m = re.exec(html)) !== null) {
@@ -65,6 +73,7 @@ export async function prewarm({
   fetchImpl = fetch,
   log = () => {},
   concurrency = 6,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 }) {
   const origin = new URL(baseUrl).origin;
   const imageUrls = new Set();
@@ -73,7 +82,10 @@ export async function prewarm({
   for (const route of routes) {
     const pageUrl = new URL(route, baseUrl).toString();
     try {
-      const res = await fetchImpl(pageUrl, { headers: { accept: "text/html" } });
+      const res = await fetchImpl(pageUrl, {
+        headers: { accept: "text/html" },
+        signal: AbortSignal.timeout(requestTimeoutMs),
+      });
       if (!res.ok) {
         log(`  page ${route}: HTTP ${res.status} (skipped)`);
         continue;
@@ -92,7 +104,10 @@ export async function prewarm({
   let failed = 0;
   await mapWithConcurrency(urls, concurrency, async (url) => {
     try {
-      const res = await fetchImpl(url, { headers: { accept: IMAGE_ACCEPT } });
+      const res = await fetchImpl(url, {
+        headers: { accept: IMAGE_ACCEPT },
+        signal: AbortSignal.timeout(requestTimeoutMs),
+      });
       // Drain the body so the encode completes and the socket frees.
       await res.arrayBuffer();
       if (res.ok) warmed++;

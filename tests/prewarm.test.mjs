@@ -153,15 +153,26 @@ test("prewarm warms the home page images and flips MISS -> HIT", async () => {
   );
 
   // Warm a DIFFERENT, not-yet-requested page so the assertion below proves the
-  // warmer (not the line above) populated the cache.
-  const { warmed, urls, pagesOk } = await prewarm({
+  // warmer (not the cold check above) populated the cache.
+  const { warmed, failed, urls, pagesOk } = await prewarm({
     baseUrl: BASE,
     routes: ["/about"],
   });
-  assert.ok(pagesOk === 1, "expected the /about page to be crawled");
-  assert.ok(warmed > 0, `expected to warm at least one image, got ${warmed}`);
+  assert.equal(pagesOk, 1, "expected the /about page to be crawled");
+  assert.ok(urls.length > 1, "expected /about to render several image variants");
+  // Spec: warm EVERY variant. A regression that warms only the first would pass
+  // a bare `warmed > 0`, so assert the full set succeeded.
+  assert.equal(failed, 0, "expected no image to fail warming");
+  assert.equal(
+    warmed,
+    urls.length,
+    `expected all ${urls.length} variants warmed, got ${warmed}`,
+  );
 
-  const warmedUrl = urls[0];
+  // Assert HIT on a URL the cold check above did NOT touch, so the HIT can only
+  // come from the warmer - not a self-inflicted warm of the shared headshot URL.
+  const warmedUrl = urls.find((u) => u !== sample);
+  assert.ok(warmedUrl, "expected a warmed URL distinct from the cold sample");
   const hit = await fetch(warmedUrl, {
     headers: { accept: "image/avif,image/webp,*/*" },
   });
@@ -170,5 +181,30 @@ test("prewarm warms the home page images and flips MISS -> HIT", async () => {
     hit.headers.get("x-nextjs-cache"),
     "HIT",
     "expected a warmed image to HIT on the next request",
+  );
+});
+
+// The entry script's exit code is the CD gate (acceptance #3): exit 1 only on
+// wholesale failure, exit 0 otherwise. Drive the real script both ways.
+test("entry script exits 1 when the site is unreachable", () => {
+  const res = spawnSync(
+    "node",
+    [join(root, "scripts/prewarm-images.mjs"), "http://127.0.0.1:1/"],
+    { encoding: "utf8" },
+  );
+  assert.equal(res.status, 1, "expected exit 1 when no page responds");
+});
+
+test("entry script exits 0 and warms against a healthy server", () => {
+  const res = spawnSync(
+    "node",
+    [join(root, "scripts/prewarm-images.mjs"), BASE],
+    { encoding: "utf8" },
+  );
+  assert.equal(res.status, 0, `expected exit 0, got ${res.status}`);
+  assert.match(
+    res.stdout,
+    /Warmed \d+\/\d+ image variant/,
+    "expected the script to report what it warmed",
   );
 });

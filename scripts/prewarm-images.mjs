@@ -27,10 +27,17 @@ console.log(
 );
 
 // Best-effort by design: a single image hiccup must never fail an otherwise
-// healthy deploy. Only a total failure to reach the site (no page responded) is
-// worth a red job - that signals a real connectivity/URL problem.
+// healthy deploy. Only a WHOLESALE failure is worth a red job - either no page
+// responded at all (connectivity/URL problem), or pages rendered image URLs yet
+// not one warmed (the optimizer is broken). A partial warm stays green.
 if (pagesOk === 0) {
   console.error(`Could not reach any page at ${baseUrl} - nothing warmed.`);
+  process.exit(1);
+}
+if (urls.length > 0 && warmed === 0) {
+  console.error(
+    `Found ${urls.length} image URL(s) but warmed none - the image optimizer may be failing.`,
+  );
   process.exit(1);
 }
 process.exit(0);
