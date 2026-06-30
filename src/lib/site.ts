@@ -15,6 +15,7 @@ export const site = {
   social: {
     linkedin: "https://www.linkedin.com/in/matthew-maynes/",
     github: "https://github.com/mattmaynes",
+    x: "https://x.com/mattmaynes",
   },
 } as const;
 

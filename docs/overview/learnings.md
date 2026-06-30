@@ -48,3 +48,8 @@ Capture lessons as you go.
   nothing and reddened the first CI run, despite passing locally on a newer Node. Use a
   shell-expanded glob (`tests/*.test.mjs`) for portable discovery, and run the suite on the pinned
   Node (a `node:20-alpine` container) before trusting green. (feedback 0003)
+- **A green deploy can still ship stale source.** With `cache-from/to: type=gha`, buildx restored
+  an outdated `COPY . .` layer, so `npm run build` ran on old code and the new image served old
+  HTML - every job green. Verify deploys against the *running container's* output, not the job
+  status; and prefer no cross-run build cache (`no-cache: true`) on a small app, or a cache keyed
+  so a source change always busts the copy+build layers. (feedback 0004)
