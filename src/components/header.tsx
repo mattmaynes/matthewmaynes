@@ -35,9 +35,12 @@ export function Header() {
       ariaLabel="Primary"
       className="sticky top-0 z-50 px-6 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 print:hidden"
     >
-      <TopNavMenuButton />
+      <TopNavMenuButton className="border border-border-strong" />
       <TopNavBrand asChild>
-        <Link href="/" className="font-bold tracking-wide uppercase">
+        <Link
+          href="/"
+          className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-bold tracking-wide uppercase md:static md:left-auto md:translate-x-0"
+        >
           {site.name}
         </Link>
       </TopNavBrand>
