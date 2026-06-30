@@ -66,8 +66,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # No cross-run build cache: the gha cache restored a stale `COPY . .`
+          # layer and shipped old source. A clean build each run is the reliable
+          # default; this app builds in about a minute. (feedback 0004)
+          no-cache: true
 
   deploy:
     needs: build

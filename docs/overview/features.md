@@ -18,7 +18,7 @@ pending) · 📋 planned.
 ## Navigation
 
 - Top bar: Home · About · Resume · Projects · Blog · Contact (mobile: hamburger).
-- Footer: social links (LinkedIn, GitHub), copyright.
+- Footer: social links (LinkedIn, GitHub, X), copyright.
 
 ## Global behaviors
 
