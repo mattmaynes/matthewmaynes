@@ -14,3 +14,13 @@
 /* Enable the rare explicit `dark:` utility; whole-UI theming is automatic via
    the semantic vars when `.dark` is on a root element. */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Print: the resume (the only print-intended page) is built entirely from
+   rem-based type tokens, so shrinking the root font-size scales the whole
+   document proportionally. This dials the rendered PDF down to two Letter
+   pages. Screen rendering is unaffected. */
+@media print {
+  html {
+    font-size: 12px;
+  }
+}

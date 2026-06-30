@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Badge, Button } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { GitHubIcon, LinkedInIcon } from "@/components/social-icons";
 import { site } from "@/lib/site";
 import { resume } from "@/lib/resume";
 
 export const metadata: Metadata = { title: "Resume" };
 
-/** Drop the scheme and any www./trailing slash so a link reads as its
- *  destination (e.g. "github.com/mattmaynes") - readable on the printed PDF. */
-function showHost(url: string): string {
-  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+/** Reduce a profile URL to just its path (e.g. "/in/matthew-maynes",
+ *  "/mattmaynes") for a compact sidebar label; the link still points at the
+ *  full URL. Falls back to the raw string if it will not parse. */
+function showPath(url: string): string {
+  try {
+    return new URL(url).pathname.replace(/\/$/, "") || "/";
+  } catch {
+    return url;
+  }
 }
 
 export default function ResumePage() {
@@ -24,24 +30,6 @@ export default function ResumePage() {
         </div>
         <div className="flex flex-col gap-1 text-body-sm sm:items-end">
           <span className="text-text-muted">{site.location}</span>
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <a
-              href={site.social.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2"
-            >
-              {showHost(site.social.linkedin)}
-            </a>
-            <a
-              href={site.social.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline underline-offset-2"
-            >
-              {showHost(site.social.github)}
-            </a>
-          </div>
           <Button asChild variant="outline" className="mt-2 print:hidden">
             <a href="/resume.pdf" download>
               Download PDF
@@ -56,17 +44,36 @@ export default function ResumePage() {
       <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-[34%_1fr] md:gap-x-12 print:grid-cols-[34%_1fr] print:gap-x-8">
         <aside className="flex flex-col gap-6">
           <Section variant="side" title="Skills">
-            <div className="flex flex-wrap gap-1.5">
-              {resume.skills.map((skill) => (
-                <Badge
-                  key={skill}
-                  variant="neutral"
-                  className="border-0 bg-secondary text-secondary-foreground"
+            <p className="text-caption text-text-muted">
+              {resume.skills.join(", ")}
+            </p>
+          </Section>
+
+          <Section variant="side" title="Links">
+            <ul className="flex flex-col gap-1.5">
+              <li>
+                <a
+                  href={site.social.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-caption text-primary underline underline-offset-2"
                 >
-                  {skill}
-                </Badge>
-              ))}
-            </div>
+                  <LinkedInIcon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                  {showPath(site.social.linkedin)}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={site.social.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-caption text-primary underline underline-offset-2"
+                >
+                  <GitHubIcon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                  {showPath(site.social.github)}
+                </a>
+              </li>
+            </ul>
           </Section>
 
           <Section variant="side" title="Software & Tools">
