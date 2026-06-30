@@ -50,12 +50,22 @@ function findServerJs(dir) {
 
 // `title` is the route-unique <title> text (layout template is "%s - Matthew
 // Maynes"; home overrides it). Asserting it proves the correct route rendered.
+// `contains` are route-unique body substrings that prove the real content
+// rendered (not just <head> on an error shell, and not a reverted placeholder).
+// `absent` are substrings that must NOT appear (e.g. the "Placeholder" badge on
+// a page that has shipped real content) - see feedback 0001/0006.
 // `hasBlur` flags routes that render a next/image with placeholder="blur" - the
 // server inlines the blurDataURL as a `data:image/...;base64,` value, so its
 // presence proves the no-flicker treatment is wired up (feedback 0005).
 const routes = [
   { path: "/", title: "Matthew Maynes - Engineering Director", hasBlur: true },
-  { path: "/about", title: "About - Matthew Maynes", hasBlur: true },
+  {
+    path: "/about",
+    title: "About - Matthew Maynes",
+    hasBlur: true,
+    contains: ["never stopped building", "The whole crew."],
+    absent: ["Placeholder"],
+  },
   { path: "/resume", title: "Resume - Matthew Maynes", hasBlur: true },
   { path: "/projects", title: "Projects - Matthew Maynes", hasBlur: true },
   { path: "/blog", title: "Blog - Matthew Maynes" },
@@ -135,6 +145,20 @@ for (const route of routes) {
       /<h1[\s>]/,
       `expected ${route.path} to render an <h1>`,
     );
+    // Route-unique body content: proves the real page rendered, so a blank body
+    // or a reverted placeholder can't pass on the shared <h1> alone.
+    for (const needle of route.contains ?? []) {
+      assert.ok(
+        html.includes(needle),
+        `expected ${route.path} body to contain "${needle}"`,
+      );
+    }
+    for (const needle of route.absent ?? []) {
+      assert.ok(
+        !html.includes(needle),
+        `expected ${route.path} body to NOT contain "${needle}"`,
+      );
+    }
     // Image-bearing routes inline a blur placeholder; its absence means the
     // no-flicker treatment regressed to a bare <Image> (feedback 0005).
     if (route.hasBlur) {
