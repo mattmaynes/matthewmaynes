@@ -105,3 +105,25 @@ Capture lessons as you go.
   `.next/standalone/server.js` path missed and the suite never ran in a worktree. `findServerJs()`
   now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
   real `server.js`. (feedback 0005)
+
+## Resume page + PDF (spec 0005)
+
+- **Do not hash rendered Next HTML to detect content changes.** The plan was to gate PDF
+  regeneration on a hash of the served `/resume` HTML; in practice Next embeds per-build asset
+  hashes and RSC payloads, so the same content yields different HTML every build - the gate would
+  fire constantly. Hash the **source inputs** instead (`resume.ts`, the page, the print CSS): it is
+  deterministic and is literally "regenerate when the resume changes". The committed PDF + a
+  source-hash sidecar also lets CI verify freshness with a pure hash compare - no browser in CI or
+  Docker, only on the developer's machine when they run `npm run resume:pdf`.
+- **A freshness gate for a generated artifact must hash EVERY input that affects the output, and
+  regenerate from a clean rebuild.** The first cut hashed only `resume.ts`/page/print-CSS (missing
+  `site.ts` + the headshot) and reused any existing standalone build - so Chrome could render a
+  stale page while the new hash was written, and a `site.location` edit passed `--check` while the
+  PDF drifted. A gate over a subset of inputs, or one that re-renders a cached build, certifies
+  stale output as fresh - worse than no gate. Fix: complete `INPUT_FILES`, and always `next build`
+  in generate mode. (feedback 0007)
+- **Encode a privacy/PII acceptance criterion as an automated assertion, not human review.** On a
+  public site, the spec's "no email/phone/postal" rule is now a smoke assertion on the `/resume`
+  HTML (which also covers the PDF, since it renders from the page), so a future edit can't silently
+  reintroduce contact info. (The placeholder-vs-real guard it also needs is the same lesson as
+  Content pages above.) (feedback 0007)

@@ -35,6 +35,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # Fail if the resume page/data changed but the committed PDF was not
+      # regenerated. A pure hash compare - no browser, so CI stays Chrome-free.
+      - run: npm run resume:pdf:check
       - run: npm run build
       - run: npm test
 
