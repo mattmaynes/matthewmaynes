@@ -11,11 +11,11 @@ three latent failure modes the personas caught:
 1. **Broken images shipped green.** `docker compose up -d` returns 0 once the container is
    *created*; with `restart: unless-stopped` a crash-looping image flaps while the deploy reports
    success. (engineer)
-2. **Unauthenticated droplet.** The deploy ran `ssh-keyscan >> known_hosts` every run
+2. **Unauthenticated server.** The deploy ran `ssh-keyscan >> known_hosts` every run
    (trust-on-first-use), so a MITM during any deploy could impersonate the host - high blast radius
    because the deploy user is docker-group/root-equivalent. (security)
 3. **Mutable-tag supply chain.** All Actions were pinned to moving major tags (`@v4`, `@v3`, ...).
-   A hijacked tag runs with `packages: write` and can push a poisoned image the droplet then runs
+   A hijacked tag runs with `packages: write` and can push a poisoned image the server then runs
    as root. (security)
 
 ## Root cause
@@ -28,8 +28,8 @@ happy path is the easy 80%.
 
 1. `docker compose up -d --wait` (the image already has a HEALTHCHECK), so a bad image is a red
    deploy.
-2. Pin the host key via a `DROPLET_KNOWN_HOSTS` secret; drop `ssh-keyscan`. Generated once with the
-   fingerprint confirmed against the DO console.
+2. Pin the host key via a `DEPLOY_KNOWN_HOSTS` secret; drop `ssh-keyscan`. Generated once with the
+   fingerprint confirmed against the host provider's console.
 3. Pin every Action to a full commit SHA (tag in a trailing comment) and add `dependabot.yml` to
    bump them. Also moved `packages: write` from workflow-wide to the `build` job only.
 

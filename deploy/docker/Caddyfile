@@ -1,5 +1,5 @@
 # Caddy routes by hostname and provisions/renews Let's Encrypt certs automatically
-# (needs ports 80/443 reachable and DNS pointing at this droplet first). HTTP is
+# (needs ports 80/443 reachable and DNS pointing at this server first). HTTP is
 # redirected to HTTPS automatically. No ACME email is set on purpose: a personal
 # address must never live in a tracked file (see docs/overview/project.md privacy).
 

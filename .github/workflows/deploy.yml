@@ -1,9 +1,9 @@
 # Continuous deployment for matthewmaynes.com.
 # Push to main -> verify (lint/build/test) -> build+push image to GHCR -> deploy
-# to the droplet over SSH. A red verify or build never reaches deploy.
+# to the server over SSH. A red verify or build never reaches deploy.
 #
 # Actions are pinned to commit SHAs (mutable tags are a supply-chain risk: this
-# job has packages: write and the droplet runs the image as root). Dependabot
+# job has packages: write and the server runs the image as root). Dependabot
 # (.github/dependabot.yml) proposes SHA bumps with the tag in a trailing comment.
 name: deploy
 
@@ -16,7 +16,7 @@ on:
 permissions:
   contents: read
 
-# Never run two deploys to the same droplet at once; let an in-flight one finish.
+# Never run two deploys to the same server at once; let an in-flight one finish.
 concurrency:
   group: deploy-main
   cancel-in-progress: false
@@ -75,10 +75,10 @@ jobs:
     steps:
       - name: Deploy over SSH
         env:
-          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.DROPLET_KNOWN_HOSTS }}
-          HOST: ${{ secrets.DROPLET_HOST }}
-          USER: ${{ secrets.DROPLET_USER }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
           # Pin the exact image built in this run (full-SHA tag from metadata-action),
           # so the running version is auditable and rollback is a one-line tag change.
           IMAGE_TAG: sha-${{ github.sha }}
@@ -87,7 +87,7 @@ jobs:
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Pinned host key (DROPLET_KNOWN_HOSTS secret): authenticates the droplet,
+          # Pinned host key (DEPLOY_KNOWN_HOSTS secret): authenticates the server,
           # so a MITM on a deploy cannot impersonate it. No trust-on-first-use.
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
@@ -95,7 +95,7 @@ jobs:
             "$USER@$HOST" "IMAGE_TAG='$IMAGE_TAG' bash -se" <<'REMOTE'
             set -euo pipefail
             cd ~/matthewmaynes
-            # Force-sync to origin/main so a stray local edit on the droplet can't
+            # Force-sync to origin/main so a stray local edit on the server can't
             # wedge future deploys (unlike `git pull --ff-only`).
             git fetch --prune origin
             git reset --hard origin/main

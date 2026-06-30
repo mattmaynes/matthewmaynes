@@ -1,6 +1,6 @@
-# 0002 - Droplet deploy: build plan
+# 0002 - Server deploy: build plan
 
-Source spec: `docs/specs/0002-droplet-deploy.md`.
+Source spec: `docs/specs/0002-host-deploy.md`.
 
 ## Files
 
@@ -9,7 +9,6 @@ Source spec: `docs/specs/0002-droplet-deploy.md`.
 | `deploy/docker/compose.proxy.yml` | new - Caddy edge proxy (owns 80/443), joins external `edge` |
 | `deploy/docker/Caddyfile` | new - apex auto-HTTPS -> `site:3000`; `www` -> apex redirect |
 | `deploy/docker/compose.site.yml` | new - production site from GHCR image, `expose` only, on `edge` |
-| `deploy/docker/README.md` | new - provisioning + DNS + deploy/rollback runbook |
 | `.github/workflows/deploy.yml` | new - verify -> build+push GHCR -> SSH deploy on push to `main` |
 | `docs/overview/architecture.md` | update - Deployment + CI/CD sections reflect the real setup |
 
@@ -27,9 +26,9 @@ Root `docker-compose.yml` is intentionally untouched: it stays the local build/r
    `build` (buildx, login via `GITHUB_TOKEN`, push `latest` + `sha`, gha cache) -> `deploy`
    (raw SSH with the deploy secrets: `git pull` + `compose -f deploy/docker/compose.site.yml pull
    && up -d`, then `docker image prune -f`). `permissions: packages: write`; concurrency guard.
-4. **Runbook** - `deploy/docker/README.md`. Droplet create (512MB/TOR1), swap, Docker install,
-   `deploy` user + CI key + docker group, `ufw`, `edge` network, repo clone, first bring-up of
-   proxy + site, Namecheap DNS, GHCR-public step, rollback by `sha` tag, the manual fallback.
+4. **Runbook** - operator runbook kept privately (git-ignored, not in the repo). VM create (~512MB),
+   swap, Docker install, `deploy` user + CI key + docker group, `ufw`, `edge` network, repo clone,
+   first bring-up of proxy + site, registrar DNS, GHCR-public step, rollback by `sha` tag, fallback.
 5. **Reflect** - update `architecture.md` Deployment/CI-CD to match (network topology, GHCR,
    pipeline, `deploy/docker/` layout).
 
@@ -46,4 +45,4 @@ Root `docker-compose.yml` is intentionally untouched: it stays the local build/r
 ## Out of scope (per spec)
 
 Contact-form SMTP, monitoring/backups, staging, CDN tuning. Live cert issuance + DNS cutover are
-operator steps in the runbook (need the real droplet + DNS), not part of the local build/test.
+operator steps in the runbook (need the real server + DNS), not part of the local build/test.
