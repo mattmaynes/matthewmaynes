@@ -127,3 +127,25 @@ Capture lessons as you go.
   HTML (which also covers the PDF, since it renders from the page), so a future edit can't silently
   reintroduce contact info. (The placeholder-vs-real guard it also needs is the same lesson as
   Content pages above.) (feedback 0007)
+
+## Image performance (feedback 0006)
+
+- **For on-demand `next/image` optimization, source size dominates - fix sources before formats.**
+  The blur placeholder lingered because the first visitor after each deploy decoded oversized
+  ~1 MB lossless PNGs before re-encoding (cold optimizer cache). Right-sizing the sources (photos
+  to quality-86 JPEG, hero capped at 1600px; flat graphics stay PNG) cut far more first-paint
+  latency than the AVIF-vs-WebP choice did. Because the 0005 static-import refactor derives
+  width/height from the files, swapping PNG->JPEG only touched the import paths in `site.ts`.
+- **Measure the image optimizer honestly or you will misdiagnose.** Two traps burned a cycle here:
+  (1) the FIRST image request to a fresh server also pays one-time `sharp` init (~0.5-0.7s), so
+  timing "AVIF first, WebP second" charges that init to AVIF and fabricated a fake "~10x slower"
+  gap - warm the process with a throwaway request first; (2) without a browser `Accept:
+  image/webp,...` header Next serves the unoptimized source (`content_type: image/jpeg`) and you
+  time passthrough, not encoding. Clean runs showed AVIF only ~0.02-0.03s/image above WebP. WebP-
+  only is still the pick for fastest first paint, but the honest reason is source size, not format.
+- **Building inside `.worktrees/` now needs its own `node_modules` (`npm ci`).** Once
+  `outputFileTracingRoot` was pinned to the project dir (learnings 0002), Turbopack restricts
+  compilation to that root and can no longer resolve `next` from the parent checkout's
+  `node_modules`; a symlink to the parent is rejected ("points out of the filesystem root"). Run
+  `npm ci` in the worktree before `npm run build`. (The build/CI/Docker single-root path is
+  unaffected.)
