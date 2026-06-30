@@ -19,6 +19,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@fontsource/figtree": "^5.2.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
     "@types/react": "^19",

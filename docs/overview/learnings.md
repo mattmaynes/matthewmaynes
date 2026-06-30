@@ -54,6 +54,40 @@ Capture lessons as you go.
   status; and prefer no cross-run build cache (`no-cache: true`) on a small app, or a cache keyed
   so a source change always busts the copy+build layers. (feedback 0004)
 
+## Content pages (spec 0003)
+
+- **A placeholder route that gains real content needs a tighter smoke assertion in the same PR.**
+  The generic per-route check (route-unique `<title>` + "an `<h1>` exists") is a resolve probe the
+  old `PagePlaceholder` already satisfied, so a blank body or a reverted placeholder would still
+  pass. The smoke table now takes optional `contains`/`absent` body substrings; assert a
+  route-unique phrase is present (and any placeholder badge is gone) when shipping real copy. This
+  recurred from feedback 0001's "assert what the unit uniquely produces" lesson. (feedback 0006)
+
+## SEO & sharing (spec 0004)
+
+- **`next/og` (satori) cannot read woff2.** `@fontsource-variable/figtree` ships woff2 only, so
+  passing it to `ImageResponse` fails. satori does read woff/ttf/otf - and the *static*
+  `@fontsource/figtree` package ships woff (plus its OFL license), so add it as a pinned
+  devDependency and derive the card fonts from it (`scripts/build-og-fonts.mjs`) rather than
+  downloading ad-hoc binaries with no provenance. Colocate the woff in `src/app/_og/` and load via
+  `new URL('./_og/figtree-NNN.woff', import.meta.url)` so they are traced into the `output:
+  standalone` build (a `process.cwd()`-relative read of `src/` would not be - `src/` is not
+  deployed). Commit the OFL `LICENSE` beside the fonts (OFL requires it to travel with the
+  binaries). Assets the OG route reads from `public/` are fine: the standalone copy step puts
+  `public/` next to `server.js`, so `join(process.cwd(), 'public/...')` resolves.
+- **Verify the generated OG image, do not assume it built.** A green `next build` only proves the
+  route compiled; a wrong font/logo path renders a blank or broken card. The smoke test fetches the
+  `og:image` URL's path on the local server and asserts a `200` + `image/png`, and the card was
+  eyeballed from `.next/server/app/opengraph-image.body` before commit.
+- **Turbopack rejects a cross-root `node_modules` symlink.** The clean-export trick for testing in a
+  worktree (build from a single-lockfile copy outside the repo) breaks if you *symlink* node_modules
+  into it (`Symlink ... points out of the filesystem root`). Hardlink-copy it instead
+  (`cp -al node_modules <export>/node_modules`) - fast on one APFS volume, and the build only writes
+  to `.next`.
+- **No new dependency for the icon set.** macOS `sips` resizes and a ~40-line stdlib ICO packer
+  (`scripts/build-icons.mjs`) writes a multi-res `favicon.ico` with PNG payloads. Reproducible from
+  one master (`public/brand/logo-m.png`), no ImageMagick.
+
 ## Images (spec 0005)
 
 - **`next/image` alone does not stop flicker.** It reserves space and optimizes bytes, but an
@@ -71,12 +105,3 @@ Capture lessons as you go.
   `.next/standalone/server.js` path missed and the suite never ran in a worktree. `findServerJs()`
   now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
   real `server.js`. (feedback 0005)
-
-## Content pages (spec 0003)
-
-- **A placeholder route that gains real content needs a tighter smoke assertion in the same PR.**
-  The generic per-route check (route-unique `<title>` + "an `<h1>` exists") is a resolve probe the
-  old `PagePlaceholder` already satisfied, so a blank body or a reverted placeholder would still
-  pass. The smoke table now takes optional `contains`/`absent` body substrings; assert a
-  route-unique phrase is present (and any placeholder badge is gone) when shipping real copy. This
-  recurred from feedback 0001's "assert what the unit uniquely produces" lesson. (feedback 0006)

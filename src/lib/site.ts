@@ -17,6 +17,12 @@ export const site = {
   title: "Engineering Director",
   tagline: "Engineering leader that loves the outdoors.",
   location: "Ontario, Canada",
+  // One shared description: the <meta>, Open Graph, Twitter card, and manifest all
+  // read this so the link preview, search snippet, and install prompt never drift.
+  description:
+    "Personal site of Matthew Maynes, an engineering leader who builds things, plants trees, and leads by example.",
+  // Alt text for the generated share card (opengraph-image).
+  ogImageAlt: "Matthew Maynes - Engineering Director",
   // Read at build time for static metadata (metadataBase). Use `||` (not `??`) so
   // an empty-string SITE_URL falls back instead of throwing in new URL("").
   url: process.env.SITE_URL || "https://matthewmaynes.com",
@@ -26,6 +32,9 @@ export const site = {
     x: "https://x.com/mattmaynes",
   },
 } as const;
+
+/** Twitter/X handle derived from the profile URL (e.g. "@mattmaynes"). */
+export const twitterHandle = `@${new URL(site.social.x).pathname.replace(/\//g, "")}`;
 
 export type NavItem = { href: string; label: string };
 
