@@ -81,3 +81,15 @@ Capture lessons as you go.
   deterministic and is literally "regenerate when the resume changes". The committed PDF + a
   source-hash sidecar also lets CI verify freshness with a pure hash compare - no browser in CI or
   Docker, only on the developer's machine when they run `npm run resume:pdf`.
+- **A freshness gate for a generated artifact must hash EVERY input that affects the output, and
+  regenerate from a clean rebuild.** The first cut hashed only `resume.ts`/page/print-CSS (missing
+  `site.ts` + the headshot) and reused any existing standalone build - so Chrome could render a
+  stale page while the new hash was written, and a `site.location` edit passed `--check` while the
+  PDF drifted. A gate over a subset of inputs, or one that re-renders a cached build, certifies
+  stale output as fresh - worse than no gate. Fix: complete `INPUT_FILES`, and always `next build`
+  in generate mode. (feedback 0006)
+- **When a route graduates from placeholder to real content, assert route-unique body text and the
+  ABSENCE of the placeholder marker.** The `/resume` smoke check asserted only the shared title +
+  a generic `<h1>`, both of which `PagePlaceholder` also produced, so a regression to the stub
+  would have passed - a re-run of feedback 0001. Also encode privacy/PII criteria as an automated
+  assertion (no email/phone/postal in the HTML), not human review, on a public site. (feedback 0006)

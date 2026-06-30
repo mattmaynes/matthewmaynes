@@ -120,15 +120,57 @@ after(() => {
 });
 
 // The resume PDF is a committed static asset under public/, generated from the
-// /resume page (npm run resume:pdf). Assert it is served so a missing file or a
-// misrouted download is caught.
-test("GET /resume.pdf serves the downloadable PDF", async () => {
+// /resume page (npm run resume:pdf). Assert it is served AND is a real,
+// non-trivial PDF - status + content-type derive from the .pdf extension alone,
+// so a 0-byte or truncated commit would otherwise pass (review 0006).
+test("GET /resume.pdf serves a real, non-trivial PDF", async () => {
   const res = await fetch(BASE + "/resume.pdf");
   assert.equal(res.status, 200, "expected 200 for /resume.pdf");
   assert.equal(
     res.headers.get("content-type"),
     "application/pdf",
     "expected /resume.pdf to be served as application/pdf",
+  );
+  const bytes = Buffer.from(await res.arrayBuffer());
+  assert.ok(
+    bytes.subarray(0, 5).toString("latin1") === "%PDF-",
+    "expected /resume.pdf to begin with the %PDF- magic bytes",
+  );
+  assert.ok(
+    bytes.byteLength > 10_000,
+    `expected /resume.pdf to be non-trivial, got ${bytes.byteLength} bytes`,
+  );
+});
+
+// The /resume page must show the real resume, not the old PagePlaceholder (which
+// shared the same <title> + an <h1>, so the generic assertions below can't tell
+// them apart - cf. feedback 0001). Also guard the privacy criterion: no contact
+// PII in the HTML, which covers the PDF too since it renders from this page.
+test("GET /resume renders the real resume with no contact PII", async () => {
+  const html = await (await fetch(BASE + "/resume")).text();
+  for (const marker of ["How I Lead", "Work History", "Certifications"]) {
+    assert.ok(html.includes(marker), `expected /resume to render "${marker}"`);
+  }
+  assert.ok(
+    !html.includes("Placeholder"),
+    "expected /resume to have dropped the PagePlaceholder badge",
+  );
+  // Privacy: the public page must not leak an email, a phone number, or the
+  // postal code from the private resume source (spec 0005).
+  assert.doesNotMatch(
+    html,
+    /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i,
+    "expected /resume to contain no email address",
+  );
+  assert.doesNotMatch(
+    html,
+    /\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/,
+    "expected /resume to contain no phone number",
+  );
+  assert.doesNotMatch(
+    html,
+    /\bK0K\s?3E0\b/i,
+    "expected /resume to contain no postal code",
   );
 });
 

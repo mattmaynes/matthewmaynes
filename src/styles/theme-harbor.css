@@ -166,8 +166,10 @@
   }
 
   /* Render badge / accent background colors in the PDF instead of dropping
-     them (browsers omit backgrounds in print unless asked). */
-  * {
+     them (browsers omit backgrounds in print unless asked). Scoped to the page
+     content under <main>; the hidden header/footer don't need it. */
+  main,
+  main * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

@@ -6,6 +6,12 @@ import { resume } from "@/lib/resume";
 
 export const metadata: Metadata = { title: "Resume" };
 
+/** Drop the scheme and any www./trailing slash so a link reads as its
+ *  destination (e.g. "github.com/mattmaynes") - readable on the printed PDF. */
+function showHost(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+}
+
 export default function ResumePage() {
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
@@ -26,22 +32,24 @@ export default function ResumePage() {
             <h1 className="text-h1 font-bold text-text">{site.name}</h1>
             <p className="text-h4 text-text-muted">{site.title}</p>
             <p className="text-body text-text-subtle">{site.location}</p>
+            {/* Show the destination URL, underlined: a printed PDF loses the
+                href, and color alone is not an accessible affordance. */}
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-body">
               <a
                 href={site.social.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-primary underline underline-offset-2"
               >
-                LinkedIn
+                {showHost(site.social.linkedin)}
               </a>
               <a
                 href={site.social.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-primary underline underline-offset-2"
               >
-                GitHub
+                {showHost(site.social.github)}
               </a>
             </div>
           </div>
@@ -155,9 +163,12 @@ function ResumeSection({
   title: string;
   children: React.ReactNode;
 }) {
+  // No break-inside-avoid on the wrapper: Work History spans pages, so pinning
+  // the whole section together would force huge gaps. Per-job break-inside-avoid
+  // keeps entries whole; break-after-avoid keeps a heading off a page bottom.
   return (
-    <section className="mt-12 break-inside-avoid">
-      <h2 className="mb-4 border-b border-border pb-2 text-h3 font-semibold text-text">
+    <section className="mt-12">
+      <h2 className="mb-4 break-after-avoid border-b border-border pb-2 text-h3 font-semibold text-text">
         {title}
       </h2>
       {children}

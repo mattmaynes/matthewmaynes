@@ -4,9 +4,9 @@
 // rules in the app drive the layout.
 //
 // Two modes:
-//   (default)  Regenerate the PDF if the resume sources changed. Boots the
-//              standalone server and drives system Chrome. Run locally and
-//              commit the result.
+//   (default)  Regenerate the PDF if the resume sources changed. Rebuilds,
+//              boots the standalone server, and drives system Chrome. Run
+//              locally and commit the result.
 //   --check    Compare the committed hash to the current source hash and exit
 //              nonzero if stale. No browser needed - this is what CI runs, so
 //              Chrome never enters CI or the Docker image.
@@ -18,29 +18,28 @@
 // makes the committed PDF stale until `npm run resume:pdf` is re-run.
 
 import { spawn, spawnSync } from "node:child_process";
-import {
-  createHash,
-  randomInt,
-} from "node:crypto";
-import {
-  cpSync,
-  existsSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assembleStandalone } from "./lib/standalone.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PDF_PATH = join(root, "public", "resume.pdf");
 const HASH_PATH = join(root, "public", "resume.pdf.hash");
 
-// Files whose contents determine what the PDF looks like. A change to any of
-// these means the committed PDF must be regenerated.
+// Everything that determines what the PDF looks like. A change to any of these
+// means the committed PDF must be regenerated, so all are folded into the
+// freshness hash. This must stay complete: the page renders identity, region,
+// and social links from site.ts and embeds the headshot, so both are inputs -
+// omitting them lets the PDF drift while --check stays green (review 0006).
 const INPUT_FILES = [
   "src/lib/resume.ts",
+  "src/lib/site.ts",
   "src/app/resume/page.tsx",
   "src/styles/theme-harbor.css",
+  "public/images/headshot.png",
   "scripts/generate-resume-pdf.mjs",
 ];
 
@@ -108,12 +107,26 @@ function findChrome() {
   for (const path of candidates) {
     if (existsSync(path)) return path;
   }
-  // Fall back to whatever is on PATH.
+  // Fall back to whatever is on PATH (`command -v` is a POSIX shell builtin).
   for (const name of ["google-chrome", "chromium", "chromium-browser"]) {
     const which = spawnSync("command", ["-v", name], { shell: true });
     if (which.status === 0) return which.stdout.toString().trim();
   }
   return null;
+}
+
+// Ask the OS for a free port instead of guessing, so a busy port can't turn
+// into a silent 60s readiness timeout (review 0006).
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = createServer();
+    srv.unref();
+    srv.on("error", reject);
+    srv.listen(0, "127.0.0.1", () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
 }
 
 const chrome = findChrome();
@@ -123,27 +136,23 @@ if (!chrome) {
   );
 }
 
-// Ensure a standalone build exists; build once if missing.
+// Always rebuild before rendering: generate mode is only reached when the
+// sources changed (or --force), so a leftover standalone build from an earlier
+// run would otherwise have Chrome render the OLD page while we write the NEW
+// hash - a stale PDF marked fresh (review 0006).
+console.log("resume:pdf - building...");
+const build = spawnSync("npx", ["next", "build"], { cwd: root, stdio: "inherit" });
+if (build.status !== 0) fail("next build failed");
+
 const standaloneDir = join(root, ".next", "standalone");
 if (!existsSync(join(standaloneDir, "server.js"))) {
-  console.log("resume:pdf - no standalone build found, running next build...");
-  const build = spawnSync("npx", ["next", "build"], {
-    cwd: root,
-    stdio: "inherit",
-  });
-  if (build.status !== 0) fail("next build failed");
+  fail(
+    "standalone server.js not found after build (check next.config outputFileTracingRoot).",
+  );
 }
+assembleStandalone(root, standaloneDir);
 
-// Assemble the standalone artifact exactly like the Dockerfile / smoke test,
-// so server.js can serve static assets and images while Chrome renders.
-cpSync(join(root, ".next", "static"), join(standaloneDir, ".next", "static"), {
-  recursive: true,
-});
-cpSync(join(root, "public"), join(standaloneDir, "public"), {
-  recursive: true,
-});
-
-const PORT = String(randomInt(20000, 60000));
+const PORT = String(await getFreePort());
 const BASE = `http://127.0.0.1:${PORT}`;
 
 async function waitForReady(timeoutMs = 60000) {
@@ -177,7 +186,10 @@ try {
 
   // Headless Chrome prints with @media print active. --virtual-time-budget
   // lets fonts and images settle before the snapshot; --no-pdf-header-footer
-  // drops Chrome's default date/URL chrome.
+  // drops Chrome's default date/URL chrome. --no-sandbox is safe here: this is
+  // a local/dev-only tool rendering a trusted 127.0.0.1 URL we just built, and
+  // it never runs in CI or the runtime image. The wall-clock `timeout` ensures
+  // a hung Chrome can't wedge the build (the spawned server is killed below).
   const args = [
     "--headless=new",
     "--disable-gpu",
@@ -188,7 +200,8 @@ try {
     `${BASE}/resume`,
   ];
   console.log(`resume:pdf - rendering ${BASE}/resume via ${chrome}`);
-  const render = spawnSync(chrome, args, { stdio: "inherit" });
+  const render = spawnSync(chrome, args, { stdio: "inherit", timeout: 120000 });
+  if (render.error) throw render.error;
   if (render.status !== 0 || !existsSync(PDF_PATH)) {
     throw new Error("headless Chrome failed to produce the PDF");
   }
