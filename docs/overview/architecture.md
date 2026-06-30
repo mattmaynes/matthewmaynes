@@ -24,7 +24,7 @@ per-component code. Already implemented in `src/styles/`.
 
 ## Deployment
 
-- **Container:** multi-stage Dockerfile (deps → build → runtime). Runtime is `node:20-alpine`
+- **Container:** multi-stage Dockerfile (deps → build → runtime). Runtime is `node:24-alpine`
   serving the standalone output. Target image well under 200MB.
 - **Local:** `docker compose up` (or `npm run dev`). The root `docker-compose.yml` builds from
   source and maps `3000:3000`; it is for local use only.
