@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { images, site } from "@/lib/site";
+import { images } from "@/lib/site";
 import type { SiteImage } from "@/lib/site";
 
 export const metadata: Metadata = { title: "About" };
@@ -113,11 +113,11 @@ export default function AboutPage() {
       </section>
 
       <p className="mt-16 text-caption text-text-muted">
-        Want the professional detail? The{" "}
+        My{" "}
         <Link href="/resume" className="text-primary underline-offset-4 hover:underline">
           resume
         </Link>{" "}
-        has the full work history. {site.name}, {site.title}, based in {site.location}.
+        has my full work history.
       </p>
     </section>
   );
