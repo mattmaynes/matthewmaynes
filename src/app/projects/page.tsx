@@ -22,11 +22,11 @@ export default function ProjectsPage() {
       <div className="grid gap-6 sm:grid-cols-2">
         <Card className="overflow-hidden">
           <Image
-            src={images.eagleSnap.src}
+            src={images.eagleSnap}
             alt={images.eagleSnap.alt}
-            width={images.eagleSnap.width}
-            height={images.eagleSnap.height}
             sizes="(max-width: 640px) 100vw, 50vw"
+            priority
+            placeholder="blur"
             className="aspect-[2/1] w-full object-cover"
           />
           <CardHeader>

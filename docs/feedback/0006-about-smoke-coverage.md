@@ -1,4 +1,4 @@
-# 0005 - About page shipped with only generic smoke coverage
+# 0006 - About page shipped with only generic smoke coverage
 
 ## Symptom
 

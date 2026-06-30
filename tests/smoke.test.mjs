@@ -2,14 +2,16 @@
 // pattern in the site map renders the RIGHT page (HTTP 200 + its route-unique
 // <title> + a rendered <h1> body). We assert the page-unique <title> rather than
 // nav/footer text, which appears on every page via the shared layout - otherwise
-// a blank or wrong page body would still pass (review feedback 0001).
+// a blank or wrong page body would still pass (review feedback 0001). Image-
+// bearing routes also assert an inlined blur placeholder so the no-flicker
+// treatment can't silently regress (feedback 0005).
 // Run via `npm test`. Builds first only if no build is present; CI does a clean
 // build, so the stale-artifact risk is limited to manual local re-runs.
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync } from "node:fs";
+import { cpSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -17,22 +19,55 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
 const BASE = `http://127.0.0.1:${PORT}`;
 
+// Locate the standalone `server.js`. Normally it sits at the standalone root,
+// but inside a nested `.worktrees/<slug>` checkout Next infers the outer repo as
+// the workspace root and emits it at `.next/standalone/.worktrees/<slug>/server.js`
+// (the two-lockfile quirk - see overview/learnings). Find it either way, skipping
+// the unrelated `server.js` files bundled under node_modules.
+function findServerJs(dir) {
+  const direct = join(dir, "server.js");
+  if (existsSync(direct)) return direct;
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (e.isDirectory()) {
+        if (e.name === "node_modules") continue;
+        stack.push(join(cur, e.name));
+      } else if (e.name === "server.js") {
+        return join(cur, e.name);
+      }
+    }
+  }
+  return null;
+}
+
 // `title` is the route-unique <title> text (layout template is "%s - Matthew
 // Maynes"; home overrides it). Asserting it proves the correct route rendered.
 // `contains` are route-unique body substrings that prove the real content
 // rendered (not just <head> on an error shell, and not a reverted placeholder).
 // `absent` are substrings that must NOT appear (e.g. the "Placeholder" badge on
-// a page that has shipped real content) - see feedback 0001/0005.
+// a page that has shipped real content) - see feedback 0001/0006.
+// `hasBlur` flags routes that render a next/image with placeholder="blur" - the
+// server inlines the blurDataURL as a `data:image/...;base64,` value, so its
+// presence proves the no-flicker treatment is wired up (feedback 0005).
 const routes = [
-  { path: "/", title: "Matthew Maynes - Engineering Director" },
+  { path: "/", title: "Matthew Maynes - Engineering Director", hasBlur: true },
   {
     path: "/about",
     title: "About - Matthew Maynes",
+    hasBlur: true,
     contains: ["never stopped building", "The whole crew."],
     absent: ["Placeholder"],
   },
-  { path: "/resume", title: "Resume - Matthew Maynes" },
-  { path: "/projects", title: "Projects - Matthew Maynes" },
+  { path: "/resume", title: "Resume - Matthew Maynes", hasBlur: true },
+  { path: "/projects", title: "Projects - Matthew Maynes", hasBlur: true },
   { path: "/blog", title: "Blog - Matthew Maynes" },
   { path: "/blog/hello-world", title: "hello-world - Blog - Matthew Maynes" },
   { path: "/contact", title: "Contact - Matthew Maynes" },
@@ -56,25 +91,29 @@ async function waitForReady(timeoutMs = 60000) {
 
 before(async () => {
   const standaloneDir = join(root, ".next", "standalone");
-  if (!existsSync(join(standaloneDir, "server.js"))) {
+  let serverJs = findServerJs(standaloneDir);
+  if (!serverJs) {
     const build = spawnSync("npx", ["next", "build"], {
       cwd: root,
       stdio: "inherit",
     });
     if (build.status !== 0) throw new Error("next build failed");
+    serverJs = findServerJs(standaloneDir);
+    if (!serverJs) throw new Error("standalone server.js not found after build");
   }
 
-  // Assemble the standalone artifact exactly as the Dockerfile does, then run
-  // the real server.js so the test exercises the deployed shape of the app.
-  cpSync(join(root, ".next", "static"), join(standaloneDir, ".next", "static"), {
+  // Assemble the standalone artifact exactly as the Dockerfile does, next to the
+  // real server.js, then run it so the test exercises the deployed shape.
+  const serverDir = dirname(serverJs);
+  cpSync(join(root, ".next", "static"), join(serverDir, ".next", "static"), {
     recursive: true,
   });
-  cpSync(join(root, "public"), join(standaloneDir, "public"), {
+  cpSync(join(root, "public"), join(serverDir, "public"), {
     recursive: true,
   });
 
   server = spawn("node", ["server.js"], {
-    cwd: standaloneDir,
+    cwd: serverDir,
     stdio: "inherit",
     env: {
       ...process.env,
@@ -118,6 +157,15 @@ for (const route of routes) {
       assert.ok(
         !html.includes(needle),
         `expected ${route.path} body to NOT contain "${needle}"`,
+      );
+    }
+    // Image-bearing routes inline a blur placeholder; its absence means the
+    // no-flicker treatment regressed to a bare <Image> (feedback 0005).
+    if (route.hasBlur) {
+      assert.match(
+        html,
+        /data:image\/[a-z]+;base64,/,
+        `expected ${route.path} to inline a blur placeholder (placeholder="blur")`,
       );
     }
   });
