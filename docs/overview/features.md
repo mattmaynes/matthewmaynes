@@ -36,12 +36,15 @@ pending) · 📋 planned.
 
 ## Images
 
-Six metadata-scrubbed PNGs in `public/images/`, served via `next/image`: `area-i-live` (home hero
+Six metadata-scrubbed images in `public/images/`, served via `next/image`: `area-i-live` (home hero
 nature shot), `headshot` (portrait), `family` / `sasha-best-dog-ever` / `baby-matthew` (about
-"Beyond the Code"), `eagle-snap` (projects). All EXIF/GPS stripped — no location leaks. They are
-static-imported through the `images` map in `src/lib/site.ts`, so each gets a build-time
-`blurDataURL` (rendered with `placeholder="blur"` — no pop-in flicker) and is served AVIF/WebP
-(`images.formats` in `next.config.ts`); above-the-fold images use `priority`.
+"Beyond the Code"), `eagle-snap` (projects). The five photos are JPEG (right format for
+photographs, hero capped at 1600px); the `eagle-snap` banner is a flat graphic and stays PNG. All
+EXIF/GPS stripped — no location leaks. They are static-imported through the `images` map in
+`src/lib/site.ts`, so each gets a build-time `blurDataURL` (rendered with `placeholder="blur"` — no
+pop-in flicker) and is optimized to WebP (`images.formats` in `next.config.ts`, with a long
+`minimumCacheTTL`); above-the-fold images use `priority`. WebP-only (not AVIF) keeps first-paint
+encode fast for the first visitor after each deploy (feedback 0006).
 
 ## Resume page
 
