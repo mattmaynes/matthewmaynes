@@ -181,3 +181,20 @@ Capture lessons as you go.
   `fetch` waits forever, and a stalled best-effort job coupled to a `concurrency`-serialized deploy
   lane will queue the next deploy behind it. "Best-effort" means it also fails fast, not just that
   it ignores errors. (spec 0006)
+
+## PR checks must gate before deploy, not only after merge (feedback 0008)
+
+- **Every check the deploy pipeline enforces must also run on the PR, before merge.** The
+  lint/`resume:pdf:check`/build/test gate lived ONLY in `deploy.yml` (`on: push: branches: [main]`),
+  which runs AFTER the merge. There was no `pull_request` workflow, so nothing blocked a bad PR: a
+  stale `public/resume.pdf` merged in #21 and then failed every post-merge deploy until it was
+  regenerated - silently keeping #22-#25 off the live site too. A post-merge gate cannot stop a bad
+  change; it only discovers it once it is already on `main`. Fix: a `pull_request` CI workflow that
+  runs the same checks, so red blocks the merge.
+- **Share one gate definition between PR CI and deploy; never duplicate it.** The PR check and the
+  deploy check must be identical - if they drift, a check can pass on the PR and fail post-merge (the
+  exact failure mode here). Extracted the steps into a reusable workflow (`verify.yml`,
+  `on: workflow_call`) called by both `ci.yml` (PR) and `deploy.yml` (push).
+- **A required check needs branch protection to actually block.** `main` had no protection at all,
+  so even a red check would not stop a merge. Adding the workflow is only half the fix; the
+  `verify / verify` check must be marked required in branch protection on `main`.
