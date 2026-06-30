@@ -26,10 +26,21 @@ per-component code. Already implemented in `src/styles/`.
 
 - **Container:** multi-stage Dockerfile (deps → build → runtime). Runtime is `node:20-alpine`
   serving the standalone output. Target image well under 200MB.
-- **Local:** `docker compose up` (or `npm run dev`). Compose maps `3000:3000`.
-- **Host:** DigitalOcean (App Platform or a Droplet running the container). DNS for
-  `matthewmaynes.com` points there; HTTPS via the platform's managed TLS.
-- **CI/CD:** a GitHub Actions build/deploy pipeline is a later enhancement.
+- **Local:** `docker compose up` (or `npm run dev`). The root `docker-compose.yml` builds from
+  source and maps `3000:3000`; it is for local use only.
+- **Host:** a small Linux VM (about 512MB RAM) running two Compose stacks on a shared external
+  `edge` network: **Caddy** (`deploy/docker/compose.proxy.yml` + `Caddyfile`) owns 80/443 and
+  auto-provisions Let's Encrypt certs, reverse-proxying by hostname to the **site**
+  (`deploy/docker/compose.site.yml`), which exposes 3000 only on `edge` (no host port). The
+  routes-by-hostname topology is built for cohosting: a second site is one more `edge` service
+  plus a Caddyfile block. The operator runbook is kept privately (git-ignored, not in the repo).
+- **Images:** built off-host and pulled from GHCR (`ghcr.io/mattmaynes/matthewmaynes`, public), so
+  the small server never runs a Next build. Tagged `latest` + immutable `sha-<commit>` for rollback.
+- **CI/CD:** `.github/workflows/deploy.yml` - push to `main` runs verify (lint/build/test) →
+  build+push to GHCR → SSH deploy to the server (`git pull`, `compose pull && up -d`). GHCR push
+  uses the built-in `GITHUB_TOKEN`; the only repo secrets are the deploy SSH credentials.
+- **Deploy layout:** all deploy artifacts live under `deploy/docker/`, leaving room for a future
+  `deploy/helm/` or `deploy/terraform/` beside it.
 
 ## Configuration & secrets
 
