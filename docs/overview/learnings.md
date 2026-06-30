@@ -63,8 +63,11 @@ Capture lessons as you go.
   whole import as `src`. Reserve `priority` for above-the-fold images so they are not lazy-loaded,
   and set `images.formats = ["image/avif","image/webp"]` (default is WebP-only) - AVIF cut the
   640px hero from a ~1 MB PNG to ~30 KB. (feedback 0005)
-- **Verify image work from the running standalone server, not the smoke test, in a worktree.** The
-  two-lockfile quirk nests `server.js` under `.next/standalone/.worktrees/<slug>/`, so the smoke
-  test's `.next/standalone/server.js` path misses. Assemble static+public next to the nested
-  `server.js`, boot it, and `curl` for the inlined `data:image/...;base64` blur placeholders and an
-  `image/avif` content-type on a `/_next/image?...` URL. (feedback 0005)
+- **A cosmetic change still needs a guard, and the smoke test must boot in a worktree.** The blur
+  treatment passed every existing smoke assertion (200 + title + h1) even when reverted, so it
+  could regress silently. The smoke test now asserts image-bearing routes inline a
+  `data:image/...;base64,` blur placeholder. It also had to be taught to *find* `server.js`: the
+  two-lockfile quirk nests it under `.next/standalone/.worktrees/<slug>/`, so the old hard-coded
+  `.next/standalone/server.js` path missed and the suite never ran in a worktree. `findServerJs()`
+  now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
+  real `server.js`. (feedback 0005)
