@@ -23,11 +23,11 @@ export default function AboutPage() {
       <div className="grid gap-10 lg:grid-cols-[260px_1fr]">
         <div>
           <Image
-            src={images.headshot.src}
+            src={images.headshot}
             alt={images.headshot.alt}
-            width={images.headshot.width}
-            height={images.headshot.height}
             sizes="(max-width: 1024px) 60vw, 260px"
+            priority
+            placeholder="blur"
             className="w-full max-w-xs rounded-lg border border-border object-cover shadow-sm"
           />
         </div>
@@ -53,11 +53,10 @@ export default function AboutPage() {
               className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm"
             >
               <Image
-                src={image.src}
+                src={image}
                 alt={image.alt}
-                width={image.width}
-                height={image.height}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+                placeholder="blur"
                 className={`aspect-[4/3] w-full object-cover ${position ?? ""}`}
               />
               <figcaption className="px-4 py-3 text-caption text-text-muted">

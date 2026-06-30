@@ -10,10 +10,11 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src={images.areaILive.src}
+            src={images.areaILive}
             alt={images.areaILive.alt}
             fill
             priority
+            placeholder="blur"
             sizes="100vw"
             // Centered by default (portrait/mobile); nudged up ~50px only in
             // landscape so the focal point sits a touch higher on wide screens.
@@ -25,11 +26,12 @@ export default function HomePage() {
         <div className="relative mx-auto flex max-w-[1200px] flex-col items-start gap-6 px-6 py-20 sm:py-28">
           <div className="flex items-center gap-5">
             <Image
-              src={images.headshot.src}
+              src={images.headshot}
               alt={images.headshot.alt}
               width={96}
               height={96}
               priority
+              placeholder="blur"
               className="h-20 w-20 rounded-full border-2 border-base-white object-cover shadow-lg sm:h-24 sm:w-24"
             />
             <div>

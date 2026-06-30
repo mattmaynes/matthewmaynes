@@ -32,7 +32,10 @@ pending) · 📋 planned.
 
 Six metadata-scrubbed PNGs in `public/images/`, served via `next/image`: `area-i-live` (home hero
 nature shot), `headshot` (portrait), `family` / `sasha-best-dog-ever` / `baby-matthew` (about
-"Beyond the Code"), `eagle-snap` (projects). All EXIF/GPS stripped — no location leaks.
+"Beyond the Code"), `eagle-snap` (projects). All EXIF/GPS stripped — no location leaks. They are
+static-imported through the `images` map in `src/lib/site.ts`, so each gets a build-time
+`blurDataURL` (rendered with `placeholder="blur"` — no pop-in flicker) and is served AVIF/WebP
+(`images.formats` in `next.config.ts`); above-the-fold images use `priority`.
 
 ## Resume page
 
