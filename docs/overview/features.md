@@ -8,7 +8,7 @@ pending) · 📋 planned.
 | Route | Status | Purpose |
 |---|---|---|
 | `/` | 🚧 | Home. Hero (name, title, tagline, nature photo), short blended bio, featured projects, latest posts, social links. |
-| `/about` | 🚧 | The "whole person" story — leadership philosophy + career narrative, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
+| `/about` | ✅ | The "whole person" story in first person: how Matthew works (problem solver, leader who still builds), a leadership belief, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
 | `/resume` | ✅ | Detailed professional resume rendered from structured data, with a **download PDF** button serving an in-sync, contact-free PDF. |
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. |
 | `/blog` | 🚧 | Blog listing with previews (title, date, excerpt, tags) and tag filtering. |

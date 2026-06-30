@@ -1,4 +1,4 @@
-# 0006 - Resume PDF: review-caught correctness gaps (spec 0005)
+# 0007 - Resume PDF: review-caught correctness gaps (spec 0005)
 
 Three **major** findings from the persona review of PR #17 (engineer, architect, tester). All in
 the in-sync-PDF machinery - the page content itself was sound. Captured here because each is a

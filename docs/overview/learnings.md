@@ -72,6 +72,15 @@ Capture lessons as you go.
   now walks the standalone dir (skipping `node_modules`) and the artifact is assembled next to the
   real `server.js`. (feedback 0005)
 
+## Content pages (spec 0003)
+
+- **A placeholder route that gains real content needs a tighter smoke assertion in the same PR.**
+  The generic per-route check (route-unique `<title>` + "an `<h1>` exists") is a resolve probe the
+  old `PagePlaceholder` already satisfied, so a blank body or a reverted placeholder would still
+  pass. The smoke table now takes optional `contains`/`absent` body substrings; assert a
+  route-unique phrase is present (and any placeholder badge is gone) when shipping real copy. This
+  recurred from feedback 0001's "assert what the unit uniquely produces" lesson. (feedback 0006)
+
 ## Resume page + PDF (spec 0005)
 
 - **Do not hash rendered Next HTML to detect content changes.** The plan was to gate PDF
@@ -87,9 +96,9 @@ Capture lessons as you go.
   stale page while the new hash was written, and a `site.location` edit passed `--check` while the
   PDF drifted. A gate over a subset of inputs, or one that re-renders a cached build, certifies
   stale output as fresh - worse than no gate. Fix: complete `INPUT_FILES`, and always `next build`
-  in generate mode. (feedback 0006)
-- **When a route graduates from placeholder to real content, assert route-unique body text and the
-  ABSENCE of the placeholder marker.** The `/resume` smoke check asserted only the shared title +
-  a generic `<h1>`, both of which `PagePlaceholder` also produced, so a regression to the stub
-  would have passed - a re-run of feedback 0001. Also encode privacy/PII criteria as an automated
-  assertion (no email/phone/postal in the HTML), not human review, on a public site. (feedback 0006)
+  in generate mode. (feedback 0007)
+- **Encode a privacy/PII acceptance criterion as an automated assertion, not human review.** On a
+  public site, the spec's "no email/phone/postal" rule is now a smoke assertion on the `/resume`
+  HTML (which also covers the PDF, since it renders from the page), so a future edit can't silently
+  reintroduce contact info. (The placeholder-vs-real guard it also needs is the same lesson as
+  Content pages above.) (feedback 0007)

@@ -33,7 +33,7 @@ const HASH_PATH = join(root, "public", "resume.pdf.hash");
 // means the committed PDF must be regenerated, so all are folded into the
 // freshness hash. This must stay complete: the page renders identity, region,
 // and social links from site.ts and embeds the headshot, so both are inputs -
-// omitting them lets the PDF drift while --check stays green (review 0006).
+// omitting them lets the PDF drift while --check stays green (review 0007).
 const INPUT_FILES = [
   "src/lib/resume.ts",
   "src/lib/site.ts",
@@ -116,7 +116,7 @@ function findChrome() {
 }
 
 // Ask the OS for a free port instead of guessing, so a busy port can't turn
-// into a silent 60s readiness timeout (review 0006).
+// into a silent 60s readiness timeout (review 0007).
 function getFreePort() {
   return new Promise((resolve, reject) => {
     const srv = createServer();
@@ -139,7 +139,7 @@ if (!chrome) {
 // Always rebuild before rendering: generate mode is only reached when the
 // sources changed (or --force), so a leftover standalone build from an earlier
 // run would otherwise have Chrome render the OLD page while we write the NEW
-// hash - a stale PDF marked fresh (review 0006).
+// hash - a stale PDF marked fresh (review 0007).
 console.log("resume:pdf - building...");
 const build = spawnSync("npx", ["next", "build"], { cwd: root, stdio: "inherit" });
 if (build.status !== 0) fail("next build failed");

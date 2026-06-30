@@ -11,9 +11,10 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { assembleStandalone } from "../scripts/lib/standalone.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
@@ -50,12 +51,22 @@ function findServerJs(dir) {
 
 // `title` is the route-unique <title> text (layout template is "%s - Matthew
 // Maynes"; home overrides it). Asserting it proves the correct route rendered.
+// `contains` are route-unique body substrings that prove the real content
+// rendered (not just <head> on an error shell, and not a reverted placeholder).
+// `absent` are substrings that must NOT appear (e.g. the "Placeholder" badge on
+// a page that has shipped real content) - see feedback 0001/0006.
 // `hasBlur` flags routes that render a next/image with placeholder="blur" - the
 // server inlines the blurDataURL as a `data:image/...;base64,` value, so its
 // presence proves the no-flicker treatment is wired up (feedback 0005).
 const routes = [
   { path: "/", title: "Matthew Maynes - Engineering Director", hasBlur: true },
-  { path: "/about", title: "About - Matthew Maynes", hasBlur: true },
+  {
+    path: "/about",
+    title: "About - Matthew Maynes",
+    hasBlur: true,
+    contains: ["never stopped building", "The whole crew."],
+    absent: ["Placeholder"],
+  },
   { path: "/resume", title: "Resume - Matthew Maynes", hasBlur: true },
   { path: "/projects", title: "Projects - Matthew Maynes", hasBlur: true },
   { path: "/blog", title: "Blog - Matthew Maynes" },
@@ -93,14 +104,10 @@ before(async () => {
   }
 
   // Assemble the standalone artifact exactly as the Dockerfile does, next to the
-  // real server.js, then run it so the test exercises the deployed shape.
+  // real server.js, then run it so the test exercises the deployed shape. Shares
+  // the assembly helper with the resume PDF generator (review 0007).
   const serverDir = dirname(serverJs);
-  cpSync(join(root, ".next", "static"), join(serverDir, ".next", "static"), {
-    recursive: true,
-  });
-  cpSync(join(root, "public"), join(serverDir, "public"), {
-    recursive: true,
-  });
+  assembleStandalone(root, serverDir);
 
   server = spawn("node", ["server.js"], {
     cwd: serverDir,
@@ -122,7 +129,7 @@ after(() => {
 // The resume PDF is a committed static asset under public/, generated from the
 // /resume page (npm run resume:pdf). Assert it is served AND is a real,
 // non-trivial PDF - status + content-type derive from the .pdf extension alone,
-// so a 0-byte or truncated commit would otherwise pass (review 0006).
+// so a 0-byte or truncated commit would otherwise pass (review 0007).
 test("GET /resume.pdf serves a real, non-trivial PDF", async () => {
   const res = await fetch(BASE + "/resume.pdf");
   assert.equal(res.status, 200, "expected 200 for /resume.pdf");
@@ -190,6 +197,20 @@ for (const route of routes) {
       /<h1[\s>]/,
       `expected ${route.path} to render an <h1>`,
     );
+    // Route-unique body content: proves the real page rendered, so a blank body
+    // or a reverted placeholder can't pass on the shared <h1> alone.
+    for (const needle of route.contains ?? []) {
+      assert.ok(
+        html.includes(needle),
+        `expected ${route.path} body to contain "${needle}"`,
+      );
+    }
+    for (const needle of route.absent ?? []) {
+      assert.ok(
+        !html.includes(needle),
+        `expected ${route.path} body to NOT contain "${needle}"`,
+      );
+    }
     // Image-bearing routes inline a blur placeholder; its absence means the
     // no-flicker treatment regressed to a bare <Image> (feedback 0005).
     if (route.hasBlur) {
