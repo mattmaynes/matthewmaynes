@@ -26,8 +26,10 @@
 - **Icons are generated, not hand-placed:** `scripts/build-icons.mjs` resizes the
   `public/brand/logo-m.png` master with macOS `sips` and packs the multi-res `favicon.ico` with a
   stdlib ICO writer - no ImageMagick, no npm dependency. Re-run it to refresh every size at once.
-- **OG image asset loading:** satori (the `next/og` engine) cannot read the woff2 that `@fontsource`
-  ships, so Figtree TTFs are colocated in `src/app/_og/` and loaded via
+- **OG image asset loading:** satori (the `next/og` engine) cannot read the woff2 that
+  `@fontsource-variable` ships, so the static `@fontsource/figtree` package (a pinned devDependency,
+  which ships woff + its OFL license) is the source. `scripts/build-og-fonts.mjs` copies the woff +
+  LICENSE into `src/app/_og/`, where `opengraph-image.tsx` loads them via
   `new URL(..., import.meta.url)` (traced into the standalone output). The logo reads from
   `public/`, which the standalone/Docker copy step deploys next to `server.js`.
 

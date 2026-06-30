@@ -3,7 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ThemeScript } from "@/components/theme-script";
-import { site, twitterHandle } from "@/lib/site";
+import { images, site, twitterHandle } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -56,7 +56,7 @@ const personJsonLd = {
   name: site.name,
   url: site.url,
   jobTitle: site.title,
-  image: `${site.url}/images/headshot.png`,
+  image: new URL(images.headshot.src, site.url).toString(),
   sameAs: [site.social.linkedin, site.social.github, site.social.x],
 };
 
@@ -74,7 +74,11 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           // Static, build-time JSON from our own constants - no user input.
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+          // Escape `<` defensively in case a field ever becomes dynamic, so the
+          // payload can never break out of the script element.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c"),
+          }}
         />
         <Header />
         <main className="flex-1">{children}</main>

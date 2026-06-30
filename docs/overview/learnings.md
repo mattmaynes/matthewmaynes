@@ -57,11 +57,15 @@ Capture lessons as you go.
 ## SEO & sharing (spec 0004)
 
 - **`next/og` (satori) cannot read woff2.** `@fontsource-variable/figtree` ships woff2 only, so
-  passing it to `ImageResponse` fails. Bundle a TTF/OTF/WOFF instead - we colocate Figtree TTFs in
-  `src/app/_og/` and load them with `new URL('./_og/figtree-NNN.ttf', import.meta.url)` so they are
-  traced into the `output: standalone` build (a `process.cwd()`-relative read of `src/` would not
-  be - `src/` is not deployed). Assets the OG route reads from `public/` are fine: the standalone
-  copy step puts `public/` next to `server.js`, so `join(process.cwd(), 'public/...')` resolves.
+  passing it to `ImageResponse` fails. satori does read woff/ttf/otf - and the *static*
+  `@fontsource/figtree` package ships woff (plus its OFL license), so add it as a pinned
+  devDependency and derive the card fonts from it (`scripts/build-og-fonts.mjs`) rather than
+  downloading ad-hoc binaries with no provenance. Colocate the woff in `src/app/_og/` and load via
+  `new URL('./_og/figtree-NNN.woff', import.meta.url)` so they are traced into the `output:
+  standalone` build (a `process.cwd()`-relative read of `src/` would not be - `src/` is not
+  deployed). Commit the OFL `LICENSE` beside the fonts (OFL requires it to travel with the
+  binaries). Assets the OG route reads from `public/` are fine: the standalone copy step puts
+  `public/` next to `server.js`, so `join(process.cwd(), 'public/...')` resolves.
 - **Verify the generated OG image, do not assume it built.** A green `next build` only proves the
   route compiled; a wrong font/logo path renders a blank or broken card. The smoke test fetches the
   `og:image` URL's path on the local server and asserts a `200` + `image/png`, and the card was
