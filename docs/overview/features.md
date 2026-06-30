@@ -17,8 +17,9 @@ pending) · 📋 planned.
 
 ## Navigation
 
-- Top bar: Home · About · Resume · Projects · Blog · Contact (mobile: hamburger).
-- Footer: social links (LinkedIn, GitHub, X), copyright.
+- Top bar: Home · About · Resume · Projects · Blog · Contact, built on Canopy's `TopNav` Branch
+  (mobile: a left-aligned hamburger that opens Canopy's disclosure panel).
+- Footer: social links (LinkedIn, GitHub, X) as Canopy ghost-icon Buttons, copyright.
 
 ## Global behaviors
 

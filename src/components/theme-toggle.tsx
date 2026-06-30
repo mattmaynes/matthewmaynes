@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Button } from "@/components/ui";
 
 function applyTheme(isDark: boolean) {
   document.documentElement.classList.toggle("dark", isDark);
@@ -62,12 +63,13 @@ export function ThemeToggle() {
   const label = isDark ? "Switch to light theme" : "Switch to dark theme";
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       onClick={toggle}
       aria-label={label}
       title={label}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-text transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span aria-hidden="true">
         {isDark ? (
@@ -101,6 +103,6 @@ export function ThemeToggle() {
           </svg>
         )}
       </span>
-    </button>
+    </Button>
   );
 }
