@@ -27,6 +27,12 @@ pending) · 📋 planned.
 - **Theme** (light/dark via the Harbor `.dark` layer): defaults to the OS `prefers-color-scheme`,
   with a header toggle whose choice persists in `localStorage` and then overrides the system
   setting. Applied before first paint, so no flash on load.
+- **SEO & sharing** (spec 0004): the metal-M favicon set (`favicon.ico` + PNG `icon`/`apple-icon`
+  + 192/512 manifest icons, all generated from `public/brand/logo-m.png` by
+  `scripts/build-icons.mjs`); Open Graph + Twitter `summary_large_image` cards backed by a
+  generated 1200x630 branded share image (`app/opengraph-image.tsx`, reused for `twitter-image`);
+  `robots.txt`, `sitemap.xml` (from the `nav` source), a web manifest, `theme-color`, and a JSON-LD
+  `Person` block. One link, a rich preview everywhere it is pasted.
 
 ## Images
 
