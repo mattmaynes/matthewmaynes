@@ -1,4 +1,12 @@
 
+## Public repo - strip PII before commit
+
+This site and its repository are **public**. Never commit personal contact info - phone, email,
+street address, or postal code - or a precise home location. Show location no more specifically
+than region (for example "Ontario, Canada"). The private resume master lives in git-ignored
+`context/`; only its scrubbed derivative (`src/lib/resume.ts`) is tracked and rendered. The
+generated `public/resume.pdf` is built from that scrubbed source, so it stays contact-free too.
+
 <!-- trellis:start -->
 ## Trellis conventions
 

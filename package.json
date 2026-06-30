@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "resume:pdf": "node scripts/generate-resume-pdf.mjs",
+    "resume:pdf:check": "node scripts/generate-resume-pdf.mjs --check"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",

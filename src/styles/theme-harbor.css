@@ -117,3 +117,60 @@
   --color-disabled: var(--color-slate-800);
   --color-disabled-foreground: var(--color-slate-600);
 }
+
+/* print - force the light palette so the generated resume PDF is always
+   dark-on-white regardless of the reader's active theme. The on-screen page is
+   untouched; this only applies to print (and the headless-Chrome PDF render,
+   which prints with `@media print` active). Re-maps the `.dark` overrides back
+   to their light values rather than repeating the full :root list. */
+@media print {
+  .dark {
+    --color-bg: var(--color-slate-50);
+    --color-surface: var(--color-base-white);
+    --color-surface-raised: var(--color-base-white);
+    --color-overlay: var(--color-slate-900);
+
+    --color-text: var(--color-slate-900);
+    --color-text-muted: var(--color-slate-600);
+    --color-text-subtle: var(--color-slate-500);
+    --color-text-inverted: var(--color-slate-50);
+
+    --color-border: var(--color-slate-200);
+    --color-border-strong: var(--color-slate-300);
+
+    --color-ring: var(--color-harbor-600);
+    --color-ring-offset: var(--color-base-white);
+
+    --color-primary: var(--color-harbor-600);
+    --color-primary-foreground: var(--color-harbor-50);
+    --color-primary-hover: var(--color-harbor-700);
+    --color-primary-active: var(--color-harbor-800);
+
+    --color-muted: var(--color-slate-100);
+    --color-muted-foreground: var(--color-slate-600);
+    --color-muted-raised: var(--color-slate-100);
+
+    --color-disabled: var(--color-slate-100);
+    --color-disabled-foreground: var(--color-slate-400);
+  }
+
+  /* Letter paper with comfortable margins. */
+  @page {
+    size: Letter;
+    margin: 0.5in;
+  }
+
+  html,
+  body {
+    background: var(--color-base-white);
+  }
+
+  /* Render badge / accent background colors in the PDF instead of dropping
+     them (browsers omit backgrounds in print unless asked). Scoped to the page
+     content under <main>; the hidden header/footer don't need it. */
+  main,
+  main * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
