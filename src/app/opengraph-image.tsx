@@ -3,11 +3,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { site } from "@/lib/site";
 
-// Needs the Node runtime to read the logo + font files off disk.
+// Needs the Node runtime to read the headshot + font files off disk.
 export const runtime = "nodejs";
 
-// The branded card crawlers render for the link preview. Same metal M as the
-// favicon, so the tab icon and the share card are visibly one brand.
+// The branded card crawlers render for the link preview: the name and the
+// headshot share the top line, so the preview puts a face to the name.
 export const alt = site.ogImageAlt;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -24,21 +24,21 @@ const WARM = "#cf9343"; // accent (gold) - the brand's warm note
 // @fontsource-variable ships; the static @fontsource/figtree woff works).
 // scripts/build-og-fonts.mjs derives them from the pinned package.
 // `new URL(..., import.meta.url)` makes them traced assets so they survive the
-// standalone build. The logo reads from public/, which the Dockerfile/standalone
-// copy step deploys alongside server.js.
+// standalone build. The headshot reads from public/, which the Dockerfile/
+// standalone copy step deploys alongside server.js.
 async function loadAssets() {
-  const [regular, semibold, bold, logo] = await Promise.all([
+  const [regular, semibold, bold, headshot] = await Promise.all([
     readFile(new URL("./_og/figtree-400.woff", import.meta.url)),
     readFile(new URL("./_og/figtree-600.woff", import.meta.url)),
     readFile(new URL("./_og/figtree-700.woff", import.meta.url)),
-    readFile(join(process.cwd(), "public/brand/logo-m.png")),
+    readFile(join(process.cwd(), "public/images/headshot.png")),
   ]);
-  const logoSrc = `data:image/png;base64,${logo.toString("base64")}`;
-  return { regular, semibold, bold, logoSrc };
+  const headshotSrc = `data:image/png;base64,${headshot.toString("base64")}`;
+  return { regular, semibold, bold, headshotSrc };
 }
 
 export default async function OpengraphImage() {
-  const { regular, semibold, bold, logoSrc } = await loadAssets();
+  const { regular, semibold, bold, headshotSrc } = await loadAssets();
 
   return new ImageResponse(
     (
@@ -55,7 +55,6 @@ export default async function OpengraphImage() {
           fontFamily: "Figtree",
         }}
       >
-        <img src={logoSrc} width={150} height={150} alt="" />
         {/* Warm gold rule: the brand's one warm note against the cool harbor
             field, so the most-shared asset reads inviting, not corporate-cold. */}
         <div
@@ -64,20 +63,40 @@ export default async function OpengraphImage() {
             height: 6,
             borderRadius: 3,
             backgroundColor: WARM,
-            marginTop: 40,
           }}
         />
+        {/* Name on the left, headshot on the right, sharing the top line. */}
         <div
           style={{
             display: "flex",
-            fontSize: 76,
-            fontWeight: 700,
-            color: TEXT,
-            marginTop: 28,
-            letterSpacing: "-0.02em",
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 24,
           }}
         >
-          {site.name}
+          <div
+            style={{
+              display: "flex",
+              fontSize: 76,
+              fontWeight: 700,
+              color: TEXT,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {site.name}
+          </div>
+          <img
+            src={headshotSrc}
+            width={220}
+            height={220}
+            alt=""
+            style={{
+              borderRadius: 110,
+              objectFit: "cover",
+              border: `4px solid ${ACCENT}`,
+            }}
+          />
         </div>
         <div
           style={{

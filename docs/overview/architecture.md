@@ -30,8 +30,8 @@
   `@fontsource-variable` ships, so the static `@fontsource/figtree` package (a pinned devDependency,
   which ships woff + its OFL license) is the source. `scripts/build-og-fonts.mjs` copies the woff +
   LICENSE into `src/app/_og/`, where `opengraph-image.tsx` loads them via
-  `new URL(..., import.meta.url)` (traced into the standalone output). The logo reads from
-  `public/`, which the standalone/Docker copy step deploys next to `server.js`.
+  `new URL(..., import.meta.url)` (traced into the standalone output). The card's headshot reads
+  from `public/`, which the standalone/Docker copy step deploys next to `server.js`.
 
 ## Styling layers (import order matters)
 
