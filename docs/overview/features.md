@@ -46,8 +46,10 @@ pending) · 📋 planned.
   (autocapture + a `global-error` boundary) and server exceptions (`instrumentation.ts`
   `onRequestError` via posthog-node, covering `POST /v1/contact`). All traffic is proxied
   same-origin through `/ingest/*`, so tracker blockers and a future CSP need no third-party
-  exception. No consent banner: analytics run for all visitors in cookieless mode. (Logs via
-  OpenTelemetry are a separate follow-up, spec 0015.)
+  exception. No consent banner: analytics run for all visitors in cookieless mode. The contact
+  form also fires explicit, PII-free conversion events (submitted/succeeded/failed) so the site's
+  one conversion stays measurable despite the replay mask. (Logs via OpenTelemetry are a separate
+  follow-up, spec 0015.)
 
 ## Images
 

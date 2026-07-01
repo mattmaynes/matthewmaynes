@@ -15,7 +15,12 @@ export function register() {
 
 export async function onRequestError(error: unknown) {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { getPostHogServer } = await import("@/lib/posthog-server");
-  const posthog = getPostHogServer();
-  await posthog.captureExceptionImmediate(error);
+  // The error hook must never throw (a slow/unreachable ingest would otherwise
+  // reject out of it as an unhandled rejection), so swallow any capture failure.
+  try {
+    const { getPostHogServer } = await import("@/lib/posthog-server");
+    await getPostHogServer().captureExceptionImmediate(error);
+  } catch {
+    // best-effort: reporting the error must not itself break the request path
+  }
 }

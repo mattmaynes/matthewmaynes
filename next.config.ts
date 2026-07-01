@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { POSTHOG_ASSET_HOST, POSTHOG_INGEST_HOST } from "./src/lib/analytics";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -35,15 +36,15 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
+        destination: `${POSTHOG_ASSET_HOST}/static/:path*`,
       },
       {
         source: "/ingest/array/:path*",
-        destination: "https://us-assets.i.posthog.com/array/:path*",
+        destination: `${POSTHOG_ASSET_HOST}/array/:path*`,
       },
       {
         source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
+        destination: `${POSTHOG_INGEST_HOST}/:path*`,
       },
     ];
   },

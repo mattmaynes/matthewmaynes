@@ -311,3 +311,24 @@ Capture lessons as you go.
 - **posthog-node `captureException` is fire-and-forget (`void`).** In `onRequestError`, use
   `captureExceptionImmediate` (returns a Promise) and `await` it so the event flushes before the
   handler returns, rather than relying on background batching around a request that may be ending.
+  Wrap it in try/catch - the error hook must never throw (a slow ingest would surface as an
+  unhandled rejection). (feedback 0011)
+- **Initialize a shared client at module scope, not in a parent effect.** React flushes child
+  passive effects before parent effects, so `posthog.init()` in the provider's `useEffect` ran
+  *after* the child `<PostHogPageView>` effect's first `capture("$pageview")` - and posthog-js drops
+  captures made before load (no buffering), so the landing pageview was lost every session. Anything
+  a child effect needs on first paint must exist before render: init at module load with a
+  `typeof window` guard. Verify runtime analytics in a real browser (Playwright network panel: the
+  landing `$pageview` and each route change should POST to `/ingest`), not just via unit tests.
+  (feedback 0011)
+- **Masking an element for replay also removes it from autocapture.** `ph-no-capture` on the whole
+  contact form (right call for PII in session replay) also stopped PostHog autocapturing the submit,
+  so the site's one conversion emitted no event. Masking and measuring are separate decisions on the
+  same element: keep the mask and track the conversion with explicit, PII-free events (outcome only,
+  never field values). (feedback 0011)
+- **Verify design-token class names against the theme, don't assume them.** `text-on-primary` does
+  not exist (`--color-primary-foreground` does) and `text-muted` is a surface fill, not text
+  (`text-text-muted` is the text token) - both rendered unreadable. Grep `theme-harbor.css`/Roots
+  for the real token before using a `text-*`/`bg-*` utility. A page that renders its own `<html>`
+  (like `global-error.tsx`) must also include `<ThemeScript>` or it ignores the visitor's theme.
+  (feedback 0011)

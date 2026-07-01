@@ -123,13 +123,20 @@ per-component code. Already implemented in `src/styles/`.
   `posthog-js`, server via `posthog-node`. Logs (PostHog's OpenTelemetry/OTLP pipeline) are
   deliberately deferred to a separate spec (0015) - a materially heavier integration.
 - **One config seam** `src/lib/analytics.ts` holds the publishable key, the client ingest host, the
-  `ui_host`, and the direct server ingest host - imported by both the client provider and the
-  server client so nothing is duplicated.
-- **Client**: `src/components/posthog-provider.tsx` (`"use client"`, mounted once in `layout.tsx`)
-  runs `posthog.init` in a `useEffect` with `capture_pageview: false` (App Router soft-navigates, so
-  `src/components/posthog-pageview.tsx` fires `$pageview` per route change behind a `Suspense`),
-  `capture_pageleave`, `capture_exceptions` (client autocapture), `persistence: "localStorage"`
-  (cookieless), and `session_recording.maskAllInputs`.
+  `ui_host`, and the region hosts - the last are imported by `next.config.ts` for the `/ingest`
+  rewrites too, so a region change is a single edit and nothing is duplicated.
+- **Client**: init lives in a module-scope, idempotent `initPostHogBrowser()`
+  (`src/lib/posthog-browser.ts`), called at import time by `src/components/posthog-provider.tsx`
+  (`"use client"`, mounted once in `layout.tsx`) - NOT in an effect. React flushes child effects
+  before parent effects, so an effect-based init let the child `<PostHogPageView>` fire the first
+  `$pageview` before load and it was dropped (feedback 0011); module-scope init loads the SDK first.
+  Config: `capture_pageview: false` (App Router soft-navigates, so `src/components/posthog-pageview.tsx`
+  fires `$pageview` per route change behind a `Suspense`), `capture_pageleave`, `capture_exceptions`
+  (client autocapture), `persistence: "localStorage"` (cookieless), and `session_recording.maskAllInputs`.
+- **Conversion tracking**: because `ph-no-capture` on the contact form also hides its submit from
+  autocapture, the form fires explicit, PII-free events (`contact_form_submitted`/`_succeeded`/`_failed`,
+  outcome only, no field values) from `handleSubmit` - the mask stays for replay privacy while the
+  one conversion stays measurable (feedback 0011).
 - **Server errors**: `src/instrumentation.ts` exports `onRequestError` (Node-runtime-guarded) which
   lazy-imports `src/lib/posthog-server.ts` (a singleton posthog-node client, `flushAt:1`) and calls
   `captureExceptionImmediate`, so RSC/route-handler/`/v1/contact` failures reach Error tracking.
