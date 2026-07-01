@@ -22,7 +22,11 @@ import { getBlogImage } from "@/lib/blog-images";
  */
 function PostImage({ name }: { name: string }) {
   const image = getBlogImage(name);
-  if (!image) return null;
+  // Fail the build loudly on a typo'd/missing image rather than silently
+  // dropping it (this compiles at build over our own tracked content only).
+  if (!image) {
+    throw new Error(`Unknown blog image referenced in MDX: "${name}"`);
+  }
   const pixelated = image.pixelated === true;
   return (
     <figure className="my-8 flex justify-center">

@@ -33,7 +33,7 @@ export default function BlogPage() {
                 {cover ? (
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="block overflow-hidden rounded-lg border border-border bg-slate-950"
+                    className="block overflow-hidden rounded-lg border border-border bg-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset"
                   >
                     <Image
                       src={cover}
@@ -49,7 +49,7 @@ export default function BlogPage() {
                   <h2 className="text-h3 font-semibold">
                     <Link
                       href={`/blog/${post.slug}`}
-                      className="text-text hover:text-primary"
+                      className="rounded-sm text-text hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset"
                     >
                       {post.title}
                     </Link>

@@ -74,14 +74,17 @@ export default async function BlogPostPage({
       </header>
 
       {cover ? (
-        <div className="mt-8 flex overflow-hidden rounded-lg border border-border bg-slate-950 p-4 sm:p-6">
+        // Match the prose reading measure (max-w-2xl, left-aligned) so the mat
+        // aligns with the body column; the pixel-art cover fills the width and
+        // upscales crisply (image-rendering: pixelated), not a stamp on a huge mat.
+        <div className="mt-8 max-w-2xl overflow-hidden rounded-lg border border-border bg-slate-950 p-4 sm:p-6">
           <Image
             src={cover}
             alt={cover.alt}
-            sizes="(max-width: 768px) 90vw, 768px"
+            sizes="(max-width: 672px) 90vw, 672px"
             priority
             placeholder={pixelated ? "empty" : "blur"}
-            className="mx-auto h-auto max-w-full"
+            className="h-auto w-full"
             style={pixelated ? { imageRendering: "pixelated" } : undefined}
           />
         </div>

@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import {
   parseFrontmatter,
   slugify,
+  sortPostsNewestFirst,
   getAllPosts,
   getPostBySlug,
 } from "../src/lib/blog.js";
@@ -77,6 +78,28 @@ test("slugify lowercases, collapses non-alphanumerics, and trims dashes", () => 
   assert.equal(slugify("Foo   ---   Bar"), "foo-bar");
   assert.equal(slugify("Already-slug"), "already-slug");
   assert.equal(slugify("C++ & Rust"), "c-rust");
+});
+
+test("sortPostsNewestFirst orders by date descending without mutating input", () => {
+  // A multi-post fixture: the real content dir has one post, so this pure test
+  // is what actually guards the comparator (an inverted sort would pass on the
+  // single-post getAllPosts check below).
+  const input = [
+    { slug: "old", date: "2025-01-01" },
+    { slug: "newest", date: "2026-06-30" },
+    { slug: "mid", date: "2025-12-31" },
+  ];
+  const out = sortPostsNewestFirst(input);
+  assert.deepEqual(
+    out.map((p) => p.slug),
+    ["newest", "mid", "old"],
+    "expected newest-first ordering",
+  );
+  assert.deepEqual(
+    input.map((p) => p.slug),
+    ["old", "newest", "mid"],
+    "sortPostsNewestFirst must not mutate its input",
+  );
 });
 
 test("getAllPosts returns posts sorted newest-first", () => {

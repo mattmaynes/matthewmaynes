@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { site } from "@/lib/site";
-import { getPostBySlug } from "@/lib/blog";
+import { getAllPosts, getPostBySlug } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 
 // Needs the Node runtime to read the cover + font files off disk.
@@ -11,6 +11,12 @@ export const runtime = "nodejs";
 export const alt = "Blog post on matthewmaynes.com";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+// Bake one card per post at build so this route is static, rather than reading
+// content/ per request and relying on Next file-tracing to have copied it.
+export function generateStaticParams() {
+  return getAllPosts().map((post) => ({ slug: post.slug }));
+}
 
 // Harbor-dark palette (see src/styles/theme-harbor.css), matching the site card.
 const BG_FROM = "#1f3447"; // harbor-900
@@ -39,8 +45,11 @@ async function loadFonts() {
 async function loadCover(coverKey: string) {
   const meta = getBlogImage(coverKey);
   if (!meta) return null;
+  // getBlogImage tolerates a missing ".png"; read the same normalized filename
+  // so a bare cover key (no extension) does not ENOENT and 500 the route.
+  const filename = coverKey.endsWith(".png") ? coverKey : `${coverKey}.png`;
   const bytes = await readFile(
-    join(process.cwd(), "public/images/blog", coverKey),
+    join(process.cwd(), "public/images/blog", filename),
   );
   const src = `data:image/png;base64,${bytes.toString("base64")}`;
 

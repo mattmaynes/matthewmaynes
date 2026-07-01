@@ -94,6 +94,15 @@ function readPost(filename) {
   const slug = filename.replace(/\.mdx$/, "");
   const raw = readFileSync(join(BLOG_DIR, filename), "utf8");
   const { data, content } = parseFrontmatter(raw);
+  // The slug is the filename; enforce that it matches the slugified title so a
+  // filename/title drift fails the build loudly instead of shipping a URL that
+  // does not read as the title (the documented content/blog naming rule).
+  const expected = slugify(data.title);
+  if (slug !== expected) {
+    throw new Error(
+      `Blog post filename slug "${slug}" does not match its title "${data.title}" (rename to "${expected}.mdx")`,
+    );
+  }
   return {
     slug,
     title: data.title,
@@ -115,14 +124,23 @@ function listPostFiles() {
 }
 
 /**
+ * Sort posts newest-first by `date`. Pure and non-mutating (copies first), so
+ * `node --test` can cover the ordering without touching the filesystem.
+ * @template {{ date: string }} T
+ * @param {T[]} posts
+ * @returns {T[]}
+ */
+export function sortPostsNewestFirst(posts) {
+  return [...posts].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+/**
  * All posts, newest-first by `date`. Parses frontmatter only (does NOT compile
  * MDX), so the listing is cheap. Slug is the filename basename.
  * @returns {Array<{ slug: string, title: string, date: string, tags: string[], excerpt: string, coverKey?: string, content: string }>}
  */
 export function getAllPosts() {
-  return listPostFiles()
-    .map(readPost)
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  return sortPostsNewestFirst(listPostFiles().map(readPost));
 }
 
 /**

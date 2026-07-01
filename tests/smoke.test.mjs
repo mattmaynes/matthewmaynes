@@ -76,13 +76,21 @@ const routes = [
   {
     path: "/blog",
     title: "Blog - Matthew Maynes",
-    // The seed post must be listed by title AND excerpt, and the placeholder /
-    // empty-state copy must be gone (learnings 0003: tighten the guard in the
-    // same PR that ships real content).
-    contains: ["I Picked the Wrong Elective", "There is a version of me who took art class"],
+    // The seed post must be listed by title AND excerpt, the rendered date
+    // (proving formatPostDate's UTC parsing, not a raw ISO string), and the
+    // cover thumbnail asset - and the placeholder / empty-state copy must be
+    // gone (learnings 0003: tighten the guard in the same PR that ships real
+    // content).
+    contains: [
+      "I Picked the Wrong Elective",
+      "There is a version of me who took art class",
+      "June 30, 2026",
+      "turing-sunrise",
+    ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
-    // rendered un-blurred (image-rendering: pixelated), never blur-upscaled.
+    // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
+    // presence is asserted via the "turing-sunrise" asset name above instead.
   },
   {
     path: "/blog/i-picked-the-wrong-elective",

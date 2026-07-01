@@ -13,9 +13,12 @@ Authoring or editing a **blog post** (content under `content/blog/`) is content,
 it does **not** follow the full Spectra protocol - no spec, no plan, no persona review. It still
 must:
 
-- be spell-checked in **Canadian English** (colour, honour, realise, organise, and so on);
+- be spell-checked in **Canadian English** (colour, honour, but -ize: realize, organize, recognize);
 - follow the repo writing and formatting rules (`docs/rules/guidelines.md`: no long dashes);
 - keep the public-repo rule above (no PII; location no finer than region);
+- stay **prose plus the known `<PostImage>` component only** - an `.mdx` post is compiled and
+  executed at build (`next-mdx-remote`), so arbitrary JSX, `<script>`, raw HTML, `import`s, or
+  JS expressions are a code-injection surface; the PR approver confirms a post contains none;
 - ship via a **pull request that is approved before it merges** - never committed straight to `main`.
 
 This carve-out covers the post content only. The blog **pipeline and tooling** (anything under

@@ -270,3 +270,30 @@ Capture lessons as you go.
   the Resend payload/send live there so `node --test` covers them without a TS build; the
   `POST /v1/contact` route handler is a thin shell that maps request/env/outcome to status codes.
   Send is a plain `fetch` (timeout-bounded) to Resend's REST API - no SDK dependency for one POST.
+
+## Blog content pipeline (spec 0009, feedback 0010)
+
+- **An acceptance test over a single-item fixture proves nothing about ordering/filtering/dedup
+  logic.** The "newest-first" criterion was only checked via `getAllPosts` against the one-post
+  content dir, so the sort loop never ran and an inverted comparator would pass green - the same
+  "assert what the unit uniquely produces" trap (feedback 0001/0003/0006) applied to *collection
+  logic* rather than page chrome. Fix: extract the logic into a pure exported function
+  (`sortPostsNewestFirst`) and test it against a multi-item fixture, asserting order *and*
+  non-mutation. When a test's realism depends on fixture size, feed it a fixture, don't lean on
+  production data.
+- **A pixel-art / fixed-resolution image is not a full-bleed hero.** Styling the tiny 192px Turing
+  cover with a full-width mat left a stamp floating on a huge panel, misaligned with the
+  left-aligned prose column. Constrain such a cover to the reading measure (`max-w-2xl`) and let it
+  fill/upscale crisply with `image-rendering: pixelated`; never blur-upscale it. The per-post OG
+  card integer-scales the same asset on a dark mat for the same reason.
+- **MDX is build-time code execution, not inert content.** `next-mdx-remote` `compileMDX` compiles
+  and runs the `.mdx` - arbitrary JSX/`<script>`/raw HTML/`import`/expressions would execute. Safe
+  here because it only ever compiles our own tracked files and posts are constrained to prose + the
+  known `<PostImage>` component (enforced by review, documented in AGENTS.md). Any move to
+  untrusted/multi-author content would need sanitisation (rehype-sanitize) or an allowlist.
+- **A per-post metadata image route needs `generateStaticParams` too.** Without it the
+  `opengraph-image` route is dynamic and reads `content/` per request, working only because Next
+  file-tracing happened to copy the `.mdx` into the standalone output - fragile. Enumerate the
+  slugs so the card bakes at build, like the page.
+- **Canadian English is `-our`/`-re` but `-ize`.** colour/honour/centre, yet realize/organize/
+  recognize (not the British `-ise`). The blog carve-out's own examples had this backwards at first.
