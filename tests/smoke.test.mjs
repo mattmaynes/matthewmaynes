@@ -93,6 +93,8 @@ const routes = [
       "There is a version of me who took art class",
       "June 28, 2026",
       "turing-sunrise",
+      // Reading-time pill on each listing row (spec 0015).
+      "min read",
       // Discovery controls (spec 0012): the search input and the tag filter must
       // render. These are DURABLE - unlike the date-relative "New" badge, which is
       // covered by the deterministic isRecent/newPostSlug unit tests instead so the
