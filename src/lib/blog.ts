@@ -8,6 +8,8 @@ import {
   getAllPosts as getAllPostsJs,
   getPostBySlug as getPostBySlugJs,
   estimateReadingMinutes as estimateReadingMinutesJs,
+  isRecent as isRecentJs,
+  newPostSlug as newPostSlugJs,
 } from "./blog.js";
 
 export type Post = {
@@ -46,6 +48,29 @@ export function estimateReadingMinutes(content: string): number {
  */
 export function readingMinutes(post: Post): number {
   return estimateReadingMinutes(post.content);
+}
+
+/**
+ * Typed wrapper over the pure JS recency check. Named to match the core export
+ * so the `./blog.js` import resolves under TypeScript (which maps the `.js`
+ * specifier to this sibling `.ts` at type-check time), like the wrappers above.
+ * True when `date` (YYYY-MM-DD) is within `days` of the injected `nowMs`.
+ */
+export function isRecent(date: string, nowMs: number, days: number): boolean {
+  return isRecentJs(date, nowMs, days);
+}
+
+/**
+ * Typed wrapper over the pure JS "which post is New" rule: the slug of the
+ * newest post while it is still within the recency window, else null. Clock is
+ * injected via `nowMs` so the badge logic stays deterministic and testable.
+ */
+export function newPostSlug(
+  posts: Array<{ slug: string; date: string }>,
+  nowMs: number,
+  days = 30,
+): string | null {
+  return newPostSlugJs(posts, nowMs, days);
 }
 
 /**

@@ -12,7 +12,12 @@ import {
   getAllPosts,
   getPostBySlug,
   estimateReadingMinutes,
+  isRecent,
+  newPostSlug,
 } from "../src/lib/blog.js";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const at = (dateStr) => Date.parse(`${dateStr}T00:00:00Z`);
 
 const GOOD = `---
 title: A Sample Post
@@ -141,6 +146,54 @@ test("estimateReadingMinutes ignores JSX tags and fenced code as words", () => {
     "```js\n" + Array(500).fill("noise").join(" ") + "\n```",
   ].join("\n\n");
   assert.equal(estimateReadingMinutes(noisy), 2);
+});
+
+test("isRecent is inclusive at exactly N days and excludes just outside", () => {
+  const date = "2026-06-01";
+  const base = at(date);
+  // Exactly 30 days after publication: still recent (window is inclusive).
+  assert.equal(isRecent(date, base + 30 * DAY_MS, 30), true);
+  // Just inside the window (29 days): recent.
+  assert.equal(isRecent(date, base + 29 * DAY_MS, 30), true);
+  // Same day as publication: recent.
+  assert.equal(isRecent(date, base, 30), true);
+  // Just outside the window (30 days + 1 ms): no longer recent.
+  assert.equal(isRecent(date, base + 30 * DAY_MS + 1, 30), false);
+  // Far outside: not recent.
+  assert.equal(isRecent(date, base + 365 * DAY_MS, 30), false);
+});
+
+test("isRecent treats a future-dated post and a bad date as not recent", () => {
+  const date = "2026-06-01";
+  // now is before the post date (negative age): not recent.
+  assert.equal(isRecent(date, at(date) - DAY_MS, 30), false);
+  // Unparseable date: not recent (never throws).
+  assert.equal(isRecent("not-a-date", at("2026-06-01"), 30), false);
+});
+
+test("newPostSlug returns the newest post's slug only while it is recent", () => {
+  const posts = [
+    { slug: "old", date: "2025-01-01" },
+    { slug: "newest", date: "2026-06-30" },
+    { slug: "mid", date: "2026-01-15" },
+  ];
+  const snapshot = posts.map((p) => p.slug);
+
+  // Newest ("newest", 2026-06-30) is 10 days old -> badged.
+  assert.equal(newPostSlug(posts, at("2026-07-10"), 30), "newest");
+  // Newest is now 100 days old -> no badge (older than the window).
+  assert.equal(newPostSlug(posts, at("2026-10-08"), 30), null);
+  // Empty input -> null.
+  assert.equal(newPostSlug([], at("2026-07-10"), 30), null);
+  // Default window is 30 days when omitted (10 days old -> still New).
+  assert.equal(newPostSlug(posts, at("2026-07-10")), "newest");
+
+  // Purity: newPostSlug must not reorder or mutate its input.
+  assert.deepEqual(
+    posts.map((p) => p.slug),
+    snapshot,
+    "newPostSlug must not mutate its input array",
+  );
 });
 
 test("getPostBySlug returns one post with its raw MDX body, or null", () => {

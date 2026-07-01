@@ -373,3 +373,23 @@ Capture lessons as you go.
   {site.name}` renders as `By <!-- -->Matthew Maynes`, so a smoke test asserting the contiguous
   substring "By Matthew Maynes" fails. Render one interpolated node (`{`By ${site.name}`}`) when a
   marker must stay contiguous for a substring assertion.
+
+## Blog discovery: tag filter, search, New badge (spec 0012)
+
+- **`useSearchParams` forces a client-render bailout that empties a static page's SSG HTML.** The
+  first cut of the listing island read `?tag=` via `useSearchParams` and wrapped it in `<Suspense>`
+  (as the build tells you to). But on a statically-generated route that pairing makes Next render
+  only the Suspense *fallback* into the prerendered HTML and defer the whole subtree to client-only
+  rendering - so the post rows, dates, tag chips, and search input were absent from `blog.html`
+  (the smoke test caught it: "June 28, 2026" missing). That also defeats the spec's "content stays
+  statically generated" goal and SEO. Fix: don't use `useSearchParams` for URL-synced state on a
+  static page. Make the URL an external store read through `useSyncExternalStore` (server snapshot
+  `""` so SSR renders the unfiltered list) and update it with synchronous `history.replaceState` +
+  a manual listener poke (it doesn't emit `popstate`). This is the same `useSyncExternalStore`
+  pattern the theme toggle used to dodge the `set-state-in-effect` lint rule (learnings 0001) - a
+  naive `useEffect(() => setActiveTag(readUrl()))` restore trips that rule; the store does not.
+- **`Date.now()` in a Server Component's render body trips `react-hooks/purity`.** Computing the
+  "New" badge's reference time inline (`newPostSlug(posts, Date.now(), 30)`) fails lint ("Cannot
+  call impure function during render"). Hoist it to a module-scope `const NOW_MS = Date.now()`,
+  which is evaluated once when the route module loads - i.e. at build time for the static page,
+  which is exactly the intended "new as of this build/deploy" semantics.
