@@ -3,9 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui";
+import { ClockIcon } from "@/components/blog-icons";
 import { PostBody } from "@/components/post-body";
-import { getAllPosts, getPostBySlug, formatPostDate } from "@/lib/blog";
+import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
+import { images, site } from "@/lib/site";
 
 type Params = { slug: string };
 
@@ -51,14 +53,30 @@ export default async function BlogPostPage({
 
   const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
   const pixelated = cover?.pixelated === true;
+  const minutes = readingMinutes(post);
 
   return (
     <article className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
       <header>
         <h1 className="text-h1 font-bold text-text">{post.title}</h1>
-        <p className="mt-3 text-caption text-text-subtle">
-          <time dateTime={post.date}>{formatPostDate(post.date)}</time>
-        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <Image
+            src={images.headshot}
+            alt=""
+            sizes="32px"
+            className="h-8 w-8 rounded-full object-cover"
+          />
+          <span className="text-caption text-text-muted">{`By ${site.name}`}</span>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-caption text-text-subtle">
+            <time dateTime={post.date}>{formatPostDate(post.date)}</time>
+          </p>
+          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-caption text-text-muted">
+            <ClockIcon className="h-3.5 w-3.5" />
+            {minutes} min read
+          </span>
+        </div>
         {post.tags.length > 0 ? (
           <ul className="mt-4 flex flex-wrap gap-2">
             {post.tags.map((tag) => (
@@ -93,6 +111,10 @@ export default async function BlogPostPage({
       <div className="mt-10">
         <PostBody source={post.content} />
       </div>
+
+      <p className="mt-10 text-caption text-text-subtle italic">
+        The thoughts and views expressed here are my own.
+      </p>
 
       <div className="mt-12">
         <Button asChild variant="outline">

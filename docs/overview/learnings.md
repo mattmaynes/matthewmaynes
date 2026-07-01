@@ -297,3 +297,44 @@ Capture lessons as you go.
   slugs so the card bakes at build, like the page.
 - **Canadian English is `-our`/`-re` but `-ize`.** colour/honour/centre, yet realize/organize/
   recognize (not the British `-ise`). The blog carve-out's own examples had this backwards at first.
+
+## Blog reading experience (spec 0011)
+
+- **A JS-core / TS-wrapper pair that shares a basename (`blog.js` + `blog.ts`) resolves the
+  `./blog.js` import to the sibling `.ts` at type-check time.** So `blog.ts` importing a name from
+  `"./blog.js"` type-checks against `blog.ts`'s *own* exports, not the JS file - it works only
+  because each wrapper (`getAllPosts`, `getPostBySlug`) re-exports a same-named symbol. Adding
+  `estimateReadingMinutes` to `blog.js` type-errored ("no exported member") until `blog.ts` also
+  exported a same-named typed wrapper; at runtime Node still resolves to the real `blog.js`, which
+  is why `node --test` passed while `tsc`/`next build` failed. New pure-core exports need a matching
+  wrapper export in the `.ts` seam. (A same-basename `.js`/`.ts` scratch pair reproduces the error
+  and is easy to mistake for a syntax problem.)
+- **A larger body size is a semantic token, not a raw Tailwind step (review 0011).** The first cut
+  set the post body to raw `text-lg`, outside the Roots type scale everything else reads from
+  (`text-body`/`text-caption`/`text-h2`, each with paired line-height/weight). The fix was a
+  `text-body-lg` role - `@theme inline { --text-body-lg / --line-height / --font-weight }` mirroring
+  how Roots declares `--text-body` - so the body stays on a named token and dark/print/line-height
+  come free. On a token-first codebase, add a role, don't reach for a raw utility. Verify it emits:
+  grep the built CSS for `.text-body-lg{font-size:...}` - a mis-declared `@theme` yields a silent
+  no-op class.
+- **A global type token goes in the Tailwind entry (`globals.css`), not `theme-harbor.css` - the
+  latter is a resume-PDF hash input (review 0011).** `theme-harbor.css` is in the resume PDF's
+  `INPUT_FILES` (it carries the resume `@media print` block), so any edit to it fails
+  `resume:pdf:check` until the PDF is regenerated. `resume:pdf:check` runs in CI (`verify.yml`) but
+  is NOT in the local `npm test`/`lint`/`build` set, so a `theme-harbor.css` edit passes locally and
+  reddens only on the PR. A resume-irrelevant token (like `text-body-lg`) belongs in `globals.css`
+  (not a PDF input), avoiding needless artifact churn. When touching `theme-harbor.css` for real,
+  run `resume:pdf:check` locally and regenerate with `npm run resume:pdf` before pushing.
+- **A cosmetic change still needs a guard that can actually fail - again (cf. feedback 0005).** The
+  reading-time/byline/disclaimer smoke markers all stayed green when the body-size bump (the spec's
+  headline outcome) was reverted, because none touch typography. Caught in review as a major: the
+  smoke test now also asserts the `text-body-lg` class marker. Every visible acceptance criterion
+  needs its own marker; shared-chrome markers do not cover a separate visual change.
+- **Keep icon wrappers purpose-scoped (review 0011).** The reading-time `Clock` wrapper first landed
+  in `social-icons.tsx` (brand/social glyphs); it belongs in its own `blog-icons.tsx`, matching the
+  existing `nav-icons.tsx` split. Same `"use client"` boundary; the module's *purpose* is the axis
+  to split on, so blog-surface icons (Clock now, Search/Rss later) share one home.
+- **React SSR inserts an HTML comment between adjacent static text and an expression.** `By
+  {site.name}` renders as `By <!-- -->Matthew Maynes`, so a smoke test asserting the contiguous
+  substring "By Matthew Maynes" fails. Render one interpolated node (`{`By ${site.name}`}`) when a
+  marker must stay contiguous for a substring assertion.
