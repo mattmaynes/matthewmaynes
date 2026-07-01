@@ -312,11 +312,19 @@ Capture lessons as you go.
 - **A larger body size is a semantic token, not a raw Tailwind step (review 0011).** The first cut
   set the post body to raw `text-lg`, outside the Roots type scale everything else reads from
   (`text-body`/`text-caption`/`text-h2`, each with paired line-height/weight). The fix was a
-  `text-body-lg` Harbor role - `@theme inline { --text-body-lg / --line-height / --font-weight }` in
-  `theme-harbor.css`, mirroring how Roots declares `--text-body` - so the body stays on a named token
-  and dark/print/line-height come free. On a token-first codebase, add a role, don't reach for a raw
-  utility. Verify it emits: grep the built CSS for `.text-body-lg{font-size:...}` - a mis-declared
-  `@theme` yields a silent no-op class.
+  `text-body-lg` role - `@theme inline { --text-body-lg / --line-height / --font-weight }` mirroring
+  how Roots declares `--text-body` - so the body stays on a named token and dark/print/line-height
+  come free. On a token-first codebase, add a role, don't reach for a raw utility. Verify it emits:
+  grep the built CSS for `.text-body-lg{font-size:...}` - a mis-declared `@theme` yields a silent
+  no-op class.
+- **A global type token goes in the Tailwind entry (`globals.css`), not `theme-harbor.css` - the
+  latter is a resume-PDF hash input (review 0011).** `theme-harbor.css` is in the resume PDF's
+  `INPUT_FILES` (it carries the resume `@media print` block), so any edit to it fails
+  `resume:pdf:check` until the PDF is regenerated. `resume:pdf:check` runs in CI (`verify.yml`) but
+  is NOT in the local `npm test`/`lint`/`build` set, so a `theme-harbor.css` edit passes locally and
+  reddens only on the PR. A resume-irrelevant token (like `text-body-lg`) belongs in `globals.css`
+  (not a PDF input), avoiding needless artifact churn. When touching `theme-harbor.css` for real,
+  run `resume:pdf:check` locally and regenerate with `npm run resume:pdf` before pushing.
 - **A cosmetic change still needs a guard that can actually fail - again (cf. feedback 0005).** The
   reading-time/byline/disclaimer smoke markers all stayed green when the body-size bump (the spec's
   headline outcome) was reverted, because none touch typography. Caught in review as a major: the
