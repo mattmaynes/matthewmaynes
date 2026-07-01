@@ -493,3 +493,44 @@ test("robots, sitemap, and manifest are served", async () => {
     await assertIsImage(await fetchLocal(icon.src), `manifest icon ${icon.src}`);
   }
 });
+
+// PostHog analytics/replay/errors (spec 0014). Session replay must never record
+// what a visitor types into the contact form, so the form carries the
+// `ph-no-capture` marker (belt-and-suspenders atop the global maskAllInputs).
+// Assert it renders, so a dropped class can't silently start leaking messages.
+test("contact form masks its inputs from session replay", async () => {
+  const html = await (await fetch(BASE + "/contact")).text();
+  assert.match(
+    html,
+    /class="[^"]*\bph-no-capture\b/,
+    "expected the contact <form> to carry ph-no-capture for replay masking",
+  );
+});
+
+// The client PostHog SDK must ship the PUBLISHABLE project key (phc_) and never
+// a personal/management API key (phx_). Collect the app's own JS chunks from the
+// home page and grep them: this proves the analytics is wired (the key is
+// inlined at build) AND guards the public-repo rule structurally - a personal
+// key must never reach the browser bundle.
+test("client bundle ships only the publishable PostHog key", async () => {
+  const html = await (await fetch(BASE + "/")).text();
+  const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((s) => s.startsWith("/_next/"));
+  assert.ok(srcs.length > 0, "expected the home page to load Next JS chunks");
+
+  let bundle = "";
+  for (const src of srcs) {
+    bundle += await (await fetch(BASE + src)).text();
+  }
+
+  assert.ok(
+    bundle.includes("phc_"),
+    "expected the client bundle to inline the publishable phc_ PostHog key",
+  );
+  assert.doesNotMatch(
+    bundle,
+    /phx_[A-Za-z0-9]/,
+    "the client bundle must contain NO personal (phx_) PostHog API key",
+  );
+});

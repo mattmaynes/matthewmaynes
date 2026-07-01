@@ -3,6 +3,7 @@ import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ThemeScript } from "@/components/theme-script";
+import { PostHogProvider } from "@/components/posthog-provider";
 import { images, site, twitterHandle } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -80,9 +81,11 @@ export default function RootLayout({
             __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c"),
           }}
         />
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <PostHogProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </PostHogProvider>
       </body>
     </html>
   );

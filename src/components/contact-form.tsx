@@ -66,7 +66,14 @@ export function ContactForm() {
   const submitting = status.kind === "submitting";
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+    // `ph-no-capture` masks this whole subtree in PostHog session replay and
+    // keeps its inputs out of autocapture (spec 0014) - belt-and-suspenders atop
+    // the global maskAllInputs, so a message body can never enter a recording.
+    <form
+      onSubmit={handleSubmit}
+      className="ph-no-capture flex flex-col gap-5"
+      noValidate
+    >
       <FormField>
         <FormFieldLabel>Name</FormFieldLabel>
         <FormFieldControl>

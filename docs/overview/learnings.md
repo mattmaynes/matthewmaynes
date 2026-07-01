@@ -297,3 +297,17 @@ Capture lessons as you go.
   slugs so the card bakes at build, like the page.
 - **Canadian English is `-our`/`-re` but `-ize`.** colour/honour/centre, yet realize/organize/
   recognize (not the British `-ise`). The blog carve-out's own examples had this backwards at first.
+
+## PostHog analytics (spec 0014)
+
+- **`NEXT_PUBLIC_*` is inlined at build time, not read at runtime.** The "config-free image, env at
+  runtime" pattern that works for the contact secrets does NOT work for a client key: a
+  runtime-only env ships a keyless bundle from CI. Give a `NEXT_PUBLIC_*` value a committed default
+  (safe here - the `phc_` key is publishable), and keep the env var as a build-time override only.
+- **Next does not export the `Instrumentation` type from its top level.** `import type
+  { Instrumentation } from "next"` does not resolve (it lives under `next/dist/server/...`, an
+  unstable deep path). Type the `onRequestError` export inline with an explicit signature instead of
+  importing the namespace; Next validates the export shape structurally.
+- **posthog-node `captureException` is fire-and-forget (`void`).** In `onRequestError`, use
+  `captureExceptionImmediate` (returns a Promise) and `await` it so the event flushes before the
+  handler returns, rather than relying on background batching around a request that may be ending.
