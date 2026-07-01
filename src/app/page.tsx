@@ -68,7 +68,7 @@ export default function HomePage() {
             { href: "/resume", title: "Resume", note: "Career history and what I do." },
             { href: "/blog", title: "Blog", note: "Engineering, leadership, nature, life." },
             { href: "/about", title: "About", note: "The whole person, not just the resume." },
-            { href: "/contact", title: "Contact", note: "Say hello (form coming soon)." },
+            { href: "/contact", title: "Contact", note: "Say hello - a note lands in my inbox." },
           ].map((item) => (
             <Link key={item.href} href={item.href} className="group">
               <Card className="h-full transition-shadow group-hover:shadow-md">
