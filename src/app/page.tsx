@@ -64,13 +64,13 @@ export default function HomePage() {
 
       {/* Intro: who I am and what this site is, then quick links to each area. */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <p className="max-w-2xl text-h4 font-normal text-text">
+        <p className="text-h4 font-normal text-text">
           I&apos;m Matthew Maynes, an engineering director who never stopped
           building. I lead by pulling the right people and the right technology
           around a problem, then finding the solution that ships the most value
           the fastest - usually from somewhere close to the details.
         </p>
-        <p className="mt-4 max-w-2xl text-body text-text-muted">
+        <p className="mt-4 text-body text-text-muted">
           This site is where the professional and the personal meet: a resume of
           the work, the projects I am proud of, and a blog on engineering,
           leadership, nature, and the occasional detour. Have a look around, and
