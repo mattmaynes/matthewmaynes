@@ -19,9 +19,11 @@ pending) · 📋 planned.
 
 - Top bar: Home · About · Resume · Projects · Blog · Contact, built on Canopy's `TopNav` Branch
   (mobile: a left-aligned hamburger that opens Canopy's disclosure panel).
-- Footer: social links (LinkedIn, GitHub, X) as Canopy ghost-icon Buttons, copyright. Icons
-  come from `@rogueoak/icons` (the curated Canopy set), as does the header theme toggle's
-  sun/moon - the site keeps no hand-rolled icon SVGs (spec 0007).
+- Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as a column of
+  icon + path-label links - the resume "Links" treatment, where the label is the URL path minus
+  its leading slash (e.g. "mattmaynes") via the shared `socialPath` helper in `site.ts` - with the
+  copyright below. Icons come from `@rogueoak/icons` (the curated Canopy set), as does the header
+  theme toggle's sun/moon - the site keeps no hand-rolled icon SVGs (spec 0007).
 
 ## Global behaviors
 
