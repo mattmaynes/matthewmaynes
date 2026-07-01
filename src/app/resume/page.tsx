@@ -7,12 +7,14 @@ import { resume } from "@/lib/resume";
 
 export const metadata: Metadata = { title: "Resume" };
 
-/** Reduce a profile URL to just its path (e.g. "/in/matthew-maynes",
- *  "/mattmaynes") for a compact sidebar label; the link still points at the
- *  full URL. Falls back to the raw string if it will not parse. */
+/** Reduce a profile URL to just its path, without leading/trailing slashes
+ *  (e.g. "in/matthew-maynes", "mattmaynes"), for a compact sidebar label; the
+ *  link still points at the full URL. Falls back to the raw string if it will
+ *  not parse. */
 function showPath(url: string): string {
   try {
-    return new URL(url).pathname.replace(/\/$/, "") || "/";
+    const parsed = new URL(url);
+    return parsed.pathname.replace(/^\/+|\/+$/g, "") || parsed.hostname;
   } catch {
     return url;
   }
