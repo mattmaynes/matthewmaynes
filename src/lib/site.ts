@@ -40,6 +40,19 @@ export const site = {
 /** Twitter/X handle derived from the profile URL (e.g. "@mattmaynes"). */
 export const twitterHandle = `@${new URL(site.social.x).pathname.replace(/\//g, "")}`;
 
+/** Reduce a profile URL to just its path, without leading/trailing slashes
+ *  (e.g. "in/matthew-maynes", "mattmaynes"), for a compact link label; the link
+ *  still points at the full URL. Falls back to the hostname if the path is empty,
+ *  or the raw string if it will not parse. Shared by the resume and footer. */
+export function socialPath(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname.replace(/^\/+|\/+$/g, "") || parsed.hostname;
+  } catch {
+    return url;
+  }
+}
+
 export type NavItem = { href: string; label: string };
 
 export const nav: readonly NavItem[] = [

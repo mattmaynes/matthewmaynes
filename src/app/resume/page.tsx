@@ -2,23 +2,10 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui";
 import { GitHubIcon, LinkedInIcon } from "@/components/social-icons";
-import { site } from "@/lib/site";
+import { site, socialPath } from "@/lib/site";
 import { resume } from "@/lib/resume";
 
 export const metadata: Metadata = { title: "Resume" };
-
-/** Reduce a profile URL to just its path, without leading/trailing slashes
- *  (e.g. "in/matthew-maynes", "mattmaynes"), for a compact sidebar label; the
- *  link still points at the full URL. Falls back to the raw string if it will
- *  not parse. */
-function showPath(url: string): string {
-  try {
-    const parsed = new URL(url);
-    return parsed.pathname.replace(/^\/+|\/+$/g, "") || parsed.hostname;
-  } catch {
-    return url;
-  }
-}
 
 export default function ResumePage() {
   return (
@@ -61,7 +48,7 @@ export default function ResumePage() {
                   className="flex items-center gap-2 text-caption text-primary underline underline-offset-2"
                 >
                   <LinkedInIcon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-                  {showPath(site.social.linkedin)}
+                  {socialPath(site.social.linkedin)}
                 </a>
               </li>
               <li>
@@ -72,7 +59,7 @@ export default function ResumePage() {
                   className="flex items-center gap-2 text-caption text-primary underline underline-offset-2"
                 >
                   <GitHubIcon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-                  {showPath(site.social.github)}
+                  {socialPath(site.social.github)}
                 </a>
               </li>
             </ul>
