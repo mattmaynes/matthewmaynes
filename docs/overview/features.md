@@ -100,6 +100,13 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
   content is fully in the SSG HTML. The active tag is mirrored in the URL (`?tag=`) via
   `history.replaceState` and read back through a `useSyncExternalStore` seam, which keeps the page
   statically generated (unlike `useSearchParams`, which would force a client-render bailout).
+- RSS feed (spec 0013): a valid RSS 2.0 feed at `/blog/feed.xml`, statically generated
+  (`dynamic = "force-static"`) from `getAllPosts`, listing every post newest-first with an absolute
+  link, `pubDate`, and the escaped excerpt. An `Rss` subscribe button on `/blog` and `/blog/[slug]`
+  links to it, and both surfaces advertise it via `<link rel="alternate" type="application/rss+xml">`
+  autodiscovery. The feed XML is assembled by the pure, fs-free `src/lib/rss.js` builder
+  (`escapeXml`, `toRfc822`, `buildBlogFeed`), so escaping and RFC-822 dates are unit-tested; output is
+  deterministic (`lastBuildDate` = newest post's date, not `Date.now()`).
 
 ## Contact form
 
