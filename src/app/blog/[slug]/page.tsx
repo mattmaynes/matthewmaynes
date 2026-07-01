@@ -3,11 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui";
-import { ClockIcon } from "@/components/blog-icons";
+import { ClockIcon, RssIcon } from "@/components/blog-icons";
 import { PostBody } from "@/components/post-body";
 import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
-import { images, site } from "@/lib/site";
+import { images, site, blogFeedTitle } from "@/lib/site";
 
 type Params = { slug: string };
 
@@ -29,6 +29,15 @@ export async function generateMetadata({
   return {
     title: `${post.title} - Blog`,
     description: post.excerpt,
+    // Autodiscovery: advertise the blog feed from each post's <head> too, so a
+    // reader handed a post URL can still find the feed.
+    alternates: {
+      types: {
+        "application/rss+xml": [
+          { url: "/blog/feed.xml", title: blogFeedTitle },
+        ],
+      },
+    },
     openGraph: {
       type: "article",
       title: post.title,
@@ -116,9 +125,15 @@ export default async function BlogPostPage({
         The thoughts and views expressed here are my own.
       </p>
 
-      <div className="mt-12">
+      <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">
           <Link href="/blog">Back to blog</Link>
+        </Button>
+        <Button asChild variant="ghost" aria-label="Subscribe to the blog via RSS">
+          <a href="/blog/feed.xml">
+            <RssIcon className="h-5 w-5" />
+            RSS
+          </a>
         </Button>
       </div>
     </article>

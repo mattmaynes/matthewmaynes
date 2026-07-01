@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Search, type IconBaseProps } from "@rogueoak/icons";
+import { Clock, Rss, Search, type IconBaseProps } from "@rogueoak/icons";
 
 /**
  * Decorative glyphs for the blog surfaces (post meta, listing controls). Thin
@@ -21,4 +21,13 @@ export function ClockIcon(props: IconBaseProps) {
  */
 export function SearchIcon(props: IconBaseProps) {
   return <Search aria-hidden {...props} />;
+}
+
+/**
+ * Decorative feed glyph for the RSS subscribe buttons on the listing and post
+ * pages. `aria-hidden` because the button's own `aria-label` carries the
+ * accessible name.
+ */
+export function RssIcon(props: IconBaseProps) {
+  return <Rss aria-hidden {...props} />;
 }

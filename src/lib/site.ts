@@ -40,6 +40,11 @@ export const site = {
 /** Twitter/X handle derived from the profile URL (e.g. "@mattmaynes"). */
 export const twitterHandle = `@${new URL(site.social.x).pathname.replace(/\//g, "")}`;
 
+/** One title for the RSS feed, shared by the feed channel and the `<link
+ *  rel="alternate">` autodiscovery on the blog surfaces, so the three never
+ *  drift (spec 0013). */
+export const blogFeedTitle = `${site.name} - Blog`;
+
 /** Reduce a profile URL to just its path, without leading/trailing slashes
  *  (e.g. "in/matthew-maynes", "mattmaynes"), for a compact link label; the link
  *  still points at the full URL. Falls back to the hostname if the path is empty,

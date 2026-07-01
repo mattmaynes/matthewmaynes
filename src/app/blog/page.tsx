@@ -2,8 +2,22 @@ import type { Metadata } from "next";
 import { getAllPosts, newPostSlug } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 import { BlogList, type BlogListPost } from "@/components/blog-list";
+import { Button } from "@/components/ui";
+import { RssIcon } from "@/components/blog-icons";
+import { blogFeedTitle } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Blog" };
+export const metadata: Metadata = {
+  title: "Blog",
+  // Autodiscovery: emits <link rel="alternate" type="application/rss+xml"> so a
+  // feed reader handed the /blog URL finds the feed automatically.
+  alternates: {
+    types: {
+      "application/rss+xml": [
+        { url: "/blog/feed.xml", title: blogFeedTitle },
+      ],
+    },
+  },
+};
 
 // Reference "now" for the "New" badge, captured once when this route module is
 // loaded - i.e. at build time for this statically generated page, so "New" means
@@ -39,7 +53,15 @@ export default function BlogPage() {
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
-      <h1 className="text-h1 font-bold text-text">Blog</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-h1 font-bold text-text">Blog</h1>
+        <Button asChild variant="ghost" aria-label="Subscribe to the blog via RSS">
+          <a href="/blog/feed.xml">
+            <RssIcon className="h-5 w-5" />
+            RSS
+          </a>
+        </Button>
+      </div>
       <p className="mt-3 max-w-2xl text-body text-text-muted">
         Notes on engineering, leadership, nature, and life - written down as I go.
       </p>

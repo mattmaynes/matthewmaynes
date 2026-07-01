@@ -19,6 +19,11 @@
   (`app/blog/[slug]/opengraph-image.tsx`, `generateStaticParams`-baked) that composes the cover.
   Syntax highlighting (`rehype-pretty-code` + Shiki) is planned but **not yet wired** - it lands
   with the first code-bearing post.
+- **Blog RSS feed (spec 0013):** a second pure, fs-free seam `src/lib/rss.js` (like `blog-view.js`)
+  assembles the RSS 2.0 XML (`escapeXml`, `toRfc822`, `buildBlogFeed`), unit-tested without a server.
+  The route `app/blog/feed.xml/route.ts` is a thin `force-static` `GET` that feeds `getAllPosts` and
+  `site` into the builder and returns `application/rss+xml`. Absolute links are joined against
+  `site.url` (the sitemap pattern); output is deterministic (`lastBuildDate` = newest post's date).
 - **Content as data:** blog posts in `content/blog/*.mdx`, project data in `content/projects/`.
   No database, no runtime fetching.
 

@@ -100,6 +100,12 @@ const routes = [
       "Search posts",
       ">All<",
       "Reflection",
+      // RSS subscribe link (spec 0013) must render, pointing at the feed.
+      'href="/blog/feed.xml"',
+      // Feed autodiscovery <link rel="alternate" type="application/rss+xml">.
+      // Its href is absolute (metadataBase), so this mimetype marker - not the
+      // root-relative subscribe href above - is what guards the head link.
+      'application/rss+xml',
     ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
@@ -120,6 +126,9 @@ const routes = [
       "By Matthew Maynes",
       "views expressed here are my own",
       "text-body-lg",
+      // RSS subscribe link + feed autodiscovery on the post page (spec 0013).
+      'href="/blog/feed.xml"',
+      'application/rss+xml',
     ],
     absent: ["Placeholder"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
@@ -468,6 +477,25 @@ test("blog post exposes a per-post og:image that renders as image/png", async ()
     res.headers.get("content-type"),
     "image/png",
     "expected the post og:image to be image/png",
+  );
+});
+
+// The blog RSS feed (spec 0013) must be served as application/rss+xml and list
+// the seed post. Mirrors the og:image fetch/assert style: fetch the path, assert
+// the status + content type, and grep the body for a known marker.
+test("GET /blog/feed.xml serves an RSS feed listing the seed post", async () => {
+  const res = await fetch(BASE + "/blog/feed.xml");
+  assert.equal(res.status, 200, "expected 200 for /blog/feed.xml");
+  assert.match(
+    res.headers.get("content-type") ?? "",
+    /^application\/rss\+xml/,
+    "expected /blog/feed.xml to be served as application/rss+xml",
+  );
+  const xml = await res.text();
+  assert.match(xml, /<rss/, "expected an RSS 2.0 root element");
+  assert.ok(
+    xml.includes("I Picked the Wrong Elective"),
+    "expected the feed to list the seed post title",
   );
 });
 
