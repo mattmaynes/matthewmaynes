@@ -160,11 +160,16 @@ per-component code. Already implemented in `src/styles/`.
 - **Local runs never capture (spec 0016)**: a pure seam `src/lib/analytics-env.js` decides who
   captures. The client (`clientAnalyticsEnabled()`) requires `NODE_ENV === "production"` **and** a
   non-local `window.location.hostname`, so `next dev` (dev NODE_ENV) and any local production build
-  (localhost) init nothing and send nothing - only the deployed client on `matthewmaynes.com`
-  captures. The server (`onRequestError`) gates on `NODE_ENV === "production"` (the proxied `Host`
-  is unreliable, so a host check could wrongly silence real error tracking). The seam is
-  unit-tested (`tests/analytics.test.mjs`); a Playwright check confirms localhost issues zero
-  `/ingest` requests.
+  (localhost) init nothing and send nothing - only the deployed client on a real host captures. It
+  is a denylist ("not localhost") rather than an allowlist ("only matthewmaynes.com") on purpose: it
+  errs toward capturing, so `www.`, an apex/IP variant, or a future host are never wrongly dropped.
+  The server (`onRequestError`) gates on an **explicit deploy-only flag** `POSTHOG_SERVER_CAPTURE=1`
+  set only in `deploy/docker/compose.site.yml`, plus `NODE_ENV === "production"`. This is because
+  both the deployed *and* the local `docker-compose.yml` set `NODE_ENV=production`, and the proxied
+  `Host` is unreliable, so NODE_ENV/host alone would leak a local production build's server errors
+  to the live project (review of PR #53). The seam is unit-tested (`tests/analytics.test.mjs`), the
+  client wiring is smoke-guarded (bundle ships the gate), and a Playwright check confirms localhost
+  issues zero `/ingest` requests.
 
 ## Repo layout (evolving — not prescriptive)
 

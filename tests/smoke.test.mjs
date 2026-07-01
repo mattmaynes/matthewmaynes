@@ -583,6 +583,14 @@ test("client bundle ships only the publishable PostHog key", async () => {
     bundle.includes("maskAllInputs"),
     "expected the client bundle to enable session_recording.maskAllInputs",
   );
+  // The local-suppression gate (spec 0016) must be wired into the client bundle,
+  // not just unit-tested in isolation: the LOCAL_HOSTS list ships with it, so a
+  // dropped guard / inverted condition / tree-shake that re-enables local capture
+  // is caught here. `127.0.0.1` is a stable literal from that list.
+  assert.ok(
+    bundle.includes("127.0.0.1"),
+    "expected the client bundle to ship the local-host suppression gate (spec 0016)",
+  );
 });
 
 // Exhaustive personal-key guard (spec 0014): NO personal/management PostHog key

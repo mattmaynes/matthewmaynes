@@ -6,7 +6,7 @@
 // The goal: local runs must never pollute the live dashboard. Only the deployed
 // production host captures.
 
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"]);
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
 
 /**
  * True when `hostname` is a local address (any port stripped). Covers the plain
@@ -41,11 +41,15 @@ export function isClientAnalyticsEnabled({ nodeEnv, hostname }) {
 }
 
 /**
- * Server-side gate: rely on NODE_ENV only. Behind the Caddy reverse proxy the
- * upstream `Host` header is unreliable, so a host-based check could wrongly
- * silence real production error tracking; NODE_ENV is the dependable signal and
- * still suppresses `next dev`.
+ * Server-side gate: an EXPLICIT deploy-only flag, not NODE_ENV or the request
+ * host. NODE_ENV=production alone is set by a local production build too (the
+ * root docker-compose and `npm start`), so it would leak local server exceptions
+ * to the live project; the upstream `Host` behind the Caddy proxy is unreliable.
+ * `POSTHOG_SERVER_CAPTURE=1` is set ONLY in the deployed container
+ * (`deploy/docker/compose.site.yml`), so it is off for every local run - dev,
+ * `npm start`, the smoke test, and even a local `docker compose up`. NODE_ENV is
+ * kept as a belt-and-suspenders second condition.
  */
-export function isServerAnalyticsEnabled(nodeEnv) {
-  return nodeEnv === "production";
+export function isServerAnalyticsEnabled({ nodeEnv, captureFlag }) {
+  return nodeEnv === "production" && captureFlag === "1";
 }

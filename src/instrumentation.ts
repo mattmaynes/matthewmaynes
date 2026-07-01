@@ -1,3 +1,5 @@
+import { isServerAnalyticsEnabled } from "@/lib/analytics-env";
+
 /**
  * Server-side error tracking (spec 0014). Next calls `onRequestError` for any
  * uncaught error in a Server Component render, route handler, or middleware -
@@ -18,8 +20,14 @@ export function register() {
 
 export async function onRequestError(error: unknown) {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { isServerAnalyticsEnabled } = await import("@/lib/analytics-env");
-  if (!isServerAnalyticsEnabled(process.env.NODE_ENV)) return;
+  if (
+    !isServerAnalyticsEnabled({
+      nodeEnv: process.env.NODE_ENV,
+      captureFlag: process.env.POSTHOG_SERVER_CAPTURE,
+    })
+  ) {
+    return;
+  }
   // The error hook must never throw (a slow/unreachable ingest would otherwise
   // reject out of it as an unhandled rejection), so swallow any capture failure.
   try {
