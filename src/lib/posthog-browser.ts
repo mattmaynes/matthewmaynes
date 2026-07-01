@@ -1,5 +1,19 @@
 import posthog from "posthog-js";
 import { analytics } from "@/lib/analytics";
+import { isClientAnalyticsEnabled } from "@/lib/analytics-env";
+
+/**
+ * Whether PostHog should capture in this browser (spec 0016): only a production
+ * build served from the real (non-local) host. Suppresses `next dev` and any
+ * local production build, so local runs never pollute the live dashboard.
+ */
+export function clientAnalyticsEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  return isClientAnalyticsEnabled({
+    nodeEnv: process.env.NODE_ENV,
+    hostname: window.location.hostname,
+  });
+}
 
 /**
  * Idempotent browser init for PostHog (spec 0014). Called at MODULE scope by the
@@ -9,14 +23,14 @@ import { analytics } from "@/lib/analytics";
  * early-returns when not loaded and does not buffer) - the landing pageview was
  * lost every session (engineer/analytics review of PR #47).
  *
- * Safe to call from anywhere, including `global-error.tsx`, which renders outside
- * the provider tree: the `typeof window` guard makes it a no-op during SSR, and
- * the `started` latch means repeated calls only init once.
+ * A no-op when analytics is disabled (local runs, spec 0016) or during SSR - so
+ * locally the SDK never loads, nothing is sent, and no capture warnings fire. The
+ * `started` latch means repeated calls only init once.
  */
 let started = false;
 
 export function initPostHogBrowser(): typeof posthog {
-  if (started || typeof window === "undefined") return posthog;
+  if (started || !clientAnalyticsEnabled()) return posthog;
   started = true;
   posthog.init(analytics.key, {
     api_host: analytics.host,
