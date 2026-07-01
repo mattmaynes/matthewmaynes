@@ -117,5 +117,5 @@ export async function PostBody({ source }: { source: string }): Promise<ReactNod
     components,
     options: { parseFrontmatter: false },
   });
-  return <div className="max-w-2xl">{content}</div>;
+  return <div>{content}</div>;
 }
