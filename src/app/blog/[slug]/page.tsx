@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui";
-import { ClockIcon, RssIcon } from "@/components/blog-icons";
+import { RssIcon } from "@/components/blog-icons";
 import { PostBody } from "@/components/post-body";
+import { ReadingTimePill } from "@/components/reading-time-pill";
 import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site, blogFeedTitle } from "@/lib/site";
@@ -81,10 +82,7 @@ export default async function BlogPostPage({
           <p className="text-caption text-text-subtle">
             <time dateTime={post.date}>{formatPostDate(post.date)}</time>
           </p>
-          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-3 py-1 text-caption text-text-muted">
-            <ClockIcon className="h-3.5 w-3.5" />
-            {minutes} min read
-          </span>
+          <ReadingTimePill minutes={minutes} />
         </div>
         {post.tags.length > 0 ? (
           <ul className="mt-4 flex flex-wrap gap-2">

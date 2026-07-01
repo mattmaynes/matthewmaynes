@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { getAllPosts, newPostSlug, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 import { BlogList, type BlogListPost } from "@/components/blog-list";
 import { Button } from "@/components/ui";
@@ -48,6 +48,7 @@ export default function BlogPage() {
       cover: cover ? { ...cover, alt: cover.alt } : undefined,
       pixelated: cover?.pixelated === true,
       isNew: post.slug === newSlug,
+      minutes: readingMinutes(post),
     };
   });
 

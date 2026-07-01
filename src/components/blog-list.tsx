@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { StaticImageData } from "next/image";
 import { SearchIcon } from "@/components/blog-icons";
+import { ReadingTimePill } from "@/components/reading-time-pill";
 import {
   formatPostDate,
   deriveTags,
@@ -28,6 +29,8 @@ export type BlogListPost = {
   cover?: Cover;
   pixelated: boolean;
   isNew: boolean;
+  /** Estimated reading time in whole minutes (server-computed, spec 0015). */
+  minutes: number;
 };
 
 // A tiny store over the URL's `?tag=` value, so the chips read the active filter
@@ -200,9 +203,12 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-1 text-caption text-text-subtle">
-                  <time dateTime={post.date}>{formatPostDate(post.date)}</time>
-                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-3">
+                  <p className="text-caption text-text-subtle">
+                    <time dateTime={post.date}>{formatPostDate(post.date)}</time>
+                  </p>
+                  <ReadingTimePill minutes={post.minutes} />
+                </div>
                 <p className="mt-3 text-body text-text-muted">{post.excerpt}</p>
                 {post.tags.length > 0 ? (
                   <ul className="mt-4 flex flex-wrap gap-2">
