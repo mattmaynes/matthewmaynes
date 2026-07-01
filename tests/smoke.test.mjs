@@ -59,7 +59,14 @@ function findServerJs(dir) {
 // server inlines the blurDataURL as a `data:image/...;base64,` value, so its
 // presence proves the no-flicker treatment is wired up (feedback 0005).
 const routes = [
-  { path: "/", title: "Matthew Maynes - Engineering Director", hasBlur: true },
+  {
+    path: "/",
+    title: "Matthew Maynes - Engineering Director",
+    hasBlur: true,
+    // Real intro copy shipped; the old walking-skeleton note must stay gone.
+    contains: ["never stopped building"],
+    absent: ["walking skeleton"],
+  },
   {
     path: "/about",
     title: "About - Matthew Maynes",

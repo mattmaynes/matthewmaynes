@@ -62,13 +62,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick links into the rest of the (still placeholder) site. */}
+      {/* Intro: who I am and what this site is, then quick links to each area. */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
-        <h2 className="text-h2 font-semibold text-text">Around the site</h2>
-        <p className="mt-2 max-w-2xl text-body text-text-muted">
-          This is the walking skeleton. The structure, theme, and images are real;
-          the words are placeholders until each section is written.
+        <p className="max-w-2xl text-h4 font-normal text-text">
+          I&apos;m Matthew Maynes, an engineering director who never stopped
+          building. I lead by pulling the right people and the right technology
+          around a problem, then finding the solution that ships the most value
+          the fastest - usually from somewhere close to the details.
         </p>
+        <p className="mt-4 max-w-2xl text-body text-text-muted">
+          This site is where the professional and the personal meet: a resume of
+          the work, the projects I am proud of, and a blog on engineering,
+          leadership, nature, and the occasional detour. Have a look around, and
+          if something resonates, say hello.
+        </p>
+
+        <h2 className="mt-16 text-h2 font-semibold text-text">Around the site</h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Order mirrors the nav (About, Resume, Blog, Contact); Home is omitted. */}
           {[
