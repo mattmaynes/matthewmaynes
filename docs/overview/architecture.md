@@ -70,6 +70,14 @@ per-component code. Already implemented in `src/styles/`.
   instead of waiting on encodes. Best-effort: it only fails if the site is wholly unreachable.
   Browser-side caching needs no help - optimized images are content-hashed and returned
   `Cache-Control: public, max-age=315360000, immutable`, so repeat visits never re-fetch.
+- **GHCR image retention (spec 0010):** each deploy pushes an image (tagged `latest` + `sha-<commit>`)
+  plus, from the build's provenance attestation, two untagged child manifests - so the package grows
+  by ~3 versions per deploy and would keep every build forever. `.github/workflows/cleanup-images.yml`
+  runs daily (`schedule`) and keeps only the **10 most recent tagged images** and the manifests they
+  reference, deleting older tagged images and orphaned untagged manifests. It uses the referrer-aware
+  `dataaxiom/ghcr-cleanup-action` (`keep-n-tagged: 10`, pinned to a commit SHA, `packages: write`
+  only), so an attestation child of a kept image is never orphaned and `latest` is always retained.
+  `workflow_dispatch` runs a safe dry-run by default.
 - **Deploy layout:** all deploy artifacts live under `deploy/docker/`, leaving room for a future
   `deploy/helm/` or `deploy/terraform/` beside it.
 

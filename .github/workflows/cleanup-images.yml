@@ -1,0 +1,52 @@
+name: Cleanup images
+
+# Prune old GHCR container image versions so the package does not accumulate the
+# full history of every build. Keeps the 10 most recent tagged images (plus every
+# manifest they reference - a provenance attestation child stays with its image),
+# and removes older tagged images and orphaned untagged manifests.
+# See docs/specs/0010-ghcr-image-retention.md.
+
+on:
+  schedule:
+    # Daily at 04:17 UTC (off-peak). The scheduled run is live (it deletes).
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview deletions without deleting"
+        type: boolean
+        default: true
+
+# Least privilege: deleting package versions needs packages: write; nothing else.
+permissions:
+  contents: read
+  packages: write
+
+# Never let two cleanups race on the same package.
+concurrency:
+  group: cleanup-images
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Prune old GHCR images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old image versions
+        # dataaxiom/ghcr-cleanup-action is referrer-aware: it retains the manifests
+        # referenced by kept tags, so an attestation child is never orphaned and a
+        # live image is never corrupted - unlike a raw version-count prune. Pinned
+        # to a commit SHA per the repo's supply-chain rule: a delete-capable action
+        # must not float on a mutable tag.
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
+        with:
+          package: matthewmaynes
+          keep-n-tagged: 10
+          delete-untagged: true
+          delete-partial-images: true
+          # Live on the daily schedule (inputs.dry_run is empty -> false); a manual
+          # run defaults to a safe preview. If a run ever fails on permissions for
+          # this user-namespace package, pass a PAT secret with delete:packages as
+          # `token` instead of the default GITHUB_TOKEN.
+          dry-run: ${{ inputs.dry_run || false }}
+          token: ${{ secrets.GITHUB_TOKEN }}
