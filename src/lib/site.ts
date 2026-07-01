@@ -17,7 +17,7 @@ import eagleSnapImg from "../../public/images/eagle-snap.png";
 export const site = {
   name: "Matthew Maynes",
   title: "Engineering Director",
-  tagline: "An endlessly curious problem solver who can't help but build things.",
+  tagline: "An endlessly curious problem solver who can't help but build things",
   location: "Ontario, Canada",
   // One shared description: the <meta>, Open Graph, Twitter card, and manifest all
   // read this so the link preview, search snippet, and install prompt never drift.
