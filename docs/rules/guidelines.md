@@ -26,3 +26,16 @@ time, so keep each rule a single, checkable line.
 4. Tag releases with a Semantic Versioning number and no `v` prefix.
    - Yes: `0.1.1`
    - No:  `v0.1.1`
+
+## Repo structure
+
+1. Every repo ships three files at its root: a `LICENSE`, a `README.md`, and a `CONTRIBUTING.md`.
+   A repo is not done without all three.
+2. Lay out the README in this order. Drop a section only when it truly does not apply:
+   - **Title image + tagline** - the logo and one line on what this is.
+   - **Badges** - build, version, license, what a reader checks at a glance.
+   - **Brief description** - a paragraph or two on what it does and why.
+   - **Quick start** - the shortest path from zero to running.
+   - **What's new** - the latest release and a line on what it adds.
+   - **Documentation** - links to deeper docs (optional, depending on the repo).
+   - **License** - the license, with a link to the full text.
