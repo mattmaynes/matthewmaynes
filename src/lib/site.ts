@@ -55,11 +55,14 @@ export function socialPath(url: string): string {
 
 export type NavItem = { href: string; label: string };
 
+// Projects is intentionally omitted while it is an in-progress stub: keeping it
+// out of `nav` also drops it from the header and the sitemap (both derive from
+// this list). The /projects route still exists and is reachable directly; re-add
+// the entry here to relist it everywhere once it ships.
 export const nav: readonly NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
   { href: "/resume", label: "Resume" },
-  { href: "/projects", label: "Projects" },
   { href: "/blog", label: "Blog" },
   { href: "/contact", label: "Contact" },
 ] as const;
