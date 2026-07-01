@@ -10,15 +10,17 @@ pending) · 📋 planned.
 | `/` | 🚧 | Home. Hero (name, title, tagline, nature photo), short blended bio, featured projects, latest posts, social links. |
 | `/about` | ✅ | The "whole person" story in first person: how Matthew works (problem solver, leader who still builds), a leadership belief, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
 | `/resume` | ✅ | Detailed professional resume rendered from structured data, with a **download PDF** button serving an in-sync, contact-free PDF. |
-| `/projects` | 🚧 | Card grid of notable work, sourced from data files. |
+| `/projects` | 🚧 | Card grid of notable work, sourced from data files. **Unlisted** while in progress: the route exists but is not linked from the nav, home page, or sitemap. |
 | `/blog` | 🚧 | Blog listing with previews (title, date, excerpt, tags) and tag filtering. |
 | `/blog/[slug]` | 🚧 | Individual post, authored as MDX with frontmatter. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 
 ## Navigation
 
-- Top bar: Home · About · Resume · Projects · Blog · Contact, built on Canopy's `TopNav` Branch
-  (mobile: a left-aligned hamburger that opens Canopy's disclosure panel).
+- Top bar: Home · About · Resume · Blog · Contact, built on Canopy's `TopNav` Branch
+  (mobile: a left-aligned hamburger that opens Canopy's disclosure panel). Projects is intentionally
+  omitted while it is an in-progress stub - the `/projects` route still exists and is reachable
+  directly, but it is not linked from the nav, the home page, or the sitemap until it ships.
 - Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as icon-only Canopy
   ghost-icon Buttons, plus the copyright. Icons come from `@rogueoak/icons` (the curated Canopy
   set), as does the header theme toggle's sun/moon - the site keeps no hand-rolled icon SVGs

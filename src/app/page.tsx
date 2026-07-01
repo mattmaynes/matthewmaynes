@@ -52,16 +52,6 @@ export default function HomePage() {
             <Button asChild variant="primary" size="lg">
               <Link href="/about">About me</Link>
             </Button>
-            {/* Outline variant is dark-text-on-light by design; recolor it for the
-                dark hero overlay so the label stays legible on the photo. */}
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="border-base-white text-base-white hover:bg-base-white/10 active:bg-base-white/20"
-            >
-              <Link href="/projects">See projects</Link>
-            </Button>
           </div>
         </div>
       </section>
@@ -76,7 +66,6 @@ export default function HomePage() {
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { href: "/resume", title: "Resume", note: "Career history and what I do." },
-            { href: "/projects", title: "Projects", note: "Things I have built and shipped." },
             { href: "/blog", title: "Blog", note: "Engineering, leadership, nature, life." },
             { href: "/about", title: "About", note: "The whole person, not just the resume." },
             { href: "/contact", title: "Contact", note: "Say hello (form coming soon)." },
