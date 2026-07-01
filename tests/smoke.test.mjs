@@ -411,14 +411,21 @@ test("robots, sitemap, and manifest are served", async () => {
     "expected robots.txt to reference the sitemap",
   );
 
-  // Every nav route should be listed (6 of them), not just one <loc>.
+  // Every nav route should be listed (5 of them), not just one <loc>. Projects is
+  // intentionally kept out of the nav while it is an in-progress stub, so it must
+  // not appear in the sitemap either (both derive from `nav`).
   const sitemap = await fetch(BASE + "/sitemap.xml");
   assert.equal(sitemap.status, 200, "expected /sitemap.xml to 200");
   const sitemapXml = await sitemap.text();
   const locs = sitemapXml.match(/<loc>/g) ?? [];
   assert.ok(
-    locs.length >= 6,
+    locs.length >= 5,
     `expected sitemap.xml to list all nav routes, saw ${locs.length}`,
+  );
+  assert.doesNotMatch(
+    sitemapXml,
+    /\/projects/,
+    "expected /projects to be excluded from the sitemap while it is unlisted",
   );
   assert.match(sitemapXml, /matthewmaynes\.com/, "expected canonical host URLs");
 
