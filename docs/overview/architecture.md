@@ -157,6 +157,14 @@ per-component code. Already implemented in `src/styles/`.
   asserts both the marker and that the client bundle ships only the publishable `phc_` key (no
   personal `phx_` key). No consent banner (cookieless, all visitors); the documented escalation, if
   strict EU compliance is ever needed, is to gate only replay behind an opt-in.
+- **Local runs never capture (spec 0016)**: a pure seam `src/lib/analytics-env.js` decides who
+  captures. The client (`clientAnalyticsEnabled()`) requires `NODE_ENV === "production"` **and** a
+  non-local `window.location.hostname`, so `next dev` (dev NODE_ENV) and any local production build
+  (localhost) init nothing and send nothing - only the deployed client on `matthewmaynes.com`
+  captures. The server (`onRequestError`) gates on `NODE_ENV === "production"` (the proxied `Host`
+  is unreliable, so a host check could wrongly silence real error tracking). The seam is
+  unit-tested (`tests/analytics.test.mjs`); a Playwright check confirms localhost issues zero
+  `/ingest` requests.
 
 ## Repo layout (evolving — not prescriptive)
 

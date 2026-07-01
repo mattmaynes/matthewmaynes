@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePostHog } from "posthog-js/react";
+import { clientAnalyticsEnabled } from "@/lib/posthog-browser";
 import {
   Button,
   FormField,
@@ -28,16 +29,21 @@ export function ContactForm() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const posthog = usePostHog();
 
+  // Track the site's core conversion as explicit, PII-FREE events (spec 0014):
+  // the form is `ph-no-capture`, so autocapture never sees the submit and the
+  // funnel would otherwise be invisible. We send no field values - only the
+  // outcome - so no name/email/message ever reaches PostHog. Gated so local runs
+  // stay off the live dashboard (spec 0016).
+  const track = (event: string, properties?: Record<string, unknown>) => {
+    if (clientAnalyticsEnabled()) posthog?.capture(event, properties);
+  };
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
     setStatus({ kind: "submitting" });
-    // Track the site's core conversion as explicit, PII-FREE events (spec 0014):
-    // the form is `ph-no-capture`, so autocapture never sees the submit and the
-    // funnel would otherwise be invisible. We send no field values - only the
-    // outcome - so no name/email/message ever reaches PostHog.
-    posthog?.capture("contact_form_submitted");
+    track("contact_form_submitted");
     try {
       const res = await fetch("/v1/contact", {
         method: "POST",
@@ -53,7 +59,7 @@ export function ContactForm() {
       if (res.ok && json?.ok) {
         form.reset();
         setStatus({ kind: "success" });
-        posthog?.capture("contact_form_succeeded");
+        track("contact_form_succeeded");
       } else {
         setStatus({
           kind: "error",
@@ -62,14 +68,14 @@ export function ContactForm() {
               ? json.error
               : "Something went wrong. Please try again.",
         });
-        posthog?.capture("contact_form_failed", { reason: `http_${res.status}` });
+        track("contact_form_failed", { reason: `http_${res.status}` });
       }
     } catch {
       setStatus({
         kind: "error",
         message: "Could not reach the server. Please try again.",
       });
-      posthog?.capture("contact_form_failed", { reason: "network" });
+      track("contact_form_failed", { reason: "network" });
     }
   }
 
