@@ -69,9 +69,30 @@ per-component code. Already implemented in `src/styles/`.
 ## Configuration & secrets
 
 - The repo is **public**. No secrets, PII, or real contact details in tracked files or history.
-- Env vars: `NODE_ENV`, `SITE_URL` (`https://matthewmaynes.com`), and — for the contact form — a
-  mail provider/SMTP credential and the destination address. All provided at runtime via the
-  environment, never committed. `.env*` stays git-ignored.
+- Env vars: `NODE_ENV`, `SITE_URL` (`https://matthewmaynes.com`), and — for the contact form
+  (spec 0008) — `RESEND_API_KEY`, `CONTACT_TO_EMAIL` (the private destination), and
+  `CONTACT_FROM_EMAIL` (verified-domain sender). All server-only (never `NEXT_PUBLIC_`), provided at
+  runtime, never committed. `.env*` stays git-ignored; locally they live in `.env.local`.
+- **Contact secrets on the host:** `deploy/docker/compose.site.yml` reads them via
+  `env_file: [.env.site]` (`required: false`). The operator creates `deploy/docker/.env.site` once
+  (`chmod 600`); it is git-ignored and untracked, so the deploy's `git reset --hard` (no `git clean`)
+  leaves it in place across deploys. No new GitHub Actions secret is needed — the image is
+  config-free and reads env at runtime.
+
+## Contact endpoint (spec 0008)
+
+- **Versioned route handler, `POST /v1/contact`** (`src/app/v1/contact/route.ts`) - a thin HTTP
+  shell over the pure `src/lib/contact.js` (validation, honeypot, same-origin, rate limiter, Resend
+  payload + send). The logic lives in a plain-JS seam so it is unit-tested by `node --test` without
+  booting a server (same pattern as `src/lib/theme.js`); the route only maps request/env/outcomes to
+  status codes (400/403/429/500, honeypot -> silent 200) and reads the secrets. Sends via `fetch` to
+  Resend's REST API - no SDK dependency for one POST.
+- **Spam guards are layered, not a single gate:** an offset honeypot (`company`, silent-drop),
+  server-side validation with length caps, a best-effort in-process per-IP rate limit (single
+  container by design; resets on restart), and a scheme-agnostic same-origin check (Origin/Referer
+  host vs the request Host - forgeable, so it thins drive-by traffic rather than being a boundary).
+  The privacy rule is enforced structurally: the destination is env-only, so it cannot appear in the
+  client bundle or repo (a smoke/grep check guards against regressions).
 
 ## Repo layout (evolving — not prescriptive)
 

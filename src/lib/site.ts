@@ -32,6 +32,8 @@ export const site = {
     linkedin: "https://www.linkedin.com/in/matthew-maynes/",
     github: "https://github.com/mattmaynes",
     x: "https://x.com/mattmaynes",
+    facebook: "https://www.facebook.com/mew.maynes",
+    instagram: "https://www.instagram.com/matthew.maynes/",
   },
 } as const;
 

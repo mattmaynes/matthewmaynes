@@ -75,7 +75,15 @@ const routes = [
   { path: "/projects", title: "Projects - Matthew Maynes" },
   { path: "/blog", title: "Blog - Matthew Maynes" },
   { path: "/blog/hello-world", title: "hello-world - Blog - Matthew Maynes" },
-  { path: "/contact", title: "Contact - Matthew Maynes" },
+  {
+    path: "/contact",
+    title: "Contact - Matthew Maynes",
+    // Assert form-unique copy (the textarea placeholder) AND the social-row
+    // heading, so a dropped/broken <ContactForm/> fails even though the social
+    // row still renders (learnings 0001: assert what the unit uniquely produces).
+    contains: ["Say hello", "Find me elsewhere"],
+    absent: ["Placeholder", "coming soon", "does not send anything yet"],
+  },
 ];
 
 let server;
@@ -121,6 +129,12 @@ before(async () => {
       NODE_ENV: "production",
       HOSTNAME: "127.0.0.1",
       PORT,
+      // Force the contact creds empty so the /v1/contact tests below always
+      // fail closed (500) at the config check and NEVER send a real email, even
+      // if the developer has real values in their shell / .env.local.
+      RESEND_API_KEY: "",
+      CONTACT_TO_EMAIL: "",
+      CONTACT_FROM_EMAIL: "",
     },
   });
   await waitForReady();
@@ -226,6 +240,108 @@ for (const route of routes) {
     }
   });
 }
+
+// Contact endpoint guards (spec 0008). We exercise every path that does NOT send
+// email - cross-origin, honeypot, invalid body, wrong method - so the suite needs
+// no Resend key and never sends a real message. The happy path (which would send)
+// is unit-tested in tests/contact.test.mjs with an injected fetch.
+test("POST /v1/contact rejects a cross-origin request (403)", async () => {
+  const res = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "https://evil.example" },
+    body: JSON.stringify({ name: "A", email: "a@b.co", message: "hi" }),
+  });
+  assert.equal(res.status, 403, "expected 403 for a cross-origin POST");
+});
+
+test("POST /v1/contact silently drops a honeypot hit (200, no send)", async () => {
+  const res = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+    body: JSON.stringify({
+      name: "A",
+      email: "a@b.co",
+      message: "hi",
+      company: "i am a bot",
+    }),
+  });
+  assert.equal(res.status, 200, "expected 200 for a honeypot hit");
+  assert.equal((await res.json()).ok, true, "expected { ok: true } (silent drop)");
+});
+
+test("POST /v1/contact rejects an invalid body (400)", async () => {
+  const res = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+    body: JSON.stringify({ name: "", email: "nope", message: "" }),
+  });
+  assert.equal(res.status, 400, "expected 400 for an invalid submission");
+});
+
+test("GET /v1/contact is not allowed (405)", async () => {
+  const res = await fetch(BASE + "/v1/contact", { method: "GET" });
+  assert.equal(res.status, 405, "expected 405 for a non-POST method");
+});
+
+test("POST /v1/contact rate-limits a burst from one IP (429)", async () => {
+  const headers = {
+    "content-type": "application/json",
+    origin: BASE,
+    "x-forwarded-for": "203.0.113.7", // isolate this test's limiter key
+  };
+  const body = JSON.stringify({
+    name: "Ada",
+    email: "ada@example.com",
+    message: "hello there",
+  });
+  let last;
+  // Limit is 5 per window; the 6th valid submission from one IP is blocked. The
+  // earlier ones return 500 (creds forced empty in the before hook), so no email
+  // is ever sent while exercising the limiter.
+  for (let i = 0; i < 6; i++) {
+    last = await fetch(BASE + "/v1/contact", { method: "POST", headers, body });
+  }
+  assert.equal(last.status, 429, "expected the 6th rapid submission to be rate-limited");
+});
+
+test("POST /v1/contact fails closed (500) when unconfigured, without leaking config", async () => {
+  const res = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: BASE,
+      "x-forwarded-for": "203.0.113.8", // distinct key so the 429 test can't taint this
+    },
+    body: JSON.stringify({
+      name: "Ada",
+      email: "ada@example.com",
+      message: "hello there",
+    }),
+  });
+  assert.equal(res.status, 500, "expected 500 when the RESEND creds are unset");
+  const json = await res.json();
+  assert.equal(json.ok, false);
+  assert.doesNotMatch(
+    JSON.stringify(json),
+    /RESEND|CONTACT_TO|api[_-]?key/i,
+    "the error response must not name the missing config",
+  );
+});
+
+// Privacy regression guard (spec 0008's hard constraint): the destination address
+// must never render into the page. Tolerate the form's example placeholder; flag
+// any other email-shaped string, without hard-coding the private address here.
+test("GET /contact exposes no contact email beyond the example placeholder", async () => {
+  const html = await (await fetch(BASE + "/contact")).text();
+  const emails = html.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) ?? [];
+  const unexpected = emails.filter((e) => e.toLowerCase() !== "you@example.com");
+  assert.deepEqual(
+    unexpected,
+    [],
+    `/contact must leak no real email; found: ${unexpected.join(", ")}`,
+  );
+  assert.ok(!/@gmail\.com/i.test(html), "no gmail address in /contact HTML");
+});
 
 // A share-card/icon URL may be absolute against metadataBase (the production
 // host) or root-relative; either way, fetch only its path/query on the local

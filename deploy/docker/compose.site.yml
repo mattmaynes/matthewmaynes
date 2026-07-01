@@ -15,6 +15,14 @@ services:
     environment:
       NODE_ENV: production
       SITE_URL: https://matthewmaynes.com
+    env_file:
+      # Contact-form secrets (spec 0008): RESEND_API_KEY, CONTACT_TO_EMAIL,
+      # CONTACT_FROM_EMAIL. Created once on the host at deploy/docker/.env.site
+      # (git-ignored via the .env* rule, chmod 600); untracked, so it survives the
+      # deploy's `git reset --hard` (there is no `git clean`). required:false so a
+      # missing file never fails the deploy - the route just fails closed (500).
+      - path: .env.site
+        required: false
     networks:
       - edge
 

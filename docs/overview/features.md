@@ -13,7 +13,7 @@ pending) · 📋 planned.
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. |
 | `/blog` | 🚧 | Blog listing with previews (title, date, excerpt, tags) and tag filtering. |
 | `/blog/[slug]` | 🚧 | Individual post, authored as MDX with frontmatter. |
-| `/contact` | 🚧 | Social links (LinkedIn, GitHub) **and a contact form** that sends email server-side. No email/phone shown. |
+| `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a row of icon-only social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 
 ## Navigation
 
@@ -78,6 +78,13 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 
 ## Contact form
 
-- Posts to a server-side handler that relays the message by email. The destination address lives
-  only in server env vars and is never sent to the browser. Needs spam protection (e.g. honeypot
-  / rate limit) before it goes live — tracked as a follow-up, not part of the v1 scaffold.
+- ✅ Live (spec 0008). The page leads with the form at full container width, then a single row of
+  icon-only social links (LinkedIn, X, Facebook, Instagram). Submitting `POST`s JSON to the
+  versioned route `/v1/contact`, which validates, applies spam guards, and relays the message by
+  email via Resend.
+- The destination address lives only in server env (`CONTACT_TO_EMAIL`, with `RESEND_API_KEY` and
+  `CONTACT_FROM_EMAIL`) and is never sent to the browser or committed. The visitor's address is the
+  reply-to, so a reply reaches them.
+- Spam protection ships with it (not deferred): a honeypot field, server-side validation + length
+  caps, a best-effort per-IP rate limit, and a same-origin check. A CAPTCHA/Turnstile is the next
+  follow-up if bots get through. See `architecture.md`.
