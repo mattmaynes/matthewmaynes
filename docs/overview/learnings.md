@@ -238,3 +238,35 @@ Capture lessons as you go.
   the sidebar icons changed the page but not the hash, so `npm run resume:pdf` reported "nothing
   to regenerate" and the committed PDF would have kept the old glyphs. Run
   `node scripts/generate-resume-pdf.mjs --force` when the resume *page* (not its data) changes.
+
+## Contact form (spec 0008, feedback 0009)
+
+- **A spec/plan/feedback doc is a tracked, public artifact - never put a secret or PII in one,
+  not even as an illustration.** The security persona caught the private destination Gmail
+  written verbatim into `docs/specs/0008-*.md` (twice) - the exact leak the feature exists to
+  prevent - and it had already been pushed to the public branch. The runtime code kept the
+  address in env correctly; the *prose* undid it. Refer to such values by their env var
+  (`CONTACT_TO_EMAIL`), never the literal. When a leak does reach a pushed branch, scrub +
+  rewrite history (amend + force-push) so no commit on the branch carries it, then re-grep;
+  note the orphaned pre-rewrite commit can linger in the host's reflog until GC (an email is not
+  a rotatable secret, so flag the residual exposure to the owner).
+- **Derive the client IP from the proxy's ACTUAL `X-Forwarded-For` behavior, not the generic
+  "client is the first entry" rule.** Our Caddy *appends* the real client IP as the **last** XFF
+  entry, so reading `[0]` let a bot forge a rotating prefix and walk straight past the per-IP
+  rate limit. Check the Caddyfile's forwarding before picking the index; take the last hop, or
+  configure `trusted_proxies`. Rate-limit keys must be values the client can't rotate.
+- **Guard/error paths are testable without the happy-path dependency - don't defer them as
+  "needs creds".** The 429, config-500, cross-origin-403, and honeypot-200 paths all return
+  before the send, so they need no Resend key. Spawn the smoke server with the creds forced
+  empty so even a keyed developer machine can't send a real email while exercising them, and give
+  each rate-limit test a distinct `X-Forwarded-For` so they don't taint each other's limiter key.
+- **Assert the unit under test, again (cf. learnings 0001/0003).** The `/contact` smoke first
+  asserted "Find me elsewhere" - the *social-row* heading - so a broken `<ContactForm/>` would
+  have passed. Anchor on form-unique copy (the textarea placeholder). The privacy criterion is
+  now an automated `/contact` assertion (flags any email but the example placeholder), mirroring
+  the `/resume` PII guard - a public-site PII rule belongs in a test, not human review.
+- **The contact core is a pure `.js` seam (`src/lib/contact.js`), like `theme.js`.** Validation,
+  honeypot, same-origin (host-compare, scheme-agnostic), the bounded in-memory rate limiter, and
+  the Resend payload/send live there so `node --test` covers them without a TS build; the
+  `POST /v1/contact` route handler is a thin shell that maps request/env/outcome to status codes.
+  Send is a plain `fetch` (timeout-bounded) to Resend's REST API - no SDK dependency for one POST.

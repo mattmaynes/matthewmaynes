@@ -1,6 +1,13 @@
 "use client";
 
-import { Github, Linkedin, X, type IconBaseProps } from "@rogueoak/icons";
+import {
+  Facebook,
+  Github,
+  Instagram,
+  Linkedin,
+  X,
+  type IconBaseProps,
+} from "@rogueoak/icons";
 
 /**
  * Brand glyphs for the social profiles, shared by the footer and the resume
@@ -25,4 +32,12 @@ export function GitHubIcon(props: IconBaseProps) {
 
 export function XIcon(props: IconBaseProps) {
   return <X aria-hidden {...props} />;
+}
+
+export function FacebookIcon(props: IconBaseProps) {
+  return <Facebook aria-hidden {...props} />;
+}
+
+export function InstagramIcon(props: IconBaseProps) {
+  return <Instagram aria-hidden {...props} />;
 }
