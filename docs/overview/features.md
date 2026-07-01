@@ -19,7 +19,9 @@ pending) · 📋 planned.
 
 - Top bar: Home · About · Resume · Projects · Blog · Contact, built on Canopy's `TopNav` Branch
   (mobile: a left-aligned hamburger that opens Canopy's disclosure panel).
-- Footer: social links (LinkedIn, GitHub, X) as Canopy ghost-icon Buttons, copyright.
+- Footer: social links (LinkedIn, GitHub, X) as Canopy ghost-icon Buttons, copyright. Icons
+  come from `@rogueoak/icons` (the curated Canopy set), as does the header theme toggle's
+  sun/moon - the site keeps no hand-rolled icon SVGs (spec 0007).
 
 ## Global behaviors
 
