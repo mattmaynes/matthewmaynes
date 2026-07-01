@@ -1,0 +1,136 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Button,
+  FormField,
+  FormFieldControl,
+  FormFieldLabel,
+  Input,
+  Textarea,
+} from "@/components/ui";
+
+/**
+ * The live contact form. A `"use client"` island (Canopy inputs cross the client
+ * boundary via `@/components/ui`, per overview/learnings) that posts JSON to
+ * `POST /v1/contact` and reflects submitting / success / error state. The
+ * destination address lives only in server env behind that route - nothing here
+ * knows it. A hidden honeypot field (`company`) catches naive bots.
+ */
+type Status =
+  | { kind: "idle" }
+  | { kind: "submitting" }
+  | { kind: "success" }
+  | { kind: "error"; message: string };
+
+export function ContactForm() {
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setStatus({ kind: "submitting" });
+    try {
+      const res = await fetch("/v1/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.get("name"),
+          email: data.get("email"),
+          message: data.get("message"),
+          company: data.get("company"), // honeypot
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json?.ok) {
+        form.reset();
+        setStatus({ kind: "success" });
+      } else {
+        setStatus({
+          kind: "error",
+          message:
+            typeof json?.error === "string"
+              ? json.error
+              : "Something went wrong. Please try again.",
+        });
+      }
+    } catch {
+      setStatus({
+        kind: "error",
+        message: "Could not reach the server. Please try again.",
+      });
+    }
+  }
+
+  const submitting = status.kind === "submitting";
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+      <FormField>
+        <FormFieldLabel>Name</FormFieldLabel>
+        <FormFieldControl>
+          <Input
+            name="name"
+            placeholder="Your name"
+            autoComplete="name"
+            required
+            maxLength={100}
+          />
+        </FormFieldControl>
+      </FormField>
+
+      <FormField>
+        <FormFieldLabel>Email</FormFieldLabel>
+        <FormFieldControl>
+          <Input
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+            maxLength={200}
+          />
+        </FormFieldControl>
+      </FormField>
+
+      <FormField>
+        <FormFieldLabel>Message</FormFieldLabel>
+        <FormFieldControl>
+          <Textarea
+            name="message"
+            rows={6}
+            placeholder="Say hello..."
+            required
+            maxLength={5000}
+          />
+        </FormFieldControl>
+      </FormField>
+
+      {/* Honeypot: hidden from users and assistive tech; a naive bot that fills
+          every input trips it and the server drops the message silently. */}
+      <div className="hidden" aria-hidden>
+        <label>
+          Company
+          <input type="text" name="company" tabIndex={-1} autoComplete="off" />
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <Button type="submit" disabled={submitting} className="w-fit">
+          {submitting ? "Sending..." : "Send"}
+        </Button>
+        {status.kind === "success" && (
+          <p role="status" className="text-body text-success">
+            Thanks - your message is on its way.
+          </p>
+        )}
+        {status.kind === "error" && (
+          <p role="alert" className="text-body text-danger">
+            {status.message}
+          </p>
+        )}
+      </div>
+    </form>
+  );
+}
