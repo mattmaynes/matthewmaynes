@@ -91,7 +91,7 @@ const routes = [
     contains: [
       "I Picked the Wrong Elective",
       "There is a version of me who took art class",
-      "June 30, 2026",
+      "June 28, 2026",
       "turing-sunrise",
     ],
     absent: ["Placeholder", "No posts yet"],
