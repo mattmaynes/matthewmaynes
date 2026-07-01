@@ -38,3 +38,7 @@ next-env.d.ts
 
 # local working context (not tracked)
 context/
+
+# local tooling scratch (not tracked)
+.playwright-mcp/
+.worktrees/
