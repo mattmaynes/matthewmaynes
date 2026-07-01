@@ -1,13 +1,41 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { getAllPosts, formatPostDate } from "@/lib/blog";
+import { getAllPosts, newPostSlug } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
+import { BlogList, type BlogListPost } from "@/components/blog-list";
 
 export const metadata: Metadata = { title: "Blog" };
 
+// Reference "now" for the "New" badge, captured once when this route module is
+// loaded - i.e. at build time for this statically generated page, so "New" means
+// "new as of this build/deploy" (plan 0012). Kept out of render so it stays a
+// pure component (react-hooks/purity forbids Date.now() during render).
+const NOW_MS = Date.now();
+
 export default function BlogPage() {
   const posts = getAllPosts();
+
+  // Which post carries the "New" badge, computed once on the server: the newest
+  // post while it is still within the 30-day recency window. Baked into the SSG
+  // HTML (no Date.now() on the client), so there is no hydration mismatch.
+  const newSlug = newPostSlug(posts, NOW_MS, 30);
+
+  // Resolve each cover on the SERVER and pass the static import (which carries
+  // its blurDataURL) plus the pixelated flag down, so next/image in the client
+  // island keeps placeholder="blur" / pixelated behaviour without importing
+  // blog-images.ts across the boundary (learnings 0005).
+  const listPosts: BlogListPost[] = posts.map((post) => {
+    const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
+    return {
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      date: post.date,
+      tags: post.tags,
+      cover: cover ? { ...cover, alt: cover.alt } : undefined,
+      pixelated: cover?.pixelated === true,
+      isNew: post.slug === newSlug,
+    };
+  });
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
@@ -16,65 +44,12 @@ export default function BlogPage() {
         Notes on engineering, leadership, nature, and life - written down as I go.
       </p>
 
-      {posts.length === 0 ? (
+      {listPosts.length === 0 ? (
         <div className="mt-10 rounded-lg border border-dashed border-border bg-surface p-8 text-center">
           <p className="text-body text-text-muted">No posts yet. Check back soon.</p>
         </div>
       ) : (
-        <ul className="mt-10 flex flex-col gap-10">
-          {posts.map((post) => {
-            const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
-            const pixelated = cover?.pixelated === true;
-            return (
-              <li
-                key={post.slug}
-                className="grid gap-5 border-b border-border pb-10 last:border-b-0 sm:grid-cols-[200px_1fr]"
-              >
-                {cover ? (
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="block overflow-hidden rounded-lg border border-border bg-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset"
-                  >
-                    <Image
-                      src={cover}
-                      alt={cover.alt}
-                      sizes="(max-width: 640px) 100vw, 200px"
-                      placeholder={pixelated ? "empty" : "blur"}
-                      className="aspect-[16/10] w-full object-contain p-3"
-                      style={pixelated ? { imageRendering: "pixelated" } : undefined}
-                    />
-                  </Link>
-                ) : null}
-                <div>
-                  <h2 className="text-h3 font-semibold">
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="rounded-sm text-text hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset"
-                    >
-                      {post.title}
-                    </Link>
-                  </h2>
-                  <p className="mt-1 text-caption text-text-subtle">
-                    <time dateTime={post.date}>{formatPostDate(post.date)}</time>
-                  </p>
-                  <p className="mt-3 text-body text-text-muted">{post.excerpt}</p>
-                  {post.tags.length > 0 ? (
-                    <ul className="mt-4 flex flex-wrap gap-2">
-                      {post.tags.map((tag) => (
-                        <li
-                          key={tag}
-                          className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-text-muted"
-                        >
-                          {tag}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <BlogList posts={listPosts} />
       )}
     </section>
   );

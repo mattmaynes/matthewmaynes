@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, type IconBaseProps } from "@rogueoak/icons";
+import { Clock, Search, type IconBaseProps } from "@rogueoak/icons";
 
 /**
  * Decorative glyphs for the blog surfaces (post meta, listing controls). Thin
@@ -13,4 +13,12 @@ import { Clock, type IconBaseProps } from "@rogueoak/icons";
  */
 export function ClockIcon(props: IconBaseProps) {
   return <Clock aria-hidden {...props} />;
+}
+
+/**
+ * Decorative magnifier for the listing's search input. `aria-hidden` because the
+ * input's own (visually-hidden) label carries the accessible name.
+ */
+export function SearchIcon(props: IconBaseProps) {
+  return <Search aria-hidden {...props} />;
 }

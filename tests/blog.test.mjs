@@ -12,7 +12,18 @@ import {
   getAllPosts,
   getPostBySlug,
   estimateReadingMinutes,
+  isRecent,
+  newPostSlug,
 } from "../src/lib/blog.js";
+import {
+  formatPostDate,
+  deriveTags,
+  resolveActiveTag,
+  filterPosts,
+} from "../src/lib/blog-view.js";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const at = (dateStr) => Date.parse(`${dateStr}T00:00:00Z`);
 
 const GOOD = `---
 title: A Sample Post
@@ -143,9 +154,140 @@ test("estimateReadingMinutes ignores JSX tags and fenced code as words", () => {
   assert.equal(estimateReadingMinutes(noisy), 2);
 });
 
+test("isRecent is inclusive at exactly N days and excludes just outside", () => {
+  const date = "2026-06-01";
+  const base = at(date);
+  // Exactly 30 days after publication: still recent (window is inclusive).
+  assert.equal(isRecent(date, base + 30 * DAY_MS, 30), true);
+  // Just inside the window (29 days): recent.
+  assert.equal(isRecent(date, base + 29 * DAY_MS, 30), true);
+  // Same day as publication: recent.
+  assert.equal(isRecent(date, base, 30), true);
+  // Just outside the window (30 days + 1 ms): no longer recent.
+  assert.equal(isRecent(date, base + 30 * DAY_MS + 1, 30), false);
+  // Far outside: not recent.
+  assert.equal(isRecent(date, base + 365 * DAY_MS, 30), false);
+});
+
+test("isRecent treats a future-dated post and a bad date as not recent", () => {
+  const date = "2026-06-01";
+  // now is before the post date (negative age): not recent.
+  assert.equal(isRecent(date, at(date) - DAY_MS, 30), false);
+  // Unparseable date: not recent (never throws).
+  assert.equal(isRecent("not-a-date", at("2026-06-01"), 30), false);
+});
+
+test("newPostSlug returns the newest post's slug only while it is recent", () => {
+  const posts = [
+    { slug: "old", date: "2025-01-01" },
+    { slug: "newest", date: "2026-06-30" },
+    { slug: "mid", date: "2026-01-15" },
+  ];
+  const snapshot = posts.map((p) => p.slug);
+
+  // Newest ("newest", 2026-06-30) is 10 days old -> badged.
+  assert.equal(newPostSlug(posts, at("2026-07-10"), 30), "newest");
+  // Newest is now 100 days old -> no badge (older than the window).
+  assert.equal(newPostSlug(posts, at("2026-10-08"), 30), null);
+  // Empty input -> null.
+  assert.equal(newPostSlug([], at("2026-07-10"), 30), null);
+  // Default window is 30 days when omitted (10 days old -> still New).
+  assert.equal(newPostSlug(posts, at("2026-07-10")), "newest");
+
+  // A future-dated post (scheduled/typo) must not hide the badge: the newest
+  // PUBLISHED post is badged instead of returning null.
+  const withFuture = [
+    { slug: "future", date: "2027-01-01" },
+    { slug: "published", date: "2026-06-30" },
+  ];
+  assert.equal(newPostSlug(withFuture, at("2026-07-10"), 30), "published");
+  // All posts future-dated -> nothing published yet -> null.
+  assert.equal(newPostSlug([{ slug: "future", date: "2027-01-01" }], at("2026-07-10"), 30), null);
+
+  // Purity: newPostSlug must not reorder or mutate its input.
+  assert.deepEqual(
+    posts.map((p) => p.slug),
+    snapshot,
+    "newPostSlug must not mutate its input array",
+  );
+});
+
 test("getPostBySlug returns one post with its raw MDX body, or null", () => {
   const post = getPostBySlug("i-picked-the-wrong-elective");
   assert.ok(post, "expected the seed post");
   assert.match(post.content, /accidentally designed a metaphor/);
   assert.equal(getPostBySlug("does-not-exist"), null);
+});
+
+// --- blog-view: pure, fs-free listing helpers (tag filter + search) ---------
+
+test("formatPostDate renders a UTC-parsed long date", () => {
+  assert.equal(formatPostDate("2026-06-28"), "June 28, 2026");
+  // Parsed as UTC midnight, so a negative-offset timezone never shifts the day.
+  assert.equal(formatPostDate("2026-01-01"), "January 1, 2026");
+});
+
+test("deriveTags is first-appearance order, case-insensitive, non-mutating", () => {
+  const posts = [
+    { tags: ["Life", "Reflection"] },
+    { tags: ["life", "Leadership"] },
+    { tags: ["Nature"] },
+  ];
+  const snapshot = posts.map((p) => [...p.tags]);
+  // "life" is a case-insensitive dup of "Life" -> first-seen casing kept, no dup.
+  assert.deepEqual(deriveTags(posts), [
+    "Life",
+    "Reflection",
+    "Leadership",
+    "Nature",
+  ]);
+  assert.deepEqual(deriveTags([]), []);
+  assert.deepEqual(
+    posts.map((p) => p.tags),
+    snapshot,
+    "deriveTags must not mutate its input",
+  );
+});
+
+test("resolveActiveTag maps ?tag= to a known tag case-insensitively, else null", () => {
+  const tags = ["Life", "Leadership"];
+  assert.equal(resolveActiveTag("leadership", tags), "Leadership"); // original casing
+  assert.equal(resolveActiveTag("Life", tags), "Life");
+  assert.equal(resolveActiveTag("", tags), null); // absent -> All
+  assert.equal(resolveActiveTag("nope", tags), null); // unknown -> All
+});
+
+test("filterPosts filters by tag and search, composed, non-mutating", () => {
+  const posts = [
+    { title: "Leading Teams", excerpt: "on management", tags: ["Leadership"] },
+    { title: "Planting Trees", excerpt: "five acres", tags: ["Nature", "Life"] },
+    { title: "Wrong Elective", excerpt: "a Reflection on choices", tags: ["Life"] },
+  ];
+  const snapshot = posts.map((p) => p.title);
+  const titles = (r) => r.map((p) => p.title);
+
+  // No filter -> everything.
+  assert.equal(filterPosts(posts, null, "").length, 3);
+  // Tag filter (case-insensitive tag match).
+  assert.deepEqual(titles(filterPosts(posts, "life", "")), [
+    "Planting Trees",
+    "Wrong Elective",
+  ]);
+  // Search over TITLE.
+  assert.deepEqual(titles(filterPosts(posts, null, "leading")), ["Leading Teams"]);
+  // Search over EXCERPT.
+  assert.deepEqual(titles(filterPosts(posts, null, "five acres")), ["Planting Trees"]);
+  // Search over TAGS (case-insensitive).
+  assert.deepEqual(titles(filterPosts(posts, null, "leadership")), ["Leading Teams"]);
+  // Composition: tag AND query must both match (intersection).
+  assert.deepEqual(titles(filterPosts(posts, "Life", "reflection")), ["Wrong Elective"]);
+  // No match -> empty array (drives the empty state).
+  assert.deepEqual(filterPosts(posts, "Life", "management"), []);
+  assert.deepEqual(filterPosts(posts, null, "zzz"), []);
+
+  assert.deepEqual(
+    posts.map((p) => p.title),
+    snapshot,
+    "filterPosts must not mutate its input",
+  );
 });
