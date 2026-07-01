@@ -218,3 +218,23 @@ Capture lessons as you go.
   1200px centering is intentionally dropped to stay Canopy-native. Accept the component's layout
   rather than fighting it; if a capped width is ever required, that is a Canopy change, not a local
   wrapper.
+
+## Icons from @rogueoak/icons (spec 0007)
+
+- **The site's icons now come from `@rogueoak/icons`, not hand-rolled SVGs.** The brand marks
+  (LinkedIn/GitHub/X) and the theme toggle's sun/moon are the curated Canopy set (Lucide UI
+  glyphs + Font Awesome 6 brands). All five were already in the published registry (0.2.0), so
+  no Canopy change/release was needed - the site just added the dependency.
+- **`@rogueoak/icons` needs a client boundary in a Server Component, same as Canopy.** Its
+  barrel (`export { Icon, IconProvider }`) evaluates `React.createContext` at module scope, so
+  importing it into a Server Component (footer, resume page) fails the RSC build with
+  `createContext is not a function` (learnings 0001, verbatim). Fix: `src/components/
+  social-icons.tsx` is a `"use client"` module that wraps the package icons and keeps its old
+  export names (`LinkedInIcon`/`GitHubIcon`/`XIcon`), so the footer and resume call sites - and
+  their `className` sizing - never changed. `theme-toggle.tsx` was already a client component,
+  so it imports `Sun`/`Moon` directly.
+- **A resume-page-only visual change needs `--force` to re-render the PDF.** The PDF freshness
+  hash covers `src/lib/resume.ts` + `src/lib/site.ts`, NOT `src/app/resume/page.tsx`. Swapping
+  the sidebar icons changed the page but not the hash, so `npm run resume:pdf` reported "nothing
+  to regenerate" and the committed PDF would have kept the old glyphs. Run
+  `node scripts/generate-resume-pdf.mjs --force` when the resume *page* (not its data) changes.
