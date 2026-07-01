@@ -105,6 +105,57 @@ export function estimateReadingMinutes(content) {
   return Math.max(1, Math.round(words.length / WORDS_PER_MINUTE));
 }
 
+/** Milliseconds in one day, for the recency window. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a post date is within `days` of a reference time. Pure and
+ * deterministic - the caller injects `nowMs` (never `Date.now()` inside), so the
+ * "New" badge logic is unit-testable with a fixed clock. `dateStr` is parsed as
+ * UTC midnight, exactly like `formatPostDate`, so a negative-offset timezone
+ * never shifts the boundary by a day. True when the post is published (not in the
+ * future) and no older than `days` days; the window is inclusive at exactly N days.
+ *
+ * @param {string} dateStr - a YYYY-MM-DD post date
+ * @param {number} nowMs - the reference time in epoch ms (injected)
+ * @param {number} days - the recency window, in days
+ * @returns {boolean}
+ */
+export function isRecent(dateStr, nowMs, days) {
+  const dateMs = Date.parse(`${dateStr}T00:00:00Z`);
+  if (Number.isNaN(dateMs)) return false;
+  const ageMs = nowMs - dateMs;
+  return ageMs >= 0 && ageMs <= days * DAY_MS;
+}
+
+/**
+ * The slug of the post that should carry the "New" badge, or null. It is the
+ * newest post (by date) but only while that post is still within the recency
+ * window (`isRecent`), so the badge is not permanent furniture. Pure and
+ * non-mutating (sorts a copy) and clock-injected via `nowMs`, so it is unit-
+ * testable against a multi-post fixture with a fixed clock.
+ *
+ * @template {{ slug: string, date: string }} T
+ * @param {T[]} posts
+ * @param {number} nowMs - the reference time in epoch ms (injected)
+ * @param {number} [days=30] - the recency window, in days
+ * @returns {string | null}
+ */
+export function newPostSlug(posts, nowMs, days = 30) {
+  if (!Array.isArray(posts) || posts.length === 0) return null;
+  // Ignore future-dated posts (a scheduled post or a `2027-` typo): otherwise
+  // the newest-by-date entry is future, `isRecent` rejects it (age < 0), and the
+  // badge would be suppressed on every post - including the genuinely-newest
+  // published one. Pick the newest post that is already published.
+  const published = posts.filter((p) => {
+    const ms = Date.parse(`${p.date}T00:00:00Z`);
+    return !Number.isNaN(ms) && ms <= nowMs;
+  });
+  if (published.length === 0) return null;
+  const newest = sortPostsNewestFirst(published)[0];
+  return isRecent(newest.date, nowMs, days) ? newest.slug : null;
+}
+
 /**
  * Slugify a string: lowercase, non-alphanumerics collapse to a single dash,
  * trim leading/trailing dashes. e.g. "I Picked the Wrong Elective" ->

@@ -11,7 +11,7 @@ pending) · 📋 planned.
 | `/about` | ✅ | The "whole person" story in first person: how Matthew works (problem solver, leader who still builds), a leadership belief, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
 | `/resume` | ✅ | Detailed professional resume rendered from structured data, with a **download PDF** button serving an in-sync, contact-free PDF. |
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. **Unlisted** while in progress: the route exists but is not linked from the nav, home page, or sitemap. |
-| `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, excerpt, and tag labels. Drop in a `.mdx` file to list a new post. (Tag *filtering* is a later spec.) |
+| `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, excerpt, and tag labels. Interactive discovery (spec 0012): tag-chip filters (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. |
 | `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 
@@ -92,7 +92,14 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 - Reading-experience chrome (spec 0011) lives on the post page: a reading-time estimate
   (`estimateReadingMinutes` in the pure `blog.js` core, ~200 wpm, floored at 1 minute, markup
   stripped so markdown/JSX is not counted), a byline + avatar, a personal-opinion disclaimer, and
-  the larger 18px body measure (the `text-body-lg` site type role). The listing page is unchanged.
+  the larger 18px body measure (the `text-body-lg` site type role).
+- Listing discovery (spec 0012): a `"use client"` island (`src/components/blog-list.tsx`) renders the
+  rows and owns tag-chip filtering, keyword search (title/excerpt/tags, case-insensitive), and the
+  "New" badge. The page stays a Server Component: it resolves covers and computes each post's `isNew`
+  flag server-side (newest post AND `isRecent(date, buildTime, 30)`, pure helpers in `blog.js`) so the
+  content is fully in the SSG HTML. The active tag is mirrored in the URL (`?tag=`) via
+  `history.replaceState` and read back through a `useSyncExternalStore` seam, which keeps the page
+  statically generated (unlike `useSearchParams`, which would force a client-render bailout).
 
 ## Contact form
 

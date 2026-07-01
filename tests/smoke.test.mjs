@@ -93,6 +93,13 @@ const routes = [
       "There is a version of me who took art class",
       "June 28, 2026",
       "turing-sunrise",
+      // Discovery controls (spec 0012): the search input and the tag filter must
+      // render. These are DURABLE - unlike the date-relative "New" badge, which is
+      // covered by the deterministic isRecent/newPostSlug unit tests instead so the
+      // smoke test does not become a time-bomb (the seed post is dated 2026-06-28).
+      "Search posts",
+      ">All<",
+      "Reflection",
     ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
