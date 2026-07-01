@@ -11,8 +11,8 @@ pending) · 📋 planned.
 | `/about` | ✅ | The "whole person" story in first person: how Matthew works (problem solver, leader who still builds), a leadership belief, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
 | `/resume` | ✅ | Detailed professional resume rendered from structured data, with a **download PDF** button serving an in-sync, contact-free PDF. |
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. **Unlisted** while in progress: the route exists but is not linked from the nav, home page, or sitemap. |
-| `/blog` | 🚧 | Blog listing with previews (title, date, excerpt, tags) and tag filtering. |
-| `/blog/[slug]` | 🚧 | Individual post, authored as MDX with frontmatter. |
+| `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, excerpt, and tag labels. Drop in a `.mdx` file to list a new post. (Tag *filtering* is a later spec.) |
+| `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title, date, tags), a cover image, the MDX body with Harbor prose styling and blur-placeholder inline images, and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 
 ## Navigation

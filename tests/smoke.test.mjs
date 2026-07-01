@@ -73,8 +73,27 @@ const routes = [
   { path: "/resume", title: "Resume - Matthew Maynes" },
   // No hasBlur: the projects page is a text-only "coming soon" stub now.
   { path: "/projects", title: "Projects - Matthew Maynes" },
-  { path: "/blog", title: "Blog - Matthew Maynes" },
-  { path: "/blog/hello-world", title: "hello-world - Blog - Matthew Maynes" },
+  {
+    path: "/blog",
+    title: "Blog - Matthew Maynes",
+    // The seed post must be listed by title AND excerpt, and the placeholder /
+    // empty-state copy must be gone (learnings 0003: tighten the guard in the
+    // same PR that ships real content).
+    contains: ["I Picked the Wrong Elective", "There is a version of me who took art class"],
+    absent: ["Placeholder", "No posts yet"],
+    // No hasBlur: the only image is the pixel-art cover, which is deliberately
+    // rendered un-blurred (image-rendering: pixelated), never blur-upscaled.
+  },
+  {
+    path: "/blog/i-picked-the-wrong-elective",
+    title: "I Picked the Wrong Elective - Blog - Matthew Maynes",
+    // A body-unique phrase proves the MDX body actually compiled and rendered.
+    contains: ["accidentally designed a metaphor"],
+    absent: ["Placeholder"],
+    // The in-body Zombie Horde image is a static-imported next/image with a blur
+    // placeholder, so its data-URL must appear (feedback 0005).
+    hasBlur: true,
+  },
   {
     path: "/contact",
     title: "Contact - Matthew Maynes",
@@ -399,6 +418,24 @@ test("home page exposes the sharing + SEO metadata", async () => {
     person.sameAs?.length,
     3,
     "expected sameAs to list the three social profiles",
+  );
+});
+
+// The blog post's per-post OG card must actually render (a wrong font/cover path
+// yields a blank card even on a green build - learnings 0004). Pull og:image from
+// the post's <head> and assert it resolves to a 200 image/png.
+test("blog post exposes a per-post og:image that renders as image/png", async () => {
+  const html = await (
+    await fetch(BASE + "/blog/i-picked-the-wrong-elective")
+  ).text();
+  const ogImage = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/);
+  assert.ok(ogImage, "expected the post to declare an og:image");
+  const res = await fetchLocal(ogImage[1]);
+  assert.equal(res.status, 200, "expected 200 for the post og:image");
+  assert.equal(
+    res.headers.get("content-type"),
+    "image/png",
+    "expected the post og:image to be image/png",
   );
 });
 
