@@ -17,7 +17,7 @@ const personal: { image: SiteImage; caption: string; position?: string }[] = [
 export default function AboutPage() {
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
-      <h1 className="text-h1 font-bold text-text">Hi, I&apos;m Matthew.</h1>
+      <h1 className="text-h1 font-bold text-text">Hi, I&apos;m Matthew</h1>
       <div className="mt-6 grid gap-10 lg:grid-cols-[260px_1fr]">
         <div>
           <Image
