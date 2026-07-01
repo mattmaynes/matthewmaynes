@@ -26,6 +26,13 @@ test("toRfc822 formats a YYYY-MM-DD date as UTC RFC-822 with the right weekday",
   assert.equal(toRfc822("2026-01-05"), "Mon, 05 Jan 2026 00:00:00 GMT");
 });
 
+test("toRfc822 throws on an unparseable date instead of emitting NaN", () => {
+  // A malformed frontmatter date must fail the build, not ship an invalid
+  // "NaN undefined NaN" pubDate that feed readers reject.
+  assert.throws(() => toRfc822("not-a-date"), /unparseable date/);
+  assert.throws(() => toRfc822("2026-13-40"), /unparseable date/);
+});
+
 test("buildBlogFeed emits a well-formed RSS 2.0 feed, one item per post, order preserved", () => {
   const posts = [
     { slug: "newest", title: "Newest Post", date: "2026-06-28", excerpt: "Newest." },

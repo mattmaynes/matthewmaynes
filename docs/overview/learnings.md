@@ -404,3 +404,24 @@ Capture lessons as you go.
   re-exports `formatPostDate` from it so server callers are unchanged (and the island's duplicate
   date formatter is gone). When a client island needs logic that also lives server-side, the shared
   home is a third fs-free module, not either fs-coupled side.
+
+## Blog RSS feed (spec 0013)
+
+- **Guard feed autodiscovery by its mimetype, not the feed href (review 0013).** The `/blog` smoke
+  test asserted the subscribe button via a root-relative `href="/blog/feed.xml"`, which does NOT
+  cover the `<link rel="alternate" type="application/rss+xml">` autodiscovery tag: `metadataBase`
+  renders that link's href ABSOLUTE (`https://.../blog/feed.xml`), so the root-relative marker never
+  matches it - deleting the `alternates` metadata stayed green. Assert `application/rss+xml` (the
+  mimetype, present only on the alternate link) to guard autodiscovery, and assert the subscribe
+  link on BOTH surfaces (listing and post), not just the listing.
+- **`toRfc822` (and any feed date) must fail loudly on a bad date.** An unparseable frontmatter date
+  produced `NaN undefined NaN ... GMT` - an invalid pubDate readers reject - instead of failing.
+  Throw on `Number.isNaN(d.getTime())`, like `blog.js`'s required-field check, so a typo breaks the
+  build rather than shipping a broken feed.
+- **`src/lib/site.ts` is a resume-PDF input: any export you add there forces a PDF regen (review
+  0013).** Hoisting the shared `blogFeedTitle` constant into `site.ts` (the right home for site-wide
+  config) tripped `resume:pdf:check` because `site.ts` is in the resume PDF's `INPUT_FILES` - even
+  though the constant never renders on the resume. Same shared-input coupling as `theme-harbor.css`
+  (learnings 0011), but `site.ts` is a legitimate resume input, so the fix is to regenerate
+  (`npm run resume:pdf`) and commit `public/resume.pdf` + `.hash`, not to relocate. Editing
+  `site.ts` always means a PDF regen in the same PR.

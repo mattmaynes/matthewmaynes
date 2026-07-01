@@ -102,6 +102,10 @@ const routes = [
       "Reflection",
       // RSS subscribe link (spec 0013) must render, pointing at the feed.
       'href="/blog/feed.xml"',
+      // Feed autodiscovery <link rel="alternate" type="application/rss+xml">.
+      // Its href is absolute (metadataBase), so this mimetype marker - not the
+      // root-relative subscribe href above - is what guards the head link.
+      'application/rss+xml',
     ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
@@ -122,6 +126,9 @@ const routes = [
       "By Matthew Maynes",
       "views expressed here are my own",
       "text-body-lg",
+      // RSS subscribe link + feed autodiscovery on the post page (spec 0013).
+      'href="/blog/feed.xml"',
+      'application/rss+xml',
     ],
     absent: ["Placeholder"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur

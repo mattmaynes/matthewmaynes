@@ -4,7 +4,7 @@ import { getBlogImage } from "@/lib/blog-images";
 import { BlogList, type BlogListPost } from "@/components/blog-list";
 import { Button } from "@/components/ui";
 import { RssIcon } from "@/components/blog-icons";
-import { site } from "@/lib/site";
+import { blogFeedTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   alternates: {
     types: {
       "application/rss+xml": [
-        { url: "/blog/feed.xml", title: `${site.name} - Blog` },
+        { url: "/blog/feed.xml", title: blogFeedTitle },
       ],
     },
   },

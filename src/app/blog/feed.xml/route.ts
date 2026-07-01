@@ -1,6 +1,6 @@
 import { getAllPosts } from "@/lib/blog";
 import { buildBlogFeed } from "@/lib/rss";
-import { site } from "@/lib/site";
+import { site, blogFeedTitle } from "@/lib/site";
 
 // Force static so the feed bakes at build like the rest of the site (no runtime
 // content reads) - getAllPosts parses the tracked content/blog/*.mdx at build.
@@ -15,7 +15,7 @@ export function GET() {
   const xml = buildBlogFeed({
     posts,
     siteUrl: site.url,
-    title: `${site.name} - Blog`,
+    title: blogFeedTitle,
     description: site.description,
   });
   return new Response(xml, {

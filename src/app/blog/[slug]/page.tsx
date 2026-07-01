@@ -7,7 +7,7 @@ import { ClockIcon, RssIcon } from "@/components/blog-icons";
 import { PostBody } from "@/components/post-body";
 import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
-import { images, site } from "@/lib/site";
+import { images, site, blogFeedTitle } from "@/lib/site";
 
 type Params = { slug: string };
 
@@ -34,7 +34,7 @@ export async function generateMetadata({
     alternates: {
       types: {
         "application/rss+xml": [
-          { url: "/blog/feed.xml", title: `${site.name} - Blog` },
+          { url: "/blog/feed.xml", title: blogFeedTitle },
         ],
       },
     },

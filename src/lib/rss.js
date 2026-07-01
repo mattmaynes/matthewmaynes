@@ -45,6 +45,12 @@ export function escapeXml(str) {
  */
 export function toRfc822(dateStr) {
   const d = new Date(`${dateStr}T00:00:00Z`);
+  // Fail loudly on a malformed date rather than emitting an invalid
+  // "NaN undefined NaN" pubDate that feed readers reject (a typo'd frontmatter
+  // date should break the build, like blog.js's required-field check).
+  if (Number.isNaN(d.getTime())) {
+    throw new Error(`toRfc822: unparseable date "${dateStr}"`);
+  }
   const day = DAYS[d.getUTCDay()];
   const date = String(d.getUTCDate()).padStart(2, "0");
   const month = MONTHS[d.getUTCMonth()];
