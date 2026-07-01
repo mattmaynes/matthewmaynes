@@ -309,6 +309,23 @@ Capture lessons as you go.
   is why `node --test` passed while `tsc`/`next build` failed. New pure-core exports need a matching
   wrapper export in the `.ts` seam. (A same-basename `.js`/`.ts` scratch pair reproduces the error
   and is easy to mistake for a syntax problem.)
+- **A larger body size is a semantic token, not a raw Tailwind step (review 0011).** The first cut
+  set the post body to raw `text-lg`, outside the Roots type scale everything else reads from
+  (`text-body`/`text-caption`/`text-h2`, each with paired line-height/weight). The fix was a
+  `text-body-lg` Harbor role - `@theme inline { --text-body-lg / --line-height / --font-weight }` in
+  `theme-harbor.css`, mirroring how Roots declares `--text-body` - so the body stays on a named token
+  and dark/print/line-height come free. On a token-first codebase, add a role, don't reach for a raw
+  utility. Verify it emits: grep the built CSS for `.text-body-lg{font-size:...}` - a mis-declared
+  `@theme` yields a silent no-op class.
+- **A cosmetic change still needs a guard that can actually fail - again (cf. feedback 0005).** The
+  reading-time/byline/disclaimer smoke markers all stayed green when the body-size bump (the spec's
+  headline outcome) was reverted, because none touch typography. Caught in review as a major: the
+  smoke test now also asserts the `text-body-lg` class marker. Every visible acceptance criterion
+  needs its own marker; shared-chrome markers do not cover a separate visual change.
+- **Keep icon wrappers purpose-scoped (review 0011).** The reading-time `Clock` wrapper first landed
+  in `social-icons.tsx` (brand/social glyphs); it belongs in its own `blog-icons.tsx`, matching the
+  existing `nav-icons.tsx` split. Same `"use client"` boundary; the module's *purpose* is the axis
+  to split on, so blog-surface icons (Clock now, Search/Rss later) share one home.
 - **React SSR inserts an HTML comment between adjacent static text and an expression.** `By
   {site.name}` renders as `By <!-- -->Matthew Maynes`, so a smoke test asserting the contiguous
   substring "By Matthew Maynes" fails. Render one interpolated node (`{`By ${site.name}`}`) when a

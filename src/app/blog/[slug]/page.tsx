@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui";
-import { ClockIcon } from "@/components/social-icons";
+import { ClockIcon } from "@/components/blog-icons";
 import { PostBody } from "@/components/post-body";
 import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
@@ -63,6 +63,7 @@ export default async function BlogPostPage({
           <Image
             src={images.headshot}
             alt=""
+            sizes="32px"
             className="h-8 w-8 rounded-full object-cover"
           />
           <span className="text-caption text-text-muted">{`By ${site.name}`}</span>

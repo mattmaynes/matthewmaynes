@@ -174,3 +174,16 @@
     print-color-adjust: exact;
   }
 }
+
+/* Type scale addition ------------------------------------------------------
+ * Roots ships body/body-sm but no larger body step. Long-form reading (the blog
+ * post body) wants a slightly larger measure, so Harbor adds a `text-body-lg`
+ * semantic role at the 1.125rem scale step with a relaxed line-height - keeping
+ * the post body on a named token like everything else, not a raw Tailwind size.
+ * Registered `inline` and paired with line-height/weight, mirroring how Roots
+ * declares `--text-body` in its preset. */
+@theme inline {
+  --text-body-lg: var(--text-lg);
+  --text-body-lg--line-height: var(--leading-relaxed);
+  --text-body-lg--font-weight: var(--font-weight-normal);
+}
