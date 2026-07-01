@@ -10,8 +10,15 @@
   with a site override in `src/styles/theme-harbor.css`. See `docs/design/brand-guide.md`.
 - **Fonts:** self-hosted via `@fontsource-variable/figtree` (UI/body) and
   `@fontsource-variable/geist-mono` (code), per Roots.
-- **Blog:** MDX files with frontmatter; static generation at build time. Syntax highlighting via
-  `rehype-pretty-code` + Shiki.
+- **Blog (spec 0009):** MDX files with frontmatter, statically generated at build. A pure JS seam
+  (`src/lib/blog.js`, unit-tested like `theme.js`/`contact.js`) hand-parses frontmatter (no
+  `gray-matter`) for the cheap listing; `next-mdx-remote/rsc` `compileMDX` renders the body in a
+  Server Component (`src/components/post-body.tsx`) over our own tracked files only. Post images are
+  static-imported through `src/lib/blog-images.ts` (mirrors the `site.ts` map: blur placeholders,
+  a `pixelated` flag for pixel art). Each post has a per-post satori OG card
+  (`app/blog/[slug]/opengraph-image.tsx`, `generateStaticParams`-baked) that composes the cover.
+  Syntax highlighting (`rehype-pretty-code` + Shiki) is planned but **not yet wired** - it lands
+  with the first code-bearing post.
 - **Content as data:** blog posts in `content/blog/*.mdx`, project data in `content/projects/`.
   No database, no runtime fetching.
 
