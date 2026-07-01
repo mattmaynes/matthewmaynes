@@ -48,8 +48,10 @@ pending) · 📋 planned.
   same-origin through `/ingest/*`, so tracker blockers and a future CSP need no third-party
   exception. No consent banner: analytics run for all visitors in cookieless mode. The contact
   form also fires explicit, PII-free conversion events (submitted/succeeded/failed) so the site's
-  one conversion stays measurable despite the replay mask. (Logs via OpenTelemetry are a separate
-  follow-up, spec 0015.)
+  one conversion stays measurable despite the replay mask. **Only the deployed production host
+  captures** (spec 0016): local runs (`next dev` or a local production build on localhost) init and
+  send nothing, so developer traffic never reaches the live dashboard. (Logs via OpenTelemetry are a
+  separate follow-up, a later spec.)
 
 ## Images
 

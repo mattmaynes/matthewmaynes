@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { ThemeScript } from "@/components/theme-script";
-import { initPostHogBrowser } from "@/lib/posthog-browser";
+import { clientAnalyticsEnabled, initPostHogBrowser } from "@/lib/posthog-browser";
 import "./globals.css";
 
 /**
@@ -21,7 +21,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    initPostHogBrowser().captureException(error);
+    if (clientAnalyticsEnabled()) initPostHogBrowser().captureException(error);
   }, [error]);
 
   return (

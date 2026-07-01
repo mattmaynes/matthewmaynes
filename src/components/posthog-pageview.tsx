@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { Suspense, useEffect } from "react";
+import { clientAnalyticsEnabled } from "@/lib/posthog-browser";
 
 /**
  * Fires a `$pageview` on every App Router navigation (spec 0014). The client
@@ -17,7 +18,7 @@ function PageViewTracker() {
   const posthog = usePostHog();
 
   useEffect(() => {
-    if (!pathname || !posthog) return;
+    if (!pathname || !posthog || !clientAnalyticsEnabled()) return;
     let url = window.origin + pathname;
     const query = searchParams?.toString();
     if (query) url += `?${query}`;

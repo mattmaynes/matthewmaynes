@@ -332,6 +332,14 @@ Capture lessons as you go.
   for the real token before using a `text-*`/`bg-*` utility. A page that renders its own `<html>`
   (like `global-error.tsx`) must also include `<ThemeScript>` or it ignores the visitor's theme.
   (feedback 0011)
+- **`NODE_ENV === "production"` is not a "deployed" signal.** A local production build (`npm start`,
+  the smoke test, Playwright) sets it too - and this repo's *local* `docker-compose.yml` sets
+  `NODE_ENV=production` as well - so gating server-side analytics on NODE_ENV leaked local-prod-build
+  server errors to the live project. To mean "only the real deployment", use an explicit deploy-only
+  env flag set solely in the deployed stack (`POSTHOG_SERVER_CAPTURE` in `compose.site.yml`), or on
+  the client the browser's real `window.location.hostname`. Prefer a capture denylist ("not
+  localhost") over an allowlist ("only the canonical host") so real traffic from `www.`/IP/new hosts
+  is never wrongly dropped - losing real data is worse than a rare stray local event. (feedback 0012)
 
 ## Blog reading experience (spec 0011)
 
