@@ -11,6 +11,7 @@
 import type { StaticImageData } from "next/image";
 import turingSunrise from "../../public/images/blog/turing-sunrise.png";
 import zombieHordeTitle from "../../public/images/blog/zombie-horde-title.png";
+import eagleSnap from "../../public/images/blog/eagle-snap.png";
 
 import type { SiteImage } from "./site";
 
@@ -26,6 +27,10 @@ export const blogImages = {
   "zombie-horde-title.png": {
     ...zombieHordeTitle,
     alt: "The chrome 'ZOMBIE HORDE' title graphic.",
+  },
+  "eagle-snap.png": {
+    ...eagleSnap,
+    alt: "Screenshots of the Eagle SNAP iPad app: a runway condition report form and its report-type menu.",
   },
 } satisfies Record<string, BlogImage>;
 

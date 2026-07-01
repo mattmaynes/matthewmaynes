@@ -173,14 +173,14 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
               {post.cover ? (
                 <Link
                   href={`/blog/${post.slug}`}
-                  className={`block overflow-hidden rounded-lg border border-border bg-slate-950 ${RING}`}
+                  className={`block self-center overflow-hidden rounded-lg border-[0.5px] border-border ${RING}`}
                 >
                   <Image
                     src={post.cover}
                     alt={post.cover.alt}
                     sizes="(max-width: 640px) 100vw, 200px"
                     placeholder={post.pixelated ? "empty" : "blur"}
-                    className="aspect-[16/10] w-full object-contain p-3"
+                    className="aspect-[16/10] w-full object-cover"
                     style={
                       post.pixelated ? { imageRendering: "pixelated" } : undefined
                     }
@@ -215,7 +215,7 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
                     {post.tags.map((tag) => (
                       <li
                         key={tag}
-                        className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-text-muted"
+                        className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
                       >
                         {tag}
                       </li>

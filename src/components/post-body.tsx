@@ -20,7 +20,13 @@ import { getBlogImage } from "@/lib/blog-images";
  * nearest-neighbour and are never blur-upscaled; the in-body flat graphic gets
  * the normal blur treatment.
  */
-function PostImage({ name }: { name: string }) {
+function PostImage({
+  name,
+  children,
+}: {
+  name: string;
+  children?: ReactNode;
+}) {
   const image = getBlogImage(name);
   // Fail the build loudly on a typo'd/missing image rather than silently
   // dropping it (this compiles at build over our own tracked content only).
@@ -29,8 +35,8 @@ function PostImage({ name }: { name: string }) {
   }
   const pixelated = image.pixelated === true;
   return (
-    <figure className="my-8 flex justify-center">
-      <span className="inline-flex max-w-full overflow-hidden rounded-lg border border-border bg-slate-950 p-3">
+    <figure className="my-8 flex flex-col items-center">
+      <span className="inline-flex max-w-full overflow-hidden rounded-lg border-[0.5px] border-border">
         <Image
           src={image}
           alt={image.alt}
@@ -40,6 +46,15 @@ function PostImage({ name }: { name: string }) {
           style={pixelated ? { imageRendering: "pixelated" } : undefined}
         />
       </span>
+      {children ? (
+        // The caption is authored as MDX children so it can carry inline markdown
+        // (a link). MDX wraps that text in a paragraph, which would otherwise pick
+        // up the large body-prose <p> style from the component map, so scope the
+        // caption type here and flatten any inner <p> back to inline-sized text.
+        <figcaption className="mt-3 max-w-2xl text-center text-caption text-text-subtle italic [&_p]:m-0 [&_p]:text-caption">
+          {children}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }
@@ -47,7 +62,10 @@ function PostImage({ name }: { name: string }) {
 const components = {
   PostImage,
   h2: (props: ComponentProps<"h2">) => (
-    <h2 className="mt-12 text-h2 font-semibold text-text" {...props} />
+    <h2
+      className="mt-12 border-b border-border pb-2 text-h2 font-semibold text-text"
+      {...props}
+    />
   ),
   p: (props: ComponentProps<"p">) => (
     <p className="mt-5 text-body-lg text-text-muted" {...props} />
@@ -73,6 +91,25 @@ const components = {
     />
   ),
 };
+
+/**
+ * Compile a short inline-markdown string (e.g. a cover caption) to a ReactNode
+ * using the same component map as the post body, so the caption can carry a
+ * link. Server-only and compiled over our own tracked frontmatter, never user
+ * input - the same trust boundary as PostBody.
+ */
+export async function InlineMdx({
+  source,
+}: {
+  source: string;
+}): Promise<ReactNode> {
+  const { content } = await compileMDX({
+    source,
+    components,
+    options: { parseFrontmatter: false },
+  });
+  return content;
+}
 
 export async function PostBody({ source }: { source: string }): Promise<ReactNode> {
   const { content } = await compileMDX({

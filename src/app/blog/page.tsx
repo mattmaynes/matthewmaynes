@@ -56,7 +56,7 @@ export default function BlogPage() {
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-h1 font-bold text-text">Blog</h1>
-        <Button asChild variant="ghost" aria-label="Subscribe to the blog via RSS">
+        <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">
           <a href="/blog/feed.xml">
             <RssIcon className="h-5 w-5" />
             RSS

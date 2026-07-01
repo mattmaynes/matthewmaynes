@@ -51,7 +51,9 @@ export function parseFrontmatter(raw) {
       data.tags = inner
         ? inner.split(",").map((t) => stripQuotes(t.trim())).filter(Boolean)
         : [];
-    } else if (["title", "date", "excerpt", "cover"].includes(key)) {
+    } else if (
+      ["title", "date", "excerpt", "cover", "coverCaption"].includes(key)
+    ) {
       data[key] = stripQuotes(value);
     }
   }
@@ -191,6 +193,7 @@ function readPost(filename) {
     tags: data.tags,
     excerpt: data.excerpt,
     coverKey: data.cover,
+    coverCaption: data.coverCaption,
     content,
   };
 }
