@@ -20,6 +20,8 @@ export type Post = {
   excerpt: string;
   /** Cover image filename (a key into src/lib/blog-images.ts), if any. */
   coverKey?: string;
+  /** Optional caption shown under the cover; inline markdown (may carry a link). */
+  coverCaption?: string;
   /** Raw MDX body, to be compiled on the post page. */
   content: string;
 };
