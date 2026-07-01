@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui";
 import { RssIcon } from "@/components/blog-icons";
-import { PostBody } from "@/components/post-body";
+import { PostBody, InlineMdx } from "@/components/post-body";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
@@ -66,30 +66,30 @@ export default async function BlogPostPage({
   const minutes = readingMinutes(post);
 
   return (
-    <article className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
+    <article className="mx-auto max-w-2xl px-6 py-12 sm:py-16">
       <header>
         <h1 className="text-h1 font-bold text-text">{post.title}</h1>
-        <div className="mt-4 flex items-center gap-3">
-          <Image
-            src={images.headshot}
-            alt=""
-            sizes="32px"
-            className="h-8 w-8 rounded-full object-cover"
-          />
-          <span className="text-caption text-text-muted">{`By ${site.name}`}</span>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <p className="text-caption text-text-subtle">
             <time dateTime={post.date}>{formatPostDate(post.date)}</time>
           </p>
           <ReadingTimePill minutes={minutes} />
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-caption text-text-muted">{`By ${site.name}`}</span>
+            <Image
+              src={images.headshot}
+              alt=""
+              sizes="32px"
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          </div>
         </div>
         {post.tags.length > 0 ? (
           <ul className="mt-4 flex flex-wrap gap-2">
             {post.tags.map((tag) => (
               <li
                 key={tag}
-                className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-text-muted"
+                className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
               >
                 {tag}
               </li>
@@ -99,20 +99,30 @@ export default async function BlogPostPage({
       </header>
 
       {cover ? (
-        // Match the prose reading measure (max-w-2xl, left-aligned) so the mat
-        // aligns with the body column; the pixel-art cover fills the width and
-        // upscales crisply (image-rendering: pixelated), not a stamp on a huge mat.
-        <div className="mt-8 max-w-2xl overflow-hidden rounded-lg border border-border bg-slate-950 p-4 sm:p-6">
-          <Image
-            src={cover}
-            alt={cover.alt}
-            sizes="(max-width: 672px) 90vw, 672px"
-            priority
-            placeholder={pixelated ? "empty" : "blur"}
-            className="h-auto w-full"
-            style={pixelated ? { imageRendering: "pixelated" } : undefined}
-          />
-        </div>
+        // Match the prose reading measure (max-w-2xl) so the cover aligns with
+        // the body column; the pixel-art cover fills the width and upscales
+        // crisply (image-rendering: pixelated).
+        <figure className="mt-8">
+          <div className="max-w-2xl overflow-hidden rounded-lg border-[0.5px] border-border">
+            <Image
+              src={cover}
+              alt={cover.alt}
+              sizes="(max-width: 672px) 90vw, 672px"
+              priority
+              placeholder={pixelated ? "empty" : "blur"}
+              className="h-auto w-full"
+              style={pixelated ? { imageRendering: "pixelated" } : undefined}
+            />
+          </div>
+          {post.coverCaption ? (
+            // Same caption treatment as an in-body <PostImage>: compile the
+            // inline markdown so a link renders, and flatten MDX's wrapping <p>
+            // back to caption-sized, subtle text.
+            <figcaption className="mt-3 max-w-2xl text-center text-caption text-text-subtle italic [&_p]:m-0 [&_p]:text-caption [&_p]:text-text-subtle">
+              <InlineMdx source={post.coverCaption} />
+            </figcaption>
+          ) : null}
+        </figure>
       ) : null}
 
       <div className="mt-10">
@@ -127,7 +137,7 @@ export default async function BlogPostPage({
         <Button asChild variant="outline">
           <Link href="/blog">Back to blog</Link>
         </Button>
-        <Button asChild variant="ghost" aria-label="Subscribe to the blog via RSS">
+        <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">
           <a href="/blog/feed.xml">
             <RssIcon className="h-5 w-5" />
             RSS
