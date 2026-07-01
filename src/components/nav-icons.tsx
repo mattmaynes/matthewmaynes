@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Edit, Mail, User, type IconBaseProps } from "@rogueoak/icons";
+import { FileText, Mail, Newspaper, User, type IconBaseProps } from "@rogueoak/icons";
 
 /**
  * Decorative glyphs for the home "Around the site" cards - one per nav
@@ -15,11 +15,11 @@ export function AboutIcon(props: IconBaseProps) {
 }
 
 export function ResumeIcon(props: IconBaseProps) {
-  return <Download aria-hidden {...props} />;
+  return <FileText aria-hidden {...props} />;
 }
 
 export function BlogIcon(props: IconBaseProps) {
-  return <Edit aria-hidden {...props} />;
+  return <Newspaper aria-hidden {...props} />;
 }
 
 export function ContactIcon(props: IconBaseProps) {
