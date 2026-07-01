@@ -93,6 +93,14 @@ per-component code. Already implemented in `src/styles/`.
   (`chmod 600`); it is git-ignored and untracked, so the deploy's `git reset --hard` (no `git clean`)
   leaves it in place across deploys. No new GitHub Actions secret is needed — the image is
   config-free and reads env at runtime.
+- **PostHog key is build-time, not runtime (spec 0014).** `NEXT_PUBLIC_POSTHOG_KEY` /
+  `NEXT_PUBLIC_POSTHOG_HOST` differ in kind from the contact secrets: a `NEXT_PUBLIC_*` value is
+  **inlined by `next build`** into the client bundle, not read at runtime. So the "config-free image,
+  env at runtime" rule does **not** apply - a runtime-only env would ship a keyless bundle from CI.
+  The key is PostHog's *publishable* client token (in the browser by design, not a secret), so
+  `src/lib/analytics.ts` carries a committed default and the CI/Docker build needs no new secret; the
+  env var only overrides the default to target a different project. The private/personal (`phx_`)
+  API key is never used anywhere.
 
 ## Contact endpoint (spec 0008)
 
@@ -108,6 +116,42 @@ per-component code. Already implemented in `src/styles/`.
   host vs the request Host - forgeable, so it thins drive-by traffic rather than being a boundary).
   The privacy rule is enforced structurally: the destination is env-only, so it cannot appear in the
   client bundle or repo (a smoke/grep check guards against regressions).
+
+## Analytics & observability (spec 0014)
+
+- **PostHog (US Cloud)** for product analytics, session replay, and error tracking. Client via
+  `posthog-js`, server via `posthog-node`. Logs (PostHog's OpenTelemetry/OTLP pipeline) are
+  deliberately deferred to a separate spec (0015) - a materially heavier integration.
+- **One config seam** `src/lib/analytics.ts` holds the publishable key, the client ingest host, the
+  `ui_host`, and the region hosts - the last are imported by `next.config.ts` for the `/ingest`
+  rewrites too, so a region change is a single edit and nothing is duplicated.
+- **Client**: init lives in a module-scope, idempotent `initPostHogBrowser()`
+  (`src/lib/posthog-browser.ts`), called at import time by `src/components/posthog-provider.tsx`
+  (`"use client"`, mounted once in `layout.tsx`) - NOT in an effect. React flushes child effects
+  before parent effects, so an effect-based init let the child `<PostHogPageView>` fire the first
+  `$pageview` before load and it was dropped (feedback 0011); module-scope init loads the SDK first.
+  Config: `capture_pageview: false` (App Router soft-navigates, so `src/components/posthog-pageview.tsx`
+  fires `$pageview` per route change behind a `Suspense`), `capture_pageleave`, `capture_exceptions`
+  (client autocapture), `persistence: "localStorage"` (cookieless), and `session_recording.maskAllInputs`.
+- **Conversion tracking**: because `ph-no-capture` on the contact form also hides its submit from
+  autocapture, the form fires explicit, PII-free events (`contact_form_submitted`/`_succeeded`/`_failed`,
+  outcome only, no field values) from `handleSubmit` - the mask stays for replay privacy while the
+  one conversion stays measurable (feedback 0011).
+- **Server errors**: `src/instrumentation.ts` exports `onRequestError` (Node-runtime-guarded) which
+  lazy-imports `src/lib/posthog-server.ts` (a singleton posthog-node client, `flushAt:1`) and calls
+  `captureExceptionImmediate`, so RSC/route-handler/`/v1/contact` failures reach Error tracking.
+  `src/app/global-error.tsx` is the client boundary for a root render crash.
+- **Same-origin proxy**: `next.config.ts` `rewrites()` map `/ingest/static|array/*` to
+  `us-assets.i.posthog.com` and `/ingest/*` to `us.i.posthog.com`, with
+  `skipTrailingSlashRedirect: true` (PostHog ingest paths use trailing slashes Next would otherwise
+  308-redirect). The browser never talks to `*.posthog.com` directly, so ad-blockers miss it and a
+  future CSP needs no third-party `connect-src`. The **server** client posts directly to
+  `us.i.posthog.com` (server egress is not ad-blocked and cannot use the browser-origin path).
+- **Privacy by construction**: replay masks all inputs globally, and the contact `<form>` carries
+  `ph-no-capture` so its subtree is never recorded even if the global mask regresses; the smoke test
+  asserts both the marker and that the client bundle ships only the publishable `phc_` key (no
+  personal `phx_` key). No consent banner (cookieless, all visitors); the documented escalation, if
+  strict EU compliance is ever needed, is to gate only replay behind an opt-in.
 
 ## Repo layout (evolving — not prescriptive)
 

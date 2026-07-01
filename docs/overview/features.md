@@ -39,6 +39,17 @@ pending) · 📋 planned.
   generated 1200x630 branded share image (`app/opengraph-image.tsx`, reused for `twitter-image`);
   `robots.txt`, `sitemap.xml` (from the `nav` source), a web manifest, `theme-color`, and a JSON-LD
   `Person` block. One link, a rich preview everywhere it is pasted.
+- **Analytics & observability** (spec 0014): PostHog (US Cloud) captures product **analytics**
+  (pageviews on every App Router route change, page-leave, and autocapture), **session replay**
+  (with all form inputs masked - the contact form is additionally marked `ph-no-capture`, so a
+  visitor's typed message is never recorded), and **error tracking** for both client exceptions
+  (autocapture + a `global-error` boundary) and server exceptions (`instrumentation.ts`
+  `onRequestError` via posthog-node, covering `POST /v1/contact`). All traffic is proxied
+  same-origin through `/ingest/*`, so tracker blockers and a future CSP need no third-party
+  exception. No consent banner: analytics run for all visitors in cookieless mode. The contact
+  form also fires explicit, PII-free conversion events (submitted/succeeded/failed) so the site's
+  one conversion stays measurable despite the replay mask. (Logs via OpenTelemetry are a separate
+  follow-up, spec 0015.)
 
 ## Images
 

@@ -11,7 +11,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { assembleStandalone } from "../scripts/lib/standalone.mjs";
@@ -502,4 +502,112 @@ test("robots, sitemap, and manifest are served", async () => {
   for (const icon of json.icons) {
     await assertIsImage(await fetchLocal(icon.src), `manifest icon ${icon.src}`);
   }
+});
+
+// PostHog analytics/replay/errors (spec 0014). Session replay must never record
+// what a visitor types into the contact form, so the form carries the
+// `ph-no-capture` marker (belt-and-suspenders atop the global maskAllInputs).
+// Assert it renders, so a dropped class can't silently start leaking messages.
+test("contact form masks its inputs from session replay", async () => {
+  const html = await (await fetch(BASE + "/contact")).text();
+  assert.match(
+    html,
+    /class="[^"]*\bph-no-capture\b/,
+    "expected the contact <form> to carry ph-no-capture for replay masking",
+  );
+});
+
+// The client PostHog SDK must ship the PUBLISHABLE project key (phc_) and never
+// a personal/management API key (phx_). Collect the app's own JS chunks from the
+// home page and grep them: this proves the analytics is wired (the key is
+// inlined at build) AND guards the public-repo rule structurally - a personal
+// key must never reach the browser bundle.
+test("client bundle ships only the publishable PostHog key", async () => {
+  const html = await (await fetch(BASE + "/")).text();
+  const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((s) => s.startsWith("/_next/"));
+  assert.ok(srcs.length > 0, "expected the home page to load Next JS chunks");
+
+  let bundle = "";
+  for (const src of srcs) {
+    bundle += await (await fetch(BASE + src)).text();
+  }
+
+  assert.ok(
+    bundle.includes("phc_"),
+    "expected the client bundle to inline the publishable phc_ PostHog key",
+  );
+  // The primary replay guard (session_recording.maskAllInputs) ships in the
+  // provider chunk, which the root layout loads on every route including home -
+  // the object key survives minification, so its absence means replay input
+  // masking silently regressed.
+  assert.ok(
+    bundle.includes("maskAllInputs"),
+    "expected the client bundle to enable session_recording.maskAllInputs",
+  );
+});
+
+// Exhaustive personal-key guard (spec 0014): NO personal/management PostHog key
+// (phx_) may appear in ANY built client asset, not just the home page's chunks.
+// Walk every .js under .next/static on disk so a leak in any route's chunk fails.
+test("no personal PostHog key (phx_) in any client asset", () => {
+  const staticDir = join(root, ".next", "static");
+  const stack = [staticDir];
+  let scanned = 0;
+  let sawConversionEvent = false;
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      const full = join(cur, e.name);
+      if (e.isDirectory()) {
+        stack.push(full);
+      } else if (e.name.endsWith(".js")) {
+        scanned++;
+        const js = readFileSync(full, "utf8");
+        assert.doesNotMatch(
+          js,
+          /phx_[A-Za-z0-9]/,
+          `personal (phx_) PostHog key must never reach a client asset: ${full}`,
+        );
+        if (js.includes("contact_form_submitted")) sawConversionEvent = true;
+      }
+    }
+  }
+  assert.ok(scanned > 0, "expected to scan at least one client .js asset");
+  // The core conversion is tracked by explicit PII-free events (autocapture
+  // can't see the ph-no-capture form's submit), so the event name must ship in
+  // some client chunk (the contact-form island).
+  assert.ok(
+    sawConversionEvent,
+    "expected a client chunk to fire the contact_form_submitted event",
+  );
+});
+
+// The same-origin /ingest reverse proxy (spec 0014 acceptance) must be
+// configured, or all PostHog capture breaks with a green suite. Assert the built
+// routes manifest carries the three ingest rewrites to US Cloud - network-free,
+// so it can't be masked by an unreachable external host in CI.
+test("the /ingest PostHog proxy rewrites are configured", () => {
+  const manifest = JSON.parse(
+    readFileSync(join(root, ".next", "routes-manifest.json"), "utf8"),
+  );
+  const rewrites = manifest.rewrites?.afterFiles ?? manifest.rewrites ?? [];
+  const dests = rewrites
+    .filter((r) => r.source?.startsWith("/ingest"))
+    .map((r) => r.destination);
+  assert.ok(
+    dests.some((d) => d.includes("us.i.posthog.com")),
+    "expected an /ingest rewrite to the PostHog US ingest host",
+  );
+  assert.ok(
+    dests.some((d) => d.includes("us-assets.i.posthog.com")),
+    "expected an /ingest rewrite to the PostHog US assets host",
+  );
 });
