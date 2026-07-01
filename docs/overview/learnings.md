@@ -297,3 +297,19 @@ Capture lessons as you go.
   slugs so the card bakes at build, like the page.
 - **Canadian English is `-our`/`-re` but `-ize`.** colour/honour/centre, yet realize/organize/
   recognize (not the British `-ise`). The blog carve-out's own examples had this backwards at first.
+
+## Blog reading experience (spec 0011)
+
+- **A JS-core / TS-wrapper pair that shares a basename (`blog.js` + `blog.ts`) resolves the
+  `./blog.js` import to the sibling `.ts` at type-check time.** So `blog.ts` importing a name from
+  `"./blog.js"` type-checks against `blog.ts`'s *own* exports, not the JS file - it works only
+  because each wrapper (`getAllPosts`, `getPostBySlug`) re-exports a same-named symbol. Adding
+  `estimateReadingMinutes` to `blog.js` type-errored ("no exported member") until `blog.ts` also
+  exported a same-named typed wrapper; at runtime Node still resolves to the real `blog.js`, which
+  is why `node --test` passed while `tsc`/`next build` failed. New pure-core exports need a matching
+  wrapper export in the `.ts` seam. (A same-basename `.js`/`.ts` scratch pair reproduces the error
+  and is easy to mistake for a syntax problem.)
+- **React SSR inserts an HTML comment between adjacent static text and an expression.** `By
+  {site.name}` renders as `By <!-- -->Matthew Maynes`, so a smoke test asserting the contiguous
+  substring "By Matthew Maynes" fails. Render one interpolated node (`{`By ${site.name}`}`) when a
+  marker must stay contiguous for a substring assertion.

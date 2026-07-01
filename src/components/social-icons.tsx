@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Clock,
   Facebook,
   Github,
   Instagram,
@@ -40,4 +41,14 @@ export function FacebookIcon(props: IconBaseProps) {
 
 export function InstagramIcon(props: IconBaseProps) {
   return <Instagram aria-hidden {...props} />;
+}
+
+/**
+ * A clock glyph for the post reading-time pill. Same client-boundary wrapper as
+ * the brand glyphs so a Server Component (the blog post page) can render it
+ * without importing `@rogueoak/icons` directly. `aria-hidden` by default - the
+ * adjacent "N min read" text carries the meaning.
+ */
+export function ClockIcon(props: IconBaseProps) {
+  return <Clock aria-hidden {...props} />;
 }

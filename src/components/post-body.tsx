@@ -50,7 +50,7 @@ const components = {
     <h2 className="mt-12 text-h2 font-semibold text-text" {...props} />
   ),
   p: (props: ComponentProps<"p">) => (
-    <p className="mt-5 text-body leading-relaxed text-text-muted" {...props} />
+    <p className="mt-5 text-lg leading-relaxed text-text-muted" {...props} />
   ),
   a: (props: ComponentProps<"a">) => (
     <a
@@ -68,7 +68,7 @@ const components = {
   em: (props: ComponentProps<"em">) => <em className="italic" {...props} />,
   blockquote: (props: ComponentProps<"blockquote">) => (
     <blockquote
-      className="mt-6 border-l-4 border-border-strong pl-4 text-body italic text-text-muted"
+      className="mt-6 border-l-4 border-border-strong pl-4 text-lg italic text-text-muted"
       {...props}
     />
   ),

@@ -102,8 +102,15 @@ const routes = [
   {
     path: "/blog/i-picked-the-wrong-elective",
     title: "I Picked the Wrong Elective - Blog - Matthew Maynes",
-    // A body-unique phrase proves the MDX body actually compiled and rendered.
-    contains: ["accidentally designed a metaphor"],
+    // A body-unique phrase proves the MDX body actually compiled and rendered;
+    // the reading-time pill, byline, and disclaimer markers guard the spec-0011
+    // reading-experience chrome so a revert reddens the smoke test.
+    contains: [
+      "accidentally designed a metaphor",
+      "min read",
+      "By Matthew Maynes",
+      "views expressed here are my own",
+    ],
     absent: ["Placeholder"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
     // placeholder, so its data-URL must appear (feedback 0005).
