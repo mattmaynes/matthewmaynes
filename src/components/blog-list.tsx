@@ -5,6 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import type { StaticImageData } from "next/image";
 import { SearchIcon } from "@/components/blog-icons";
+import {
+  formatPostDate,
+  deriveTags,
+  resolveActiveTag,
+  filterPosts,
+} from "@/lib/blog-view";
 
 /** A cover image passed down from the server: a static import (carrying its
  * blurDataURL) plus alt text. Resolved on the server via `getBlogImage` so the
@@ -23,22 +29,6 @@ export type BlogListPost = {
   pixelated: boolean;
   isNew: boolean;
 };
-
-/**
- * Format a YYYY-MM-DD date as "Month D, YYYY". Parsed as UTC midnight with a
- * fixed locale so server and client render identically (no hydration mismatch)
- * and a negative-offset timezone never shifts the day - the same rule as
- * `formatPostDate` in `src/lib/blog.ts`, inlined here because that module pulls
- * in `node:fs` and cannot cross the client boundary.
- */
-function formatDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
 
 // A tiny store over the URL's `?tag=` value, so the chips read the active filter
 // WITHOUT `useSearchParams` - that hook forces this statically-generated page to
@@ -80,23 +70,16 @@ const RING =
 export function BlogList({ posts }: { posts: BlogListPost[] }) {
   const [query, setQuery] = useState("");
 
-  // Tag set: the union of every post's tags, first-appearance order,
-  // deduplicated case-insensitively.
-  const allTags: string[] = [];
-  for (const post of posts) {
-    for (const tag of post.tags) {
-      if (!allTags.some((t) => t.toLowerCase() === tag.toLowerCase())) {
-        allTags.push(tag);
-      }
-    }
-  }
+  // Tag set + active-tag resolution + filtering all live in the pure, fs-free
+  // `blog-view` core so they are unit-tested against a multi-post fixture
+  // (learnings 0009) rather than trapped in this island.
+  const allTags = deriveTags(posts);
 
   // The URL is the source of truth for the tag filter (shareable/bookmarkable);
-  // it restores the active tag on load. Resolve `?tag=` back to a known tag
-  // case-insensitively; an unknown/absent value means "All".
+  // it restores the active tag on load. `resolveActiveTag` maps `?tag=` back to
+  // a known tag case-insensitively; an unknown/absent value means "All".
   const tagParam = useSyncExternalStore(subscribeUrlTag, readUrlTag, () => "");
-  const activeTag =
-    allTags.find((t) => t.toLowerCase() === tagParam.toLowerCase()) ?? null;
+  const activeTag = resolveActiveTag(tagParam, allTags);
 
   function selectTag(tag: string | null) {
     // Reflect the filter in the URL without a scroll jump or a back-history
@@ -109,27 +92,15 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
   }
 
   // Filter by the active tag first, then narrow by the search query over
-  // title + excerpt + tags. Both matches are case-insensitive.
-  const q = query.trim().toLowerCase();
-  const filtered = posts.filter((post) => {
-    if (
-      activeTag &&
-      !post.tags.some((t) => t.toLowerCase() === activeTag.toLowerCase())
-    ) {
-      return false;
-    }
-    if (q) {
-      const haystack =
-        `${post.title} ${post.excerpt} ${post.tags.join(" ")}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    return true;
-  });
+  // title + excerpt + tags (both case-insensitive, composed) - in the pure core.
+  const filtered = filterPosts(posts, activeTag, query);
 
   const chipBase = `rounded-full border px-3 py-1 text-caption transition-colors ${RING}`;
   const chipOn = "border-primary bg-primary text-primary-foreground";
+  // Inactive chips read apart from the static, non-interactive post tag pills:
+  // hovering darkens the border and text so the affordance is clear.
   const chipOff =
-    "border-border bg-muted text-text-muted hover:text-text";
+    "border-border bg-muted text-text-muted hover:border-border-strong hover:text-text";
 
   return (
     <div className="mt-8">
@@ -230,7 +201,7 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
                   ) : null}
                 </div>
                 <p className="mt-1 text-caption text-text-subtle">
-                  <time dateTime={post.date}>{formatDate(post.date)}</time>
+                  <time dateTime={post.date}>{formatPostDate(post.date)}</time>
                 </p>
                 <p className="mt-3 text-body text-text-muted">{post.excerpt}</p>
                 {post.tags.length > 0 ? (

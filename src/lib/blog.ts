@@ -74,15 +74,9 @@ export function newPostSlug(
 }
 
 /**
- * Format a YYYY-MM-DD date string as a human-readable date (e.g.
- * "June 30, 2026"). Parsed as UTC so the rendered date never shifts by a day
- * in a negative-offset timezone.
+ * Format a YYYY-MM-DD date string as a human-readable date (e.g. "June 28,
+ * 2026"). Re-exported from the fs-free `blog-view.js` so the Server Component
+ * post page and the `"use client"` listing island share ONE formatter (the
+ * island cannot import this module, whose graph pulls in `node:fs`).
  */
-export function formatPostDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-CA", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
+export { formatPostDate } from "./blog-view.js";

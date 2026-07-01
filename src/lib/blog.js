@@ -143,7 +143,16 @@ export function isRecent(dateStr, nowMs, days) {
  */
 export function newPostSlug(posts, nowMs, days = 30) {
   if (!Array.isArray(posts) || posts.length === 0) return null;
-  const newest = sortPostsNewestFirst(posts)[0];
+  // Ignore future-dated posts (a scheduled post or a `2027-` typo): otherwise
+  // the newest-by-date entry is future, `isRecent` rejects it (age < 0), and the
+  // badge would be suppressed on every post - including the genuinely-newest
+  // published one. Pick the newest post that is already published.
+  const published = posts.filter((p) => {
+    const ms = Date.parse(`${p.date}T00:00:00Z`);
+    return !Number.isNaN(ms) && ms <= nowMs;
+  });
+  if (published.length === 0) return null;
+  const newest = sortPostsNewestFirst(published)[0];
   return isRecent(newest.date, nowMs, days) ? newest.slug : null;
 }
 
