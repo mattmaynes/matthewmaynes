@@ -75,6 +75,36 @@ function stripQuotes(s) {
   return s.replace(/^["'](.*)["']$/, "$1");
 }
 
+/** Words a typical adult reads per minute; the estimate divides by this. */
+const WORDS_PER_MINUTE = 200;
+
+/**
+ * Estimate a post's reading time in whole minutes from its MDX body. Pure and
+ * deterministic (no Date, no Math.random): strips the markup that is not prose
+ * (fenced code blocks, JSX tags like PostImage, markdown link URLs, and inline
+ * heading/emphasis markers) then counts the remaining whitespace-separated words
+ * and divides by ~200 wpm. Floors at 1 so even a one-word post reads as
+ * "1 min read".
+ *
+ * @param {string} content - the raw MDX body (frontmatter already stripped)
+ * @returns {number} whole minutes, always >= 1
+ */
+export function estimateReadingMinutes(content) {
+  const prose = String(content ?? "")
+    // Fenced code blocks - not prose, drop entirely.
+    .replace(/```[\s\S]*?```/g, " ")
+    // Inline code spans - drop the markup and its contents.
+    .replace(/`[^`]*`/g, " ")
+    // JSX/HTML tags such as <PostImage name="..."/> - drop the whole tag.
+    .replace(/<[^>]+>/g, " ")
+    // Markdown links [text](url): keep the link text, drop the URL.
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    // Bare markdown/emphasis markers left over.
+    .replace(/[#>*_~`|-]+/g, " ");
+  const words = prose.split(/\s+/).filter(Boolean);
+  return Math.max(1, Math.round(words.length / WORDS_PER_MINUTE));
+}
+
 /**
  * Slugify a string: lowercase, non-alphanumerics collapse to a single dash,
  * trim leading/trailing dashes. e.g. "I Picked the Wrong Elective" ->

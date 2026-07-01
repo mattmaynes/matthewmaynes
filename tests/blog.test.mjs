@@ -11,6 +11,7 @@ import {
   sortPostsNewestFirst,
   getAllPosts,
   getPostBySlug,
+  estimateReadingMinutes,
 } from "../src/lib/blog.js";
 
 const GOOD = `---
@@ -115,6 +116,31 @@ test("getAllPosts returns posts sorted newest-first", () => {
   const seed = posts.find((p) => p.slug === "i-picked-the-wrong-elective");
   assert.ok(seed, "expected the seed post by its filename slug");
   assert.equal(seed.title, "I Picked the Wrong Elective");
+});
+
+test("estimateReadingMinutes counts a multi-paragraph body at ~200 wpm", () => {
+  // Three 120-word paragraphs = 360 words; round(360/200) = round(1.8) = 2.
+  const para = Array(120).fill("word").join(" ");
+  const body = `${para}\n\n${para}\n\n${para}`;
+  assert.equal(estimateReadingMinutes(body), 2);
+});
+
+test("estimateReadingMinutes floors at 1 minute for a tiny body", () => {
+  assert.equal(estimateReadingMinutes("Hi there"), 1);
+  assert.equal(estimateReadingMinutes("word"), 1);
+});
+
+test("estimateReadingMinutes ignores JSX tags and fenced code as words", () => {
+  // 400 words of prose alone -> round(400/200) = 2 minutes.
+  const prose = Array(400).fill("word").join(" ");
+  // Add a <PostImage> tag and a 500-word code fence: neither is prose, so the
+  // estimate must stay 2 (if markup counted, 900/200 -> 5).
+  const noisy = [
+    prose,
+    '<PostImage name="turing-sunrise" />',
+    "```js\n" + Array(500).fill("noise").join(" ") + "\n```",
+  ].join("\n\n");
+  assert.equal(estimateReadingMinutes(noisy), 2);
 });
 
 test("getPostBySlug returns one post with its raw MDX body, or null", () => {
