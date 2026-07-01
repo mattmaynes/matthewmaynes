@@ -15,6 +15,18 @@
    the semantic vars when `.dark` is on a root element. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Site type-scale extension. Roots ships body/body-sm but no larger body step;
+   long-form reading (the blog post body) wants a slightly larger measure, so we
+   add a `text-body-lg` role at the 1.125rem step with a relaxed line-height,
+   paired with line-height/weight the way Roots declares `--text-body`. Kept here
+   in the Tailwind entry (not theme-harbor.css) so a global type token does not
+   churn the resume-PDF freshness hash, which covers theme-harbor.css. */
+@theme inline {
+  --text-body-lg: var(--text-lg);
+  --text-body-lg--line-height: var(--leading-relaxed);
+  --text-body-lg--font-weight: var(--font-weight-normal);
+}
+
 /* Print: the resume (the only print-intended page) is built entirely from
    rem-based type tokens, so shrinking the root font-size scales the whole
    document proportionally. This dials the rendered PDF down to two Letter

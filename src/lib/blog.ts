@@ -7,6 +7,7 @@
 import {
   getAllPosts as getAllPostsJs,
   getPostBySlug as getPostBySlugJs,
+  estimateReadingMinutes as estimateReadingMinutesJs,
 } from "./blog.js";
 
 export type Post = {
@@ -27,6 +28,24 @@ export function getAllPosts(): Post[] {
 
 export function getPostBySlug(slug: string): Post | null {
   return getPostBySlugJs(slug) as Post | null;
+}
+
+/**
+ * Typed wrapper over the pure JS reading-time core. Named to match the core
+ * export so the `./blog.js` import resolves under TypeScript (which maps the
+ * `.js` specifier to this sibling `.ts` at type-check time), exactly like the
+ * `getAllPosts`/`getPostBySlug` wrappers above.
+ */
+export function estimateReadingMinutes(content: string): number {
+  return estimateReadingMinutesJs(content);
+}
+
+/**
+ * Estimated reading time for a post, in whole minutes (always >= 1). Delegates
+ * to the pure JS core so the estimate is unit-tested without a TS build.
+ */
+export function readingMinutes(post: Post): number {
+  return estimateReadingMinutes(post.content);
 }
 
 /**

@@ -12,7 +12,7 @@ pending) · 📋 planned.
 | `/resume` | ✅ | Detailed professional resume rendered from structured data, with a **download PDF** button serving an in-sync, contact-free PDF. |
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. **Unlisted** while in progress: the route exists but is not linked from the nav, home page, or sitemap. |
 | `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, excerpt, and tag labels. Drop in a `.mdx` file to list a new post. (Tag *filtering* is a later spec.) |
-| `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title, date, tags), a cover image, the MDX body with Harbor prose styling and blur-placeholder inline images, and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
+| `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 
 ## Navigation
@@ -89,6 +89,10 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 
 - Posts as `.mdx` files; filename → slug. Frontmatter: `title`, `date`, `tags`, `excerpt`.
 - Tag groups: Technical · Leadership · Nature · Life. Newest first.
+- Reading-experience chrome (spec 0011) lives on the post page: a reading-time estimate
+  (`estimateReadingMinutes` in the pure `blog.js` core, ~200 wpm, floored at 1 minute, markup
+  stripped so markdown/JSX is not counted), a byline + avatar, a personal-opinion disclaimer, and
+  the larger 18px body measure (the `text-body-lg` site type role). The listing page is unchanged.
 
 ## Contact form
 
