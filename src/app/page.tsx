@@ -1,6 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import {
+  AboutIcon,
+  BlogIcon,
+  ContactIcon,
+  ResumeIcon,
+} from "@/components/nav-icons";
 import { images, site } from "@/lib/site";
 
 export default function HomePage() {
@@ -64,19 +70,23 @@ export default function HomePage() {
           the words are placeholders until each section is written.
         </p>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Order mirrors the nav (About, Resume, Blog, Contact); Home is omitted. */}
           {[
-            { href: "/resume", title: "Resume", note: "Career history and what I do." },
-            { href: "/blog", title: "Blog", note: "Engineering, leadership, nature, life." },
-            { href: "/about", title: "About", note: "The whole person, not just the resume." },
-            { href: "/contact", title: "Contact", note: "Say hello - a note lands in my inbox." },
-          ].map((item) => (
-            <Link key={item.href} href={item.href} className="group">
+            { href: "/about", title: "About", note: "The whole person, not just the resume.", Icon: AboutIcon },
+            { href: "/resume", title: "Resume", note: "Career history and what I do.", Icon: ResumeIcon },
+            { href: "/blog", title: "Blog", note: "Engineering, leadership, nature, life.", Icon: BlogIcon },
+            { href: "/contact", title: "Contact", note: "Say hello - a note lands in my inbox.", Icon: ContactIcon },
+          ].map(({ href, title, note, Icon }) => (
+            <Link key={href} href={href} className="group">
               <Card className="h-full transition-shadow group-hover:shadow-md">
                 <CardHeader>
-                  <CardTitle>{item.title}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon className="h-5 w-5 shrink-0 text-primary" />
+                    {title}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-body text-text-muted">{item.note}</p>
+                  <p className="text-body text-text-muted">{note}</p>
                 </CardContent>
               </Card>
             </Link>
