@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Button } from "@/components/ui";
 import { ContactForm } from "@/components/contact-form";
 import {
   FacebookIcon,
@@ -7,11 +6,11 @@ import {
   LinkedInIcon,
   XIcon,
 } from "@/components/social-icons";
-import { site } from "@/lib/site";
+import { site, socialPath } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Contact" };
 
-// Icon-only social links (no channel names), URLs from the single source of
+// Social links shown as icon + URL-path label, URLs from the single source of
 // truth. The contact row intentionally omits GitHub (the footer still carries it).
 const socials = [
   { label: "LinkedIn", href: site.social.linkedin, Icon: LinkedInIcon },
@@ -36,26 +35,25 @@ export default function ContactPage() {
         <ContactForm />
       </div>
 
-      {/* One row of icon-only social links beneath the form. */}
+      {/* Social links beneath the form: a column of icon + URL-path labels (the
+          resume "Links" treatment, sharing the socialPath helper). */}
       <div className="mt-12">
         <h2 className="text-caption font-semibold uppercase tracking-wide text-text-subtle">
           Find me elsewhere
         </h2>
-        <ul className="mt-4 flex flex-row flex-wrap items-center gap-1">
+        <ul className="mt-4 flex flex-col gap-1.5">
           {socials.map(({ label, href, Icon }) => (
             <li key={label}>
-              {/* Reuse the footer's social button (Canopy ghost icon) so both
-                  rows match in size, hover, and focus-visible ring. */}
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={`Matthew Maynes on ${label}`}
+                className="flex items-center gap-2 text-caption text-primary underline underline-offset-2"
               >
-                <a href={href} target="_blank" rel="noopener noreferrer">
-                  <Icon className="h-5 w-5" />
-                </a>
-              </Button>
+                <Icon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                {socialPath(href)}
+              </a>
             </li>
           ))}
         </ul>

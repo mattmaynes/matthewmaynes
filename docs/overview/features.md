@@ -13,17 +13,16 @@ pending) · 📋 planned.
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. |
 | `/blog` | 🚧 | Blog listing with previews (title, date, excerpt, tags) and tag filtering. |
 | `/blog/[slug]` | 🚧 | Individual post, authored as MDX with frontmatter. |
-| `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a row of icon-only social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
+| `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 
 ## Navigation
 
 - Top bar: Home · About · Resume · Projects · Blog · Contact, built on Canopy's `TopNav` Branch
   (mobile: a left-aligned hamburger that opens Canopy's disclosure panel).
-- Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as a column of
-  icon + path-label links - the resume "Links" treatment, where the label is the URL path minus
-  its leading slash (e.g. "mattmaynes") via the shared `socialPath` helper in `site.ts` - with the
-  copyright below. Icons come from `@rogueoak/icons` (the curated Canopy set), as does the header
-  theme toggle's sun/moon - the site keeps no hand-rolled icon SVGs (spec 0007).
+- Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as icon-only Canopy
+  ghost-icon Buttons, plus the copyright. Icons come from `@rogueoak/icons` (the curated Canopy
+  set), as does the header theme toggle's sun/moon - the site keeps no hand-rolled icon SVGs
+  (spec 0007). (The contact page shows the same profiles instead as a labelled column - see below.)
 
 ## Global behaviors
 
@@ -80,8 +79,9 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 
 ## Contact form
 
-- ✅ Live (spec 0008). The page leads with the form at full container width, then a single row of
-  icon-only social links (LinkedIn, X, Facebook, Instagram). Submitting `POST`s JSON to the
+- ✅ Live (spec 0008). The page leads with the form at full container width, then a column of
+  social links (LinkedIn, X, Facebook, Instagram) rendered as icon + URL-path labels (the resume
+  "Links" treatment via the shared `socialPath` helper). Submitting `POST`s JSON to the
   versioned route `/v1/contact`, which validates, applies spam guards, and relays the message by
   email via Resend.
 - The destination address lives only in server env (`CONTACT_TO_EMAIL`, with `RESEND_API_KEY` and
