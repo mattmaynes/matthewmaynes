@@ -138,6 +138,22 @@ const routes = [
     hasBlur: true,
   },
   {
+    path: "/privacy",
+    title: "Privacy - Matthew Maynes",
+    // Body-unique markers prove the real policy rendered (not a blank shell): a
+    // phrase from the copy, the two named processors, and the public privacy
+    // address (which renders only in this page body - the shared footer link is
+    // label-only, so the /resume and /contact no-email guards stay green). No
+    // hasBlur: the page is text-only.
+    contains: [
+      "I do not sell your data",
+      "PostHog",
+      "Resend",
+      "privacy@matthewmaynes.com",
+    ],
+    absent: ["Placeholder"],
+  },
+  {
     path: "/contact",
     title: "Contact - Matthew Maynes",
     // Assert form-unique copy (the textarea placeholder) AND the social-row

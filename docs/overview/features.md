@@ -14,6 +14,7 @@ pending) · 📋 planned.
 | `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, a reading-time pill (spec 0015, the same `Clock` + "N min read" treatment as the post page), excerpt, and tag labels. Interactive discovery (spec 0012): tag-chip filters (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. |
 | `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
+| `/privacy` | ✅ | Plain-language privacy policy (spec 0017) documenting what the site actually does: PostHog analytics with masked-input session replay, the Resend-relayed contact form, transient IP use, self-hosted assets, no tracking cookies/ads/database. Cookieless legitimate-interest basis (no consent banner). Linked from the footer, not the top nav or sitemap. Lists a dedicated public `privacy@` address for data requests - the only email on the site. |
 
 ## Navigation
 
@@ -22,9 +23,10 @@ pending) · 📋 planned.
   omitted while it is an in-progress stub - the `/projects` route still exists and is reachable
   directly, but it is not linked from the nav, the home page, or the sitemap until it ships.
 - Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as icon-only Canopy
-  ghost-icon Buttons, plus the copyright. Icons come from `@rogueoak/icons` (the curated Canopy
-  set), as does the header theme toggle's sun/moon - the site keeps no hand-rolled icon SVGs
-  (spec 0007). (The contact page shows the same profiles instead as a labelled column - see below.)
+  ghost-icon Buttons, plus the copyright and a `Privacy` link to `/privacy` (spec 0017). Icons come
+  from `@rogueoak/icons` (the curated Canopy set), as does the header theme toggle's sun/moon - the
+  site keeps no hand-rolled icon SVGs (spec 0007). (The contact page shows the same profiles instead
+  as a labelled column - see below.)
 
 ## Global behaviors
 
