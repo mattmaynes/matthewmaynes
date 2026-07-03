@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { site } from "@/lib/site";
 import { Button } from "@/components/ui";
 import {
@@ -22,7 +23,13 @@ export function Footer() {
     <footer className="mt-16 border-t border-border bg-surface print:hidden">
       <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
         <p className="text-caption text-text-muted">
-          &copy; {new Date().getFullYear()} {site.name}.
+          &copy; {new Date().getFullYear()} {site.name}.{" "}
+          <Link
+            href="/privacy"
+            className="underline-offset-4 hover:text-text hover:underline"
+          >
+            Privacy
+          </Link>
         </p>
         <div className="flex items-center gap-1">
           {socials.map(({ label, href, Icon }) => (
