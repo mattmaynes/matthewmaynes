@@ -10,14 +10,15 @@
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "resume:pdf": "node scripts/generate-resume-pdf.mjs",
     "resume:pdf:check": "node scripts/generate-resume-pdf.mjs --check",
-    "prewarm": "node scripts/prewarm-images.mjs"
+    "prewarm": "node scripts/prewarm-images.mjs",
+    "theme:build": "roots-brand brand/harbor/brand.config.json"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist-mono": "^5.2.8",
-    "@rogueoak/canopy": "^0.2.1",
+    "@rogueoak/canopy": "^0.5.0",
     "@rogueoak/icons": "^0.3.1",
-    "@rogueoak/roots": "^0.2.1",
+    "@rogueoak/roots": "^0.5.0",
     "next": "16.2.9",
     "next-mdx-remote": "6.0.0",
     "posthog-js": "^1.396.3",
@@ -33,6 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "style-dictionary": "^4.4.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

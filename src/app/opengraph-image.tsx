@@ -12,7 +12,7 @@ export const alt = site.ogImageAlt;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Harbor-dark palette (see src/styles/theme-harbor.css).
+// Harbor-dark palette (see brand/harbor/ + src/styles/brand-harbor.generated.css).
 const BG_FROM = "#1f3447"; // harbor-900
 const BG_TO = "#14222f"; // slate-950
 const TEXT = "#f6f7f9"; // slate-50

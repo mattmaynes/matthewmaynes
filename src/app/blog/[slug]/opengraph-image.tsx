@@ -18,7 +18,7 @@ export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));
 }
 
-// Harbor-dark palette (see src/styles/theme-harbor.css), matching the site card.
+// Harbor-dark palette (see brand/harbor/ + src/styles/brand-harbor.generated.css), matching the site card.
 const BG_FROM = "#1f3447"; // harbor-900
 const BG_TO = "#14222f"; // slate-950
 const MAT = "#0c1218"; // near-black mat behind the cover art

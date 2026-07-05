@@ -1,0 +1,25 @@
+{
+  "color": {
+    "bg": { "$value": "{color.slate.50}", "$type": "color" },
+    "surface": { "$value": "{color.base.white}", "$type": "color" },
+    "surface-raised": { "$value": "{color.base.white}", "$type": "color" },
+    "overlay": { "$value": "{color.slate.900}", "$type": "color" },
+    "text": { "$value": "{color.slate.900}", "$type": "color" },
+    "text-muted": { "$value": "{color.slate.600}", "$type": "color" },
+    "text-subtle": { "$value": "{color.slate.500}", "$type": "color" },
+    "text-inverted": { "$value": "{color.slate.50}", "$type": "color" },
+    "border": { "$value": "{color.slate.200}", "$type": "color" },
+    "border-strong": { "$value": "{color.slate.300}", "$type": "color" },
+    "ring": { "$value": "{color.harbor.600}", "$type": "color" },
+    "ring-offset": { "$value": "{color.base.white}", "$type": "color" },
+    "primary": { "$value": "{color.harbor.600}", "$type": "color" },
+    "primary-foreground": { "$value": "{color.harbor.50}", "$type": "color" },
+    "primary-hover": { "$value": "{color.harbor.700}", "$type": "color" },
+    "primary-active": { "$value": "{color.harbor.800}", "$type": "color" },
+    "muted": { "$value": "{color.slate.100}", "$type": "color" },
+    "muted-foreground": { "$value": "{color.slate.600}", "$type": "color" },
+    "muted-raised": { "$value": "{color.slate.100}", "$type": "color" },
+    "disabled": { "$value": "{color.slate.100}", "$type": "color" },
+    "disabled-foreground": { "$value": "{color.slate.400}", "$type": "color" }
+  }
+}

@@ -7,7 +7,10 @@
   because the contact form needs a server-side endpoint to send mail; standalone keeps SSR / route
   handlers / dynamic OG available without re-architecting later.
 - **Styling:** Tailwind CSS **v4** (CSS-first) on the **Harbor** theme — `@rogueoak/roots` tokens
-  with a site override in `src/styles/theme-harbor.css`. See `docs/design/brand-guide.md`.
+  re-branded via the roots brand pipeline: DTCG sources in `brand/harbor/` compile (`npm run
+  theme:build`) to `src/styles/brand-harbor.generated.css` (an AA-guarded `:root` + `.dark` block);
+  `src/styles/theme-harbor.css` adds only the print concerns. Harbor maps `primary` + the neutrals
+  and inherits the rest (accent/secondary/status) from Roots. See `docs/design/brand-guide.md`.
 - **Fonts:** self-hosted via `@fontsource-variable/figtree` (UI/body) and
   `@fontsource-variable/geist-mono` (code), per Roots.
 - **Blog (spec 0009):** MDX files with frontmatter, statically generated at build. A pure JS seam
@@ -48,8 +51,9 @@
 ## Styling layers (import order matters)
 
 `globals.css` imports, in order: `tailwindcss` → `@rogueoak/roots/tokens.css` →
-`@rogueoak/roots/tailwind-preset.css` → `./theme-harbor.css` (must win the cascade) → fontsource
-packages. Components read **only** Roots' semantic tokens, so light/dark re-theme with no
+`@rogueoak/roots/tailwind-preset.css` → `./brand-harbor.generated.css` (the Harbor brand; must win
+the cascade, so a role Harbor omits keeps the Roots default) → `./theme-harbor.css` (print only) →
+fontsource packages. Components read **only** Roots' semantic tokens, so light/dark re-theme with no
 per-component code. Already implemented in `src/styles/`.
 
 ## Deployment
@@ -180,8 +184,11 @@ per-component code. Already implemented in `src/styles/`.
 - `src/app/` — App Router routes and layouts.
 - `src/components/` — UI and layout components.
 - `src/lib/` — content loading (blog, projects) + scrubbed `resume.ts` data.
-- `src/styles/` — `globals.css` + `theme-harbor.css` (Harbor palette; includes the `@media print`
-  block that forces the light palette for the resume PDF).
+- `src/styles/` — `globals.css` + `brand-harbor.generated.css` (the Harbor palette, generated from
+  `brand/harbor/`) + `theme-harbor.css` (only the `@media print` block that forces the light palette
+  for the resume PDF).
+- `brand/harbor/` — DTCG source for the Harbor Canopy brand (`npm run theme:build` regenerates the
+  CSS). See `brand/harbor/README.md`.
 - `scripts/` — build/authoring tools (e.g. `generate-resume-pdf.mjs`).
 - `content/` — authored blog/project content (tracked; contains no PII).
 - `public/` — static assets; the **committed** `resume.pdf` + `resume.pdf.hash`.
@@ -192,8 +199,11 @@ per-component code. Already implemented in `src/styles/`.
 
 - **Node server over static export** — to support the server-side contact form (and future
   dynamic needs) from day one.
-- **Harbor on Roots** — bluer + slate palette with a warm accent, applied purely at the token
-  layer so the design system stays intact and dark mode is free.
+- **Harbor on Roots** — bluer + slate palette with a warm (inherited) accent, applied purely at the
+  token layer via the roots brand pipeline so the design system stays intact and dark mode is free.
+  Harbor is a **partial** brand (maps `primary` + neutrals, inherits the rest); the pipeline's AA
+  guard checks each override against the Roots default it lands next to — which is what caught and
+  fixed a sub-AA dark primary the earlier hand-written override had shipped.
 - **Resume privacy by construction** — the page and generated PDF are built from a source that
   omits phone/email/exact address; the real destination for the contact form lives only in server
   env vars.
