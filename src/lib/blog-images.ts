@@ -35,7 +35,7 @@ export const blogImages = {
   },
   "house-quicksand.png": {
     ...houseQuicksand,
-    alt: "A flat illustration of a tidy house tilting as its base sinks into a rippled pool of quicksand.",
+    alt: "A two-storey house sinking and buckling into a swirling pool of black quicksand, surrounded by scattered debris and swampland.",
   },
 } satisfies Record<string, BlogImage>;
 
