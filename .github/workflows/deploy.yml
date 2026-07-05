@@ -92,6 +92,16 @@ jobs:
             # wedge future deploys (unlike `git pull --ff-only`).
             git fetch --prune origin
             git reset --hard origin/main
+            # This repo owns the shared edge proxy (it routes every cohosted domain,
+            # e.g. rogueoak.com). Create / bring up if absent (idempotent; also
+            # applies any Caddyfile change). A cohosted site repo ships only its own
+            # site stack joined to this network - it does not manage the proxy.
+            docker network inspect edge >/dev/null 2>&1 || docker network create edge
+            # Validate the Caddyfile before applying it, so a syntax error fails the
+            # deploy instead of taking the edge proxy down (Caddy has no healthcheck).
+            docker run --rm -v "$HOME/matthewmaynes/deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
+              caddy:2-alpine caddy validate --adapter caddyfile --config /etc/caddy/Caddyfile
+            docker compose -f deploy/docker/compose.proxy.yml up -d
             export IMAGE_TAG
             docker compose -f deploy/docker/compose.site.yml pull
             # --wait blocks until the container passes its HEALTHCHECK, so a broken
