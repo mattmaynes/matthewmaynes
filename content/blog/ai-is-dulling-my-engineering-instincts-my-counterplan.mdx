@@ -1,0 +1,64 @@
+---
+title: AI Is Dulling My Engineering Instincts - My Counterplan
+date: 2026-07-05
+tags: [AI, Engineering, Craft]
+excerpt: AI is very good at making sure you never hit a wall, which sounds like a win until you notice what you didn't learn on the way around it. I'm one of the engineers letting their judgement atrophy, and here's my plan to stay sharp.
+cover: house-quicksand.png
+coverCaption: It'll stand for a while, and everyone will compliment the siding
+---
+
+In 1975, Frederick Brooks introduced the idea that some engineers could be "ten times as productive as the mediocre one." In the age of AI, that line has quietly turned from an observation about outliers into an expectation from executives. To hit that bar, a lot of engineers who've shifted to AI assisted development are letting their judgement atrophy without noticing it happening. I know, because I'm one of them. But I've got a plan to stay sharp, and it starts with admitting the problem instead of shipping past it.
+
+It wasn't all that long ago that if you hit a wall programming, you either had to ask a friend or "figure it out". I've been writing code since 2009 and getting paid for it since 2012, and I've run into my fair share of walls. Every time you make it out the other side of one, you've found a gap in your knowledge and filled it, and you understand your code that much better for it. AI is very good at making sure you never hit that wall in the first place, which sounds like a win until you notice what you didn't learn on the way around it.
+
+Good software has high cohesion, low coupling, and is built to be changed later by someone who is not you, possibly a future version of you who has forgotten everything. Every developer can recite that sentence. Fewer of us can still feel it.
+
+That's the part I want to talk about. Feeling it.
+
+## You can't review your way to understanding
+
+Reviewing a pull request tells you whether the code works and whether it roughly follows convention. It does not tell you whether the code is easy to change. Those are different questions, and only one of them shows up in a diff.
+
+Ease of change is something you feel when you're the one in there, moving a function, renaming a concept, trying to add a parameter and hitting a wall of things that quietly depend on each other in ways nobody documented. You cannot get that feeling from reading someone else's finished output, whether that someone is a colleague or a language model. You get it from doing the work, or at least enough of it to know where the wall is.
+
+When AI writes the first draft and I just review it, I get the "does it work" signal loud and clear. I get almost nothing on the "will this hurt me in six months" signal. That second signal used to come free with the act of writing the code myself. Now I have to go looking for it on purpose.
+
+## The debt we're not subtracting
+
+Engineers get measured on value produced. Features shipped, tickets closed, velocity charts pointing in the encouraging direction. What's missing from that equation is the subtraction. Code is far cheaper to produce now than ever before, but debt is not free. It compounds, the same as it always did, except now we're building the pile faster than ever.
+
+Continuing to build on top of debt you haven't paid down is like putting up a house on quicksand. It'll stand for a while. Everyone will compliment the siding. Then one day someone tries to add a second floor and the whole thing starts to lean.
+
+I don't think AI created this problem. I think it removed the friction that used to slow us down enough to notice the lean.
+
+## The habit I'm building back in
+
+Here's the actual practice, not just the principle. Before I build a feature now, I go read through the code myself and make a decision about how I'd do it. It doesn't need to be comprehensive, I'm not drawing a diagram for a button colour change. But I need to see the path before I hand any of the work off to a tool that will happily generate a path whether or not it's a good one.
+
+If I skip that step, I don't have a solution. I have tech debt with a passing test suite.
+
+Reading through the codebase does two things at once. It builds my map of how the project is organized, and it shows me how the pieces are actually connected, which is usually a slightly different story than how they're supposed to be connected. You only get the second part by looking.
+
+## Context is king, for AI and for me
+
+Everyone talks about context in terms of what the model needs. Bigger context windows, better retrieval, cleaner prompts. Fair enough, no arguments here. But the part that gets skipped is that I need context too, and mine doesn't come from a system prompt. It comes from having actually been in the code.
+
+If I don't hold the context myself, I can only tell when the AI's output is obviously wrong, not when it's subtly wrong. Subtly wrong is the expensive kind. Obviously wrong gets caught in review. Subtly wrong gets merged, ships, and turns up twelve months later as an incident with my name near the top of the postmortem.
+
+## So here's the counterplan
+
+Nothing dramatic, just a few rules I'm holding myself to.
+
+Read the code in the context of the change I'm about to make, every time, before I let anything generate a line of it.
+
+Never let AI fully own a decision. It can propose. I decide.
+
+Keep reading books on the principles of good software design, the boring foundational stuff that doesn't go out of date just because the tooling around it did.
+
+Make changes myself often enough that I don't lose the feel for what "easy to change" actually feels like under my own hands.
+
+None of this is anti-AI. I still use it constantly, and it's genuinely made me faster at the parts of the job that were never where the value was anyway, the boilerplate, the syntax lookups, the first draft of a script I'd have written myself in twenty minutes regardless. What I'm not willing to outsource is the judgement. That was always the actual job. Everything else was just typing.
+
+---
+
+_The "ten times as productive" line is from Frederick Brooks, [The Mythical Man-Month](https://www.goodreads.com/en/book/show/13629.The_Mythical_Man_Month) (1975)._

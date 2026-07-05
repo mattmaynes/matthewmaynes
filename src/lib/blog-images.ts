@@ -12,6 +12,7 @@ import type { StaticImageData } from "next/image";
 import turingSunrise from "../../public/images/blog/turing-sunrise.png";
 import zombieHordeTitle from "../../public/images/blog/zombie-horde-title.png";
 import eagleSnap from "../../public/images/blog/eagle-snap.png";
+import houseQuicksand from "../../public/images/blog/house-quicksand.png";
 
 import type { SiteImage } from "./site";
 
@@ -31,6 +32,10 @@ export const blogImages = {
   "eagle-snap.png": {
     ...eagleSnap,
     alt: "Screenshots of the Eagle SNAP iPad app: a runway condition report form and its report-type menu.",
+  },
+  "house-quicksand.png": {
+    ...houseQuicksand,
+    alt: "A flat illustration of a tidy house tilting as its base sinks into a rippled pool of quicksand.",
   },
 } satisfies Record<string, BlogImage>;
 
