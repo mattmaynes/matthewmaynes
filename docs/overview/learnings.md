@@ -433,3 +433,20 @@ Capture lessons as you go.
   (learnings 0011), but `site.ts` is a legitimate resume input, so the fix is to regenerate
   (`npm run resume:pdf`) and commit `public/resume.pdf` + `.hash`, not to relocate. Editing
   `site.ts` always means a PDF regen in the same PR.
+
+## Cohosting a second site behind the shared Caddy proxy
+
+- **`compose up -d` does NOT apply a changed Caddyfile.** The Caddyfile is a read-only bind mount,
+  so editing it is not a service change: Compose does not recreate or reload the container, and Caddy
+  keeps running its old config (observed: `caddy` up for days after a Caddyfile change never took).
+  Cohosting rogueoak.com added its vhost to the file but the running proxy ignored it, so its TLS
+  handshakes failed (no cert) even though the config on disk was correct. The deploy now hashes the
+  Caddyfile across the `git reset`, and on a change runs `caddy reload`, verifies every site block
+  reached the running config (`/config/` admin API), and restarts as a fallback - a long-lived
+  container was seen to silently no-op a `reload` (exit 0, config unchanged); only a restart applied
+  it and triggered ACME.
+- **Pin `DEPLOY_KNOWN_HOSTS` by the same identifier the workflow's `DEPLOY_HOST` uses.** When a
+  cohosted repo's `DEPLOY_HOST` is a hostname (e.g. `rogueoak.com`) that used to point at a different
+  server, its pinned host key is stale after the DNS cutover and the deploy fails with "REMOTE HOST
+  IDENTIFICATION HAS CHANGED" before running anything. Regenerate with `ssh-keyscan <hostname>` (not
+  just the IP) so the key matches the identifier being connected to.

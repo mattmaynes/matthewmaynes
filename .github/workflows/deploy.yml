@@ -91,17 +91,37 @@ jobs:
             # Force-sync to origin/main so a stray local edit on the server can't
             # wedge future deploys (unlike `git pull --ff-only`).
             git fetch --prune origin
+            # Note the Caddyfile hash before the reset so we can tell whether this
+            # deploy actually changed it (see the reload logic below).
+            caddy_before=$(md5sum deploy/docker/Caddyfile 2>/dev/null | cut -d' ' -f1 || true)
             git reset --hard origin/main
+            caddy_after=$(md5sum deploy/docker/Caddyfile | cut -d' ' -f1)
             # This repo owns the shared edge proxy (it routes every cohosted domain,
-            # e.g. rogueoak.com). Create / bring up if absent (idempotent; also
-            # applies any Caddyfile change). A cohosted site repo ships only its own
-            # site stack joined to this network - it does not manage the proxy.
+            # e.g. rogueoak.com). Create / bring it up if absent (idempotent). A
+            # cohosted site repo ships only its own site stack joined to this
+            # network - it does not manage the proxy.
             docker network inspect edge >/dev/null 2>&1 || docker network create edge
             # Validate the Caddyfile before applying it, so a syntax error fails the
             # deploy instead of taking the edge proxy down (Caddy has no healthcheck).
             docker run --rm -v "$HOME/matthewmaynes/deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
               caddy:2-alpine caddy validate --adapter caddyfile --config /etc/caddy/Caddyfile
             docker compose -f deploy/docker/compose.proxy.yml up -d
+            # `compose up -d` does NOT apply a changed Caddyfile: the file is a
+            # read-only bind mount, so editing it is not a service change and the
+            # container is not recreated or reloaded. When the Caddyfile changed,
+            # reload explicitly; then verify every site block reached the running
+            # config and restart as a guaranteed fallback (a long-lived container
+            # has been observed to silently no-op a `reload`).
+            if [ "$caddy_before" != "$caddy_after" ]; then
+              docker exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile || true
+              running=$(docker exec caddy sh -c 'wget -qO- http://localhost:2019/config/ 2>/dev/null' || true)
+              for host in $(grep -oE '^[a-z0-9.-]+ \{' deploy/docker/Caddyfile | cut -d' ' -f1); do
+                case "$running" in
+                  *"\"$host\""*) ;;
+                  *) echo "caddy reload did not apply $host - restarting caddy"; docker restart caddy; break ;;
+                esac
+              done
+            fi
             export IMAGE_TAG
             docker compose -f deploy/docker/compose.site.yml pull
             # --wait blocks until the container passes its HEALTHCHECK, so a broken
