@@ -1,0 +1,8 @@
+{
+  "name": "harbor",
+  "primitives": "primitive.json",
+  "semantic": "semantic.json",
+  "semanticDark": "semantic.dark.json",
+  "outFile": "../../src/styles/brand-harbor.generated.css",
+  "scope": null
+}

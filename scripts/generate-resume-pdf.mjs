@@ -38,6 +38,13 @@ const INPUT_FILES = [
   "src/lib/resume.ts",
   "src/lib/site.ts",
   "src/app/resume/page.tsx",
+  // Palette: the DTCG brand sources + the generated brand css they compile to, plus the print-only
+  // companion. The generated file is the actual rendered palette; the sources are hashed too so a
+  // change that was not regenerated (npm run theme:build) still trips --check.
+  "brand/harbor/primitive.json",
+  "brand/harbor/semantic.json",
+  "brand/harbor/semantic.dark.json",
+  "src/styles/brand-harbor.generated.css",
   "src/styles/theme-harbor.css",
   "scripts/generate-resume-pdf.mjs",
 ];
