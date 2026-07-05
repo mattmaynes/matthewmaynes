@@ -58,16 +58,20 @@ per-component code. Already implemented in `src/styles/`.
   serving the standalone output. Target image well under 200MB.
 - **Local:** `docker compose up` (or `npm run dev`). The root `docker-compose.yml` builds from
   source and maps `3000:3000`; it is for local use only.
-- **Host:** a small Linux VM (about 512MB RAM) running two Compose stacks on a shared external
-  `edge` network: **Caddy** (`deploy/docker/compose.proxy.yml` + `Caddyfile`) owns 80/443 and
-  auto-provisions Let's Encrypt certs, reverse-proxying by hostname to the **site**
-  (`deploy/docker/compose.site.yml`), which exposes 3000 only on `edge` (no host port). The
-  routes-by-hostname topology is built for cohosting: a second site is one more `edge` service
-  plus a Caddyfile block. The operator runbook is kept privately (git-ignored, not in the repo).
+- **Host:** a small Linux VM running Compose stacks on a shared external `edge` network: **Caddy**
+  (`deploy/docker/compose.proxy.yml` + `Caddyfile`) owns 80/443 and auto-provisions Let's Encrypt
+  certs, reverse-proxying by hostname to the **site** (`deploy/docker/compose.site.yml`), which
+  exposes 3000 only on `edge` (no host port). **This repo owns the shared proxy** for the host: the
+  deploy job creates the `edge` network, validates the Caddyfile, and brings Caddy up on every
+  deploy. **rogueoak.com is cohosted here** - the Caddyfile routes it to the `rogueoak:3000` backend,
+  which the separate rogueoak repo deploys as its own `edge` service (it ships no proxy of its own, so
+  the two deploys never fight over 80/443). A further site is one more `edge` service plus a Caddyfile
+  block. The operator runbook is kept privately (git-ignored, not in the repo).
 - **Images:** built off-host and pulled from GHCR (`ghcr.io/mattmaynes/matthewmaynes`, public), so
   the small server never runs a Next build. Tagged `latest` + immutable `sha-<commit>` for rollback.
 - **CI/CD:** `.github/workflows/deploy.yml` - push to `main` runs verify (lint/build/test) →
-  build+push to GHCR → SSH deploy to the server (`git pull`, `compose pull && up -d`) → **prewarm**.
+  build+push to GHCR → SSH deploy to the server (`git pull`, ensure `edge` + validate/up the Caddy
+  proxy, `compose pull && up -d`) → **prewarm**.
   GHCR push uses the built-in `GITHUB_TOKEN`; the only repo secrets are the deploy SSH credentials.
 - **Image cache pre-warm (spec 0006):** the `prewarm` job runs after a healthy deploy and hits the
   live site (`node scripts/prewarm-images.mjs $SITE_URL`, via Caddy to the fresh container) to

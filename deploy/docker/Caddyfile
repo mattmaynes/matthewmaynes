@@ -16,3 +16,18 @@ matthewmaynes.com {
 www.matthewmaynes.com {
 	redir https://matthewmaynes.com{uri} permanent
 }
+
+# Cohosted site: rogueoak.com. This proxy is the single owner of the edge TLS
+# terminator, so every domain served from this host is routed here (the rogueoak
+# repo ships only its own site stack, joined to the shared `edge` network as
+# `rogueoak`). See docs/overview for the cohosting arrangement.
+rogueoak.com {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	reverse_proxy rogueoak:3000
+}
+
+# www -> apex. Caddy still issues a cert for www so the redirect is served over HTTPS.
+www.rogueoak.com {
+	redir https://rogueoak.com{uri} permanent
+}
