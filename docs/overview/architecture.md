@@ -67,10 +67,14 @@ per-component code. Already implemented in `src/styles/`.
   certs, reverse-proxying by hostname to the **site** (`deploy/docker/compose.site.yml`), which
   exposes 3000 only on `edge` (no host port). **This repo owns the shared proxy** for the host: the
   deploy job creates the `edge` network, validates the Caddyfile, and brings Caddy up on every
-  deploy. **rogueoak.com is cohosted here** - the Caddyfile routes it to the `rogueoak:3000` backend,
-  which the separate rogueoak repo deploys as its own `edge` service (it ships no proxy of its own, so
-  the two deploys never fight over 80/443). A further site is one more `edge` service plus a Caddyfile
-  block. The operator runbook is kept privately (git-ignored, not in the repo).
+  deploy. **rogueoak.com is cohosted here** - the Caddyfile routes it to the `rogueoak` backend via the
+  same dynamic-A upstream as the apex (spec 0019 amendment), so Caddy follows rogueoak's own
+  zero-downtime rollout; the separate rogueoak repo deploys it as its own `edge` service (it ships no
+  proxy of its own, so the two deploys never fight over 80/443). The two **deploy pipelines are kept
+  symmetric** - same rollout install, `docker rollout`, health gate, `timeout-minutes`, `mem_limit`,
+  and `prune -af` - differing only where they must: this repo owns the shared Caddy and runs the image
+  `prewarm` job; each repo carries its own names/image/SITE_URL. A further site is one more `edge`
+  service plus a Caddyfile block. The operator runbook is kept privately (git-ignored, not in the repo).
 - **Images:** built off-host and pulled from GHCR (`ghcr.io/mattmaynes/matthewmaynes`, public), so
   the small server never runs a Next build. Tagged `latest` + immutable `sha-<commit>` for rollback.
 - **CI/CD:** `.github/workflows/deploy.yml` - push to `main` runs verify (lint/build/test) →

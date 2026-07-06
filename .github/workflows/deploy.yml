@@ -91,9 +91,12 @@ jobs:
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=10 \
             "$USER@$HOST" "IMAGE_TAG='$IMAGE_TAG' bash -se" <<'REMOTE'
             set -euo pipefail
-            cd ~/matthewmaynes
-            # Force-sync to origin/main so a stray local edit on the server can't
-            # wedge future deploys (unlike `git pull --ff-only`).
+            # Self-bootstrap: clone on first deploy, else force-sync to origin/main
+            # (symmetric with the rogueoak deploy). git reset --hard beats a
+            # `git pull --ff-only` since a stray local edit can't wedge it.
+            REPO="$HOME/matthewmaynes"
+            [ -d "$REPO/.git" ] || git clone https://github.com/mattmaynes/matthewmaynes.git "$REPO"
+            cd "$REPO"
             git fetch --prune origin
             # Note the Caddyfile hash before the reset so we can tell whether this
             # deploy actually changed it (see the reload logic below).
@@ -187,9 +190,10 @@ jobs:
             done
             [ -n "$ok" ] || { echo "post-rollout health check failed: matthewmaynes.com is not reachable end-to-end"; exit 1; }
 
-            # Prune only THIS project's dangling images (label-scoped), so a
-            # cohosted stack's images are never touched.
-            docker image prune -f \
+            # Prune this project's UNUSED images (label-scoped, -a not just dangling),
+            # so superseded sha-<commit> images do not pile up on the host disk; the
+            # running image is in use and kept. A cohosted stack's images are untouched.
+            docker image prune -af \
               --filter "label=org.opencontainers.image.source=https://github.com/mattmaynes/matthewmaynes"
           REMOTE
 
