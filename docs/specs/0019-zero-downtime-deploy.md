@@ -200,3 +200,25 @@ not the job status" (learnings 0002).
       removed - zero-downtime, fail-safe), with no separate `rm`+recreate path.
 - [ ] `architecture.md` documents the blue/green rollout + dynamic-upstream routing;
       lint/build of the repo remain clean (no app code changed).
+
+## Amendment - cohost symmetry (rogueoak.com)
+
+The original spec scoped rogueoak out. Follow-up (this amendment) extends zero-downtime to
+the cohosted stack and converges the two deploys:
+
+- **This repo (matthewmaynes):** the shared Caddyfile's `rogueoak.com` block now uses the
+  same dynamic-A-upstream routing as the apex (re-resolving the `rogueoak` service alias),
+  so Caddy follows rogueoak's rollout. Safe while rogueoak is still a single container (the
+  alias resolves either way). The `deploy.yml` also adopts two patterns from the rogueoak
+  deploy for symmetry: a self-bootstrap clone-if-missing, and `image prune -af` (label-scoped,
+  removing superseded tags, not just dangling).
+- **rogueoak repo (separate PR):** its `compose.site.yml` drops `container_name` and adds the
+  same `mem_limit`; its deploy job mirrors this one - pinned docker-rollout install, `docker
+  rollout` in place of `up -d --wait`, a post-rollout end-to-end health gate (curling
+  rogueoak.com over loopback), and `timeout-minutes`. It keeps the intentional differences:
+  it never manages Caddy (this repo owns the shared proxy), and its names/image/SITE_URL.
+
+Goal: the two deploy jobs are structurally identical except the Caddy-ownership block (this
+repo only), the prewarm job (this repo's image-heavy blog), and names. Capacity note from
+feedback 0015 applies to both: rogueoak's rollout also briefly doubles its footprint, so the
+host (now ~1GB + 2GB swap, per-service mem_limit) must hold site + rogueoak overlaps.
