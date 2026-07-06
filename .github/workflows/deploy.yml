@@ -123,10 +123,45 @@ jobs:
               done
             fi
             export IMAGE_TAG
+            # Pre-pull so the rollout's new container starts instantly (no pull mid-swap).
             docker compose -f deploy/docker/compose.site.yml pull
-            # --wait blocks until the container passes its HEALTHCHECK, so a broken
-            # image is a red deploy instead of a silently flapping container.
-            docker compose -f deploy/docker/compose.site.yml up -d --wait
+
+            # Zero-downtime deploy (spec 0019) via docker-rollout: scale the site
+            # service to two instances, wait for the new one's HEALTHCHECK, then
+            # remove the old - so Caddy (dynamic-A upstreams re-resolving the `site`
+            # alias) always has a live backend. The plugin is a shell script that
+            # runs on the host during a privileged deploy, so it is pinned to a
+            # commit SHA and checksum-verified before use, like the SHA-pinned
+            # Actions (feedback 0002, supply chain).
+            # docker-rollout v0.13: github.com/Wowu/docker-rollout/releases/tag/v0.13
+            ROLLOUT_SHA=39b8066d56cc1edc76d1ae898db46623cc93bc24
+            ROLLOUT_SHA256=fa0df004de84747142cb627c55210aaa914bbae76666e7b95a2ac46805d81a84
+            plugin="$HOME/.docker/cli-plugins/docker-rollout"
+            if ! printf '%s  %s\n' "$ROLLOUT_SHA256" "$plugin" | sha256sum -c - >/dev/null 2>&1; then
+              mkdir -p "$HOME/.docker/cli-plugins"
+              tmp=$(mktemp)
+              curl -fsSL "https://raw.githubusercontent.com/Wowu/docker-rollout/$ROLLOUT_SHA/docker-rollout" -o "$tmp"
+              printf '%s  %s\n' "$ROLLOUT_SHA256" "$tmp" | sha256sum -c -
+              chmod +x "$tmp"
+              mv "$tmp" "$plugin"
+            fi
+
+            # One-time cutover from the pre-0019 container literally named `site`
+            # (the old container_name): docker-rollout needs Compose-indexed names,
+            # so hand over once (one last brief blip) then every later deploy is a
+            # pure rollout. The name check self-clears once the indexed instance exists.
+            if [ "$(docker container inspect -f '{{.Name}}' site 2>/dev/null)" = "/site" ]; then
+              echo "spec 0019 cutover: replacing legacy 'site' container with a Compose-indexed instance"
+              docker rm -f site
+              docker compose -f deploy/docker/compose.site.yml up -d --wait
+            else
+              # Waits up to 90s for the new instance to pass its HEALTHCHECK (image
+              # start-period is 15s), then a short grace so Caddy's 1s DNS refresh
+              # picks up the new IP before the old container is removed. A broken
+              # image never goes healthy, so the old instance keeps serving and the
+              # deploy fails - a bad build cannot take the site down.
+              docker rollout -t 90 --wait-after-healthy 5 -f deploy/docker/compose.site.yml site
+            fi
             # Prune only THIS project's dangling images (label-scoped), so a
             # cohosted stack's images are never touched.
             docker image prune -f \
