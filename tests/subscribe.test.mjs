@@ -76,6 +76,20 @@ test("splitName caps each part at the Constant Contact field limit", () => {
   assert.equal(parts.lastName.length, SUBSCRIBE_LIMITS.part);
 });
 
+test("splitName caps by code point, never splitting an astral character", () => {
+  // Each astral emoji is 2 UTF-16 units; a naive .slice(0, 50) on a 51-emoji run
+  // would cut the 25th emoji in half and leave a lone surrogate. Assert the capped
+  // part is exactly 50 code points and contains no unpaired surrogate.
+  const emoji = "\u{1F600}"; // grinning face (astral)
+  const parts = splitName(emoji.repeat(60));
+  assert.equal([...parts.firstName].length, SUBSCRIBE_LIMITS.part);
+  assert.doesNotMatch(
+    parts.firstName,
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/,
+    "capped part must contain no lone surrogate",
+  );
+});
+
 test("validateSubscribe rejects missing, blank, or non-string emails", () => {
   for (const bad of [{ email: "" }, { email: "   " }, {}, { email: 5 }, { email: {} }]) {
     assert.equal(validateSubscribe(bad).ok, false);

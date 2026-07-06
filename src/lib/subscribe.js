@@ -21,6 +21,14 @@
 // a split part never overflows the API.
 export const SUBSCRIBE_LIMITS = { email: 200, name: 100, part: 50 };
 
+// Cap a string to at most `n` Unicode code points (not UTF-16 units), so a hard
+// slice can never split an astral character (e.g. an emoji or a rare CJK glyph)
+// into a lone surrogate (review 0018-amendment).
+function capChars(str, n) {
+  const cp = Array.from(str);
+  return cp.length > n ? cp.slice(0, n).join("") : str;
+}
+
 // Same deliberately-loose shape as the contact core: one @, a dot in the domain,
 // no whitespace. Gates obvious garbage, not RFC-perfect addresses.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -50,7 +58,7 @@ export function validateSubscribe(input) {
     return { ok: false, error: "Please enter a valid email address." };
   const name =
     typeof input.name === "string"
-      ? input.name.trim().slice(0, SUBSCRIBE_LIMITS.name)
+      ? capChars(input.name.trim(), SUBSCRIBE_LIMITS.name)
       : "";
   return { ok: true, data: { email, name } };
 }
@@ -69,11 +77,8 @@ export function splitName(name) {
   const norm = typeof name === "string" ? name.trim().replace(/\s+/g, " ") : "";
   if (!norm) return {};
   const sp = norm.indexOf(" ");
-  const first = (sp === -1 ? norm : norm.slice(0, sp)).slice(
-    0,
-    SUBSCRIBE_LIMITS.part,
-  );
-  const rest = sp === -1 ? "" : norm.slice(sp + 1).slice(0, SUBSCRIBE_LIMITS.part);
+  const first = capChars(sp === -1 ? norm : norm.slice(0, sp), SUBSCRIBE_LIMITS.part);
+  const rest = sp === -1 ? "" : capChars(norm.slice(sp + 1), SUBSCRIBE_LIMITS.part);
   /** @type {NameParts} */
   const parts = {};
   if (first) parts.firstName = first;

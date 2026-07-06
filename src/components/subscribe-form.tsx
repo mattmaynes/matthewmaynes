@@ -69,7 +69,7 @@ export function SubscribeForm({
       if (res.ok && json?.ok) {
         form.reset();
         setStatus({ kind: "success" });
-        track("blog_subscribe_succeeded", { source });
+        track("blog_subscribe_succeeded", { source, has_name: hasName });
       } else {
         setStatus({
           kind: "error",
@@ -78,14 +78,18 @@ export function SubscribeForm({
               ? json.error
               : "Something went wrong. Please try again.",
         });
-        track("blog_subscribe_failed", { reason: `http_${res.status}`, source });
+        track("blog_subscribe_failed", {
+          reason: `http_${res.status}`,
+          source,
+          has_name: hasName,
+        });
       }
     } catch {
       setStatus({
         kind: "error",
         message: "Could not reach the server. Please try again.",
       });
-      track("blog_subscribe_failed", { reason: "network", source });
+      track("blog_subscribe_failed", { reason: "network", source, has_name: hasName });
     }
   }
 
