@@ -50,7 +50,7 @@ export default function SubscribePage() {
             {cover ? (
               <Link
                 href={`/blog/${latest.slug}`}
-                className="block self-start overflow-hidden rounded-lg border-[0.5px] border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="block self-center overflow-hidden rounded-lg border-[0.5px] border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset focus-visible:outline-none"
               >
                 <Image
                   src={cover}
@@ -66,7 +66,7 @@ export default function SubscribePage() {
               <h3 className="text-h3 font-semibold">
                 <Link
                   href={`/blog/${latest.slug}`}
-                  className="rounded-sm text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  className="rounded-sm text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset focus-visible:outline-none"
                 >
                   {latest.title}
                 </Link>

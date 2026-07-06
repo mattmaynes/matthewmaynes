@@ -121,7 +121,11 @@ const routes = [
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is display:none until the email is focused,
-      // so a dropped Name field reddens this.
+      // so a dropped Name field reddens this. NOTE: the client-only reveal itself
+      // (onFocus -> setExpanded(true) -> reflow) is not SSR-observable, so no smoke
+      // marker covers that live transition - an acknowledged gap (there is no
+      // subscribe-form unit test; /blog only renders the collapsed state and
+      // /subscribe uses alwaysShowName). The static states on both routes ARE guarded.
       "Name (optional)",
     ],
     // The DEFAULT-collapsed state is guarded via `sm:flex-1` in `absent` below:
@@ -215,10 +219,14 @@ const routes = [
       "sm:flex-row sm:items-end",
       "sm:flex-1",
       "Name (optional)",
-      // The "Latest post" block: the section label and the newest post's title,
-      // plus the link out to the full listing.
+      // The "Latest post" block rendered: the section label, the card's reading-time
+      // pill ("min read" is unique to the card on this route, and every post has a
+      // reading time), and the link out to the full listing. These are DURABLE - we
+      // deliberately do NOT pin the newest post's title/slug, which changes with every
+      // new post (the same time-bomb the /blog "New" badge avoids); the ordering that
+      // picks the newest post is covered by the sortPostsNewestFirst unit test.
       "Latest post",
-      "AI Is Dulling My Engineering Instincts",
+      "min read",
       "See all posts",
       'href="/blog"',
     ],
@@ -226,8 +234,10 @@ const routes = [
     // here (the page supplies its own H1 + copy), so a regression that re-enabled
     // it would be a duplicate heading.
     absent: ["Placeholder", "Subscribe for updates"],
-    // The latest-post cover is a static-imported next/image with a blur placeholder.
-    hasBlur: true,
+    // No hasBlur assertion: it would only pass while the newest post's cover happens
+    // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
+    // inlined blurDataURL), so it would redden on unrelated content changes. The blur
+    // treatment is guarded on the stable image-bearing routes instead (feedback 0005).
   },
 ];
 
