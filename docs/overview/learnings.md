@@ -519,3 +519,21 @@ Capture lessons as you go.
   re-export shim as a second canonical import.** The shared HTTP guards moved to `http-guards.js`,
   but the contact route kept importing them via a `contact.js` re-export, leaving two import paths
   for the same symbols. Point every caller (route + tests) at the new module and drop the shim.
+
+## Zero-downtime rollout OOM'd the small VM (feedback 0015)
+
+- **A zero-downtime rollout doubles the memory footprint for the duration of the swap - size the
+  host (and its cohosted neighbours) for the peak, or it causes the outage it was meant to prevent.**
+  The first blue/green deploy ran two `site` instances at once (docker-rollout's N->2N overlap) on a
+  ~512MB VM already running Caddy + the cohosted rogueoak app, with no swap. The box OOM-thrashed:
+  `sshd` stopped answering (banner-exchange timeout, so it could not even be reached to recover),
+  Caddy was left with no healthy upstream (443 connects but HTTPS hangs), and the deploy step hung
+  ~11 min until the VM was rebooted from the provider console. Fix: RAM doubled to ~1GB, a 2GB swap
+  file added, a generous per-service `mem_limit` (so one tenant can't starve the shared box), and a
+  `timeout-minutes` on the deploy job so a wedged host fails fast. A deploy that changes runtime
+  topology (container count / memory) is a CAPACITY change - verify the target's headroom before
+  shipping, don't treat it as just a config edit.
+- **On a cohosted box, cap each stack's memory (`mem_limit`) so one app's runaway can't take down the
+  neighbour.** The OOM took the whole VM (and would have taken rogueoak with it), because nothing
+  bounded either stack. A generous limit well above real usage never trips in normal operation but
+  contains a leak/spike to the offending stack.

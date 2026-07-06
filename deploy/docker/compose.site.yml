@@ -14,6 +14,15 @@ services:
     # fixed name would block the overlap. The service keeps the `site` network
     # alias, which Caddy resolves via Docker DNS to whichever instances are live.
     restart: unless-stopped
+    # Cohosted-box memory safety (feedback 0015): the zero-downtime rollout briefly
+    # runs TWO site instances, and on the shared VM a spike here must never OOM the
+    # whole box and take down the cohosted rogueoak stack (which is exactly what
+    # happened once - see feedback 0015). Bound each instance well above its real
+    # ~120MB SSR footprint, so this never trips in normal operation and only caps a
+    # runaway/leak. The host still needs headroom for 2x + neighbours + swap; see the
+    # capacity note in overview/architecture.md.
+    mem_limit: 400m
+    mem_reservation: 192m
     expose:
       - "3000"
     environment:

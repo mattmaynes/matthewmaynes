@@ -65,6 +65,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Bound the SSH deploy so a wedged host (e.g. an OOM-thrashed box mid-rollout -
+    # feedback 0015) fails the deploy fast instead of hanging for many minutes. A
+    # normal deploy is ~2-3 min; this leaves ample margin for a slow image pull.
+    timeout-minutes: 12
     steps:
       - name: Deploy over SSH
         env:
