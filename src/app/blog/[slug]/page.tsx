@@ -52,6 +52,74 @@ export async function generateMetadata({
   };
 }
 
+// Cover-hero header (tags, title, byline). Rendered twice per post: overlaid on
+// the image at >= sm, and stacked below the clean image on mobile, where a short
+// wide cover leaves no room for a legible overlay. `overlay` flips the colour
+// treatment (light-on-image vs default-on-page) and the title size.
+function HeroMeta({
+  post,
+  minutes,
+  overlay,
+}: {
+  post: { title: string; date: string; tags: string[] };
+  minutes: number;
+  overlay: boolean;
+}) {
+  return (
+    <>
+      {post.tags.length > 0 ? (
+        <ul className="flex flex-wrap gap-2">
+          {post.tags.map((tag) => (
+            <li
+              key={tag}
+              className={
+                overlay
+                  ? "rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground"
+                  : "rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
+              }
+            >
+              {tag}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <h1
+        className={
+          overlay
+            ? "mt-3 text-h1 font-bold text-white"
+            : "mt-3 text-h2 font-bold text-text"
+        }
+      >
+        {post.title}
+      </h1>
+      <div
+        className={`mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 ${
+          overlay ? "text-white/90" : "text-text-subtle"
+        }`}
+      >
+        <time dateTime={post.date} className="text-caption">
+          {formatPostDate(post.date)}
+        </time>
+        <span className="inline-flex items-center gap-1 text-caption">
+          <ClockIcon className="h-3.5 w-3.5" />
+          {minutes} min read
+        </span>
+        <span className="ml-auto inline-flex items-center gap-2">
+          <span className="text-caption">{`By ${site.name}`}</span>
+          <Image
+            src={images.headshot}
+            alt=""
+            sizes="32px"
+            className={`h-8 w-8 rounded-full object-cover ${
+              overlay ? "ring-1 ring-white/40" : ""
+            }`}
+          />
+        </span>
+      </div>
+    </>
+  );
+}
+
 export default async function BlogPostPage({
   params,
 }: {
@@ -68,10 +136,10 @@ export default async function BlogPostPage({
   return (
     <article className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
       {cover ? (
-        // Hero cover: the title, tags, and byline sit as an overlay on the
-        // cover image, over a bottom-anchored gradient that keeps the text
-        // legible regardless of the underlying image. The pixel-art cover
-        // fills the width and upscales crisply (image-rendering: pixelated).
+        // Hero cover. At >= sm the title, tags, and byline overlay the image on a
+        // bottom gradient. On mobile a short wide cover has no room for a legible
+        // overlay, so the image renders clean and the header stacks below it. The
+        // pixel-art cover fills the width and upscales crisply.
         <figure>
           <div className="relative overflow-hidden rounded-lg border-[0.5px] border-border">
             <Image
@@ -83,39 +151,13 @@ export default async function BlogPostPage({
               className="h-auto w-full"
               style={pixelated ? { imageRendering: "pixelated" } : undefined}
             />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-5 pt-12 pb-5 sm:px-7 sm:pt-16 sm:pb-7">
-              {post.tags.length > 0 ? (
-                <ul className="flex flex-wrap gap-2">
-                  {post.tags.map((tag) => (
-                    <li
-                      key={tag}
-                      className="rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground"
-                    >
-                      {tag}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <h1 className="mt-3 text-h2 font-bold text-white sm:text-h1">{post.title}</h1>
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-white/90">
-                <time dateTime={post.date} className="text-caption">
-                  {formatPostDate(post.date)}
-                </time>
-                <span className="inline-flex items-center gap-1 text-caption">
-                  <ClockIcon className="h-3.5 w-3.5" />
-                  {minutes} min read
-                </span>
-                <span className="ml-auto inline-flex items-center gap-2">
-                  <span className="text-caption">{`By ${site.name}`}</span>
-                  <Image
-                    src={images.headshot}
-                    alt=""
-                    sizes="32px"
-                    className="h-8 w-8 rounded-full object-cover ring-1 ring-white/40"
-                  />
-                </span>
-              </div>
+            <div className="absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/80 via-black/45 to-transparent px-7 pt-16 pb-7 sm:block">
+              <HeroMeta post={post} minutes={minutes} overlay />
             </div>
+          </div>
+          {/* Mobile: header below the clean cover, in default on-page colours. */}
+          <div className="mt-4 sm:hidden">
+            <HeroMeta post={post} minutes={minutes} overlay={false} />
           </div>
           {post.coverCaption ? (
             // Same caption treatment as an in-body <PostImage>: compile the
