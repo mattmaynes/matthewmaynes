@@ -12,8 +12,11 @@ import { Button, FormField, FormFieldControl, FormFieldLabel, Input } from "@/co
  * The Constant Contact credentials live only in server env behind that route -
  * nothing here knows them. A hidden honeypot field (`company`) catches naive bots.
  *
- * Layout is mobile-first: the input and button STACK full width by default and sit
- * inline on one row at `sm` and up (input flexes to fill, button hugs its label).
+ * Layout is mobile-first: the fields STACK full width below `sm` and sit inline on
+ * one row at `sm` and up. Revealing the optional Name field keeps the row inline at
+ * `sm+` (email shortens, Name slides in between it and the button) rather than
+ * reflowing the whole row to stacked - which used to jolt the button down and shift
+ * the page on desktop (spec 0020).
  */
 type Status =
   | { kind: "idle" }
@@ -24,17 +27,26 @@ type Status =
 export function SubscribeForm({
   className,
   source,
+  alwaysShowName = false,
+  heading = true,
 }: {
   className?: string;
   /** Which surface this instance renders on - a PII-free analytics dimension so
-   *  listing vs. post conversions are attributable. Never carries the email. */
-  source: "blog_index" | "blog_post";
+   *  listing vs. post vs. the dedicated page are attributable. Never the email. */
+  source: "blog_index" | "blog_post" | "subscribe_page";
+  /** Show the optional Name field from first paint instead of on email focus -
+   *  used by the dedicated `/subscribe` page, which leads with the full ask. */
+  alwaysShowName?: boolean;
+  /** Render the box's own heading + subtext. The dedicated `/subscribe` page
+   *  supplies its own page-level copy, so it turns this off. */
+  heading?: boolean;
 }) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // Progressive disclosure (spec 0018 amendment): the optional Name field stays
   // hidden until the reader focuses the email, then stays revealed (never hidden
-  // again, so it does not vanish out from under a click).
-  const [expanded, setExpanded] = useState(false);
+  // again, so it does not vanish out from under a click). The dedicated page
+  // (`alwaysShowName`) starts revealed so all three fields show up front.
+  const [expanded, setExpanded] = useState(alwaysShowName);
   const posthog = usePostHog();
 
   // Track the conversion as explicit, PII-FREE events: the form is
@@ -97,25 +109,28 @@ export function SubscribeForm({
 
   return (
     <section className={className}>
-      <h2 className="text-h3 font-bold text-text">Subscribe for updates</h2>
-      <p className="mt-2 max-w-2xl text-body text-text-muted">
-        New posts in your inbox now and then. No spam; unsubscribe anytime.
-      </p>
+      {heading ? (
+        <>
+          <h2 className="text-h3 font-bold text-text">Subscribe for updates</h2>
+          <p className="mt-2 max-w-2xl text-body text-text-muted">
+            New posts in your inbox now and then. No spam; unsubscribe anytime.
+          </p>
+        </>
+      ) : null}
 
       {/* `ph-no-capture` masks this subtree in session replay and keeps its input
           out of autocapture (spec 0014), so an email can never enter a recording. */}
-      <form onSubmit={handleSubmit} className="ph-no-capture mt-5" noValidate>
-        {/* Default: email + button inline at sm+ (stacked on mobile). Once the
-            optional Name field is revealed, the row reflows to fully stacked
-            (email -> Name -> Subscribe) at all widths so Name sits between them. */}
-        <div
-          className={
-            expanded
-              ? "flex flex-col gap-3"
-              : "flex flex-col gap-3 sm:flex-row sm:items-end"
-          }
-        >
-          <FormField className={expanded ? "w-full" : "w-full sm:flex-1"}>
+      <form
+        onSubmit={handleSubmit}
+        className={`ph-no-capture ${heading ? "mt-5" : ""}`}
+        noValidate
+      >
+        {/* The row stays inline at sm+ whether or not the optional Name field is
+            revealed: email flexes wider (sm:flex-[2]) and shortens to make room, and
+            the revealed Name sits between it and the button (sm:flex-1). Below sm the
+            fields stack. DOM order (email -> Name -> button) is the visual order. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <FormField className="w-full sm:flex-[2]">
             <FormFieldLabel className="sr-only">Email address</FormFieldLabel>
             <FormFieldControl>
               <Input
@@ -132,8 +147,9 @@ export function SubscribeForm({
 
           {/* Optional Name (spec 0018 amendment). Always in the DOM (so its label
               ships in the SSR HTML) but display:none until revealed, so it is not
-              focusable or announced until the reader shows intent. */}
-          <FormField className={expanded ? "w-full" : "hidden"}>
+              focusable or announced until the reader shows intent. When shown it
+              takes `sm:flex-1` - a marker unique to the revealed state (spec 0020). */}
+          <FormField className={expanded ? "w-full sm:flex-1" : "hidden"}>
             <FormFieldLabel className="sr-only">Name (optional)</FormFieldLabel>
             <FormFieldControl>
               <Input
@@ -146,11 +162,7 @@ export function SubscribeForm({
             </FormFieldControl>
           </FormField>
 
-          <Button
-            type="submit"
-            disabled={submitting}
-            className={expanded ? "w-full" : "w-full sm:w-auto"}
-          >
+          <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
             {submitting ? "Subscribing..." : "Subscribe"}
           </Button>
         </div>
