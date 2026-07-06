@@ -173,6 +173,12 @@ per-component code. Already implemented in `src/styles/`.
   restart. The add-contact call hits the create-or-update `sign_up_form` endpoint with
   `create_source: "Contact"`, so a repeat email is idempotent (no duplicate error); on any non-2xx it
   throws **status-only** (never the response body, which can echo the submitted email into logs).
+- **Optional name (spec 0018 amendment).** The client reveals an optional "Name" field on email
+  focus and posts it alongside the email. `src/lib/subscribe.js` `splitName()` splits it on the first
+  whitespace run (first token -> first name, remainder -> last name, each capped at the Constant
+  Contact 50-char field limit), and `buildSignUpPayload` adds `first_name`/`last_name` to the
+  `sign_up_form` body **only when present** - so a nameless signup posts the identical payload as
+  before. The name is never logged; only a PII-free `has_name` boolean is tracked.
 - **Spam guards** are the same layered set as the contact endpoint (honeypot, validation, per-IP
   rate limit, same-origin), via the shared `http-guards.js`. The OAuth credentials are env-only, so
   they cannot reach the client bundle or repo (guarded structurally, like the contact destination).

@@ -135,6 +135,12 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
   validates, applies the same shared spam guards as the contact form, and adds the email to the
   "Matthew Maynes Blog" list in Constant Contact. The block is mobile-first: input and button stack
   full width below `sm` and go inline on one row at `sm+`.
+- **Optional name capture (spec 0018 amendment).** The box stays as above by default; focusing the
+  email reveals a single optional "Name" field between the email and the button, and the row reflows
+  to stacked (email -> Name -> Subscribe). Providing a name is optional; when given it is split on
+  the first space (first token -> first name, remainder -> last name) and stored on the Constant
+  Contact contact for later personalization. A PII-free `has_name` boolean rides the submit event
+  (never the name itself).
 - The Constant Contact OAuth credentials live only in server env (`CTCT_CLIENT_ID`,
   `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID`) and never reach the browser or the repo. The route mints a
   24h access token from the non-rotating refresh token (cached in-memory across requests) and calls

@@ -109,10 +109,11 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 8. Submit to Constant Contact (refresh-cached token -> sign_up_form).
+  // 8. Submit to Constant Contact (refresh-cached token -> sign_up_form). The
+  //    optional name (spec 0018 amendment) is split into first/last name in the lib.
   try {
     await submitSubscription(
-      { email: result.data.email, clientId, refreshToken, listId },
+      { email: result.data.email, name: result.data.name, clientId, refreshToken, listId },
       { cache: tokenCache },
     );
   } catch (err) {
