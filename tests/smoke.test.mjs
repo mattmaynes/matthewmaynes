@@ -108,11 +108,17 @@ const routes = [
       // Its href is absolute (metadataBase), so this mimetype marker - not the
       // root-relative subscribe href above - is what guards the head link.
       'application/rss+xml',
-      // Email subscribe block (spec 0018) at the bottom of the listing: its title,
-      // and the responsive-layout class that stacks the input/button on mobile and
-      // goes inline at sm+ (so removing the responsive layout reddens this).
+      // Email subscribe block (spec 0018) at the bottom of the listing. These
+      // markers are UNIQUE to the subscribe form on this route, so they can
+      // actually fail (feedback 0013 / the recurring "assert what the unit
+      // uniquely produces" learning): the bare "sm:flex-row" utility is emitted by
+      // the shared footer too, so it could NOT catch a dropped form. Instead:
+      // - the subtext copy proves the form body rendered (unique string), and
+      // - "sm:flex-row sm:items-end" is the form's own row container class combo,
+      //   which nothing else on /blog emits, so it guards the responsive layout.
       "Subscribe for updates",
-      "sm:flex-row",
+      "No spam; unsubscribe anytime.",
+      "sm:flex-row sm:items-end",
     ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
@@ -136,10 +142,14 @@ const routes = [
       // RSS subscribe link + feed autodiscovery on the post page (spec 0013).
       'href="/blog/feed.xml"',
       'application/rss+xml',
-      // Email subscribe block (spec 0018) after the post content, same responsive
-      // layout marker as the listing so a dropped block or layout fails here too.
+      // Email subscribe block (spec 0018) after the post content. Unit-unique
+      // markers, same rationale as the listing (feedback 0013): the subtext copy
+      // proves the form rendered, and "sm:flex-row sm:items-end" (the form's own
+      // row container) guards the responsive layout - the bare "sm:flex-row"
+      // utility is shared by chrome and could not fail.
       "Subscribe for updates",
-      "sm:flex-row",
+      "No spam; unsubscribe anytime.",
+      "sm:flex-row sm:items-end",
     ],
     absent: ["Placeholder"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur

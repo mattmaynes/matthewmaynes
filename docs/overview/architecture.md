@@ -149,10 +149,15 @@ per-component code. Already implemented in `src/styles/`.
   secrets. Two `fetch` calls to Constant Contact, no SDK.
 - **Token handling.** The route mints a 24h bearer token from the long-lived, **non-rotating**
   refresh token and caches it in module scope (with an expiry skew) so a burst of submits does not
-  re-mint each time. Non-rotating means a refresh yields a new access token but the same refresh
-  token, so nothing is persisted back; a restart just re-mints. The add-contact call hits the
-  create-or-update `sign_up_form` endpoint with `create_source: "Contact"`, so a repeat email is
-  idempotent (no duplicate error).
+  re-mint each time. The cache **memoizes the in-flight refresh**, so a concurrent cold-cache burst
+  shares one mint rather than each caller hitting the auth server. Non-rotating means a refresh
+  yields a new access token but the same refresh token, so nothing is persisted back; a restart just
+  re-mints. If the cached token is invalidated upstream before its computed TTL (revocation, clock
+  skew, early expiry), the add-contact call returns 401 and the core **self-heals once** - clears the
+  cache, re-mints, and retries the add a single time - rather than failing every subscribe until a
+  restart. The add-contact call hits the create-or-update `sign_up_form` endpoint with
+  `create_source: "Contact"`, so a repeat email is idempotent (no duplicate error); on any non-2xx it
+  throws **status-only** (never the response body, which can echo the submitted email into logs).
 - **Spam guards** are the same layered set as the contact endpoint (honeypot, validation, per-IP
   rate limit, same-origin), via the shared `http-guards.js`. The OAuth credentials are env-only, so
   they cannot reach the client bundle or repo (guarded structurally, like the contact destination).

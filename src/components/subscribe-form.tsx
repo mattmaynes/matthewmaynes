@@ -21,11 +21,15 @@ type Status =
   | { kind: "success" }
   | { kind: "error"; message: string };
 
-/** Shared focus-ring classes, matching the site's other interactive surfaces. */
-const RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset";
-
-export function SubscribeForm({ className }: { className?: string }) {
+export function SubscribeForm({
+  className,
+  source,
+}: {
+  className?: string;
+  /** Which surface this instance renders on - a PII-free analytics dimension so
+   *  listing vs. post conversions are attributable. Never carries the email. */
+  source: "blog_index" | "blog_post";
+}) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const posthog = usePostHog();
 
@@ -42,7 +46,7 @@ export function SubscribeForm({ className }: { className?: string }) {
     const form = event.currentTarget;
     const data = new FormData(form);
     setStatus({ kind: "submitting" });
-    track("blog_subscribe_submitted");
+    track("blog_subscribe_submitted", { source });
     try {
       const res = await fetch("/v1/subscribe", {
         method: "POST",
@@ -56,7 +60,7 @@ export function SubscribeForm({ className }: { className?: string }) {
       if (res.ok && json?.ok) {
         form.reset();
         setStatus({ kind: "success" });
-        track("blog_subscribe_succeeded");
+        track("blog_subscribe_succeeded", { source });
       } else {
         setStatus({
           kind: "error",
@@ -65,14 +69,14 @@ export function SubscribeForm({ className }: { className?: string }) {
               ? json.error
               : "Something went wrong. Please try again.",
         });
-        track("blog_subscribe_failed", { reason: `http_${res.status}` });
+        track("blog_subscribe_failed", { reason: `http_${res.status}`, source });
       }
     } catch {
       setStatus({
         kind: "error",
         message: "Could not reach the server. Please try again.",
       });
-      track("blog_subscribe_failed", { reason: "network" });
+      track("blog_subscribe_failed", { reason: "network", source });
     }
   }
 
@@ -99,7 +103,6 @@ export function SubscribeForm({ className }: { className?: string }) {
                 autoComplete="email"
                 required
                 maxLength={200}
-                className={RING}
               />
             </FormFieldControl>
           </FormField>

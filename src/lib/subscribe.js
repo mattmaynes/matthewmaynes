@@ -129,10 +129,13 @@ export async function addContactToList(
     signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(
-      `Constant Contact sign_up_form responded ${res.status}: ${detail.slice(0, 200)}`,
-    );
+    // Do NOT fold the response body into the error: sign_up_form 4xx bodies can
+    // echo the submitted email_address, and the route logs thrown errors - that
+    // would leak a subscriber's email into container logs. Status only. Attach it
+    // as `err.status` so callers can branch (e.g. self-heal on a stale-token 401).
+    const err = new Error(`Constant Contact sign_up_form responded ${res.status}`);
+    err.status = res.status;
+    throw err;
   }
   return res;
 }
@@ -149,23 +152,34 @@ export async function addContactToList(
 export function createTokenCache(now = Date.now) {
   /** @type {{ token: string, expiresAtMs: number } | null} */
   let cached = null;
+  /** @type {Promise<string> | null} in-flight mint, shared by concurrent callers */
+  let inflight = null;
   return {
     /**
      * @param {{ clientId: string, refreshToken: string }} creds
      * @param {typeof fetch} [fetchImpl]
      * @returns {Promise<string>} a valid bearer access token
      */
-    async getAccessToken(creds, fetchImpl = fetch) {
-      if (cached && now() < cached.expiresAtMs) return cached.token;
-      const { accessToken, expiresInSec } = await refreshAccessToken(
-        creds,
-        fetchImpl,
-      );
-      cached = {
-        token: accessToken,
-        expiresAtMs: now() + (expiresInSec - EXPIRY_SKEW_SEC) * 1000,
-      };
-      return accessToken;
+    getAccessToken(creds, fetchImpl = fetch) {
+      if (cached && now() < cached.expiresAtMs)
+        return Promise.resolve(cached.token);
+      // Memoize the in-flight refresh so a cold-cache burst shares ONE mint
+      // instead of each concurrent caller hitting the auth server. Cleared in
+      // `finally` so a failed mint does not wedge the cache (the next call retries).
+      if (!inflight) {
+        inflight = refreshAccessToken(creds, fetchImpl)
+          .then(({ accessToken, expiresInSec }) => {
+            cached = {
+              token: accessToken,
+              expiresAtMs: now() + (expiresInSec - EXPIRY_SKEW_SEC) * 1000,
+            };
+            return accessToken;
+          })
+          .finally(() => {
+            inflight = null;
+          });
+      }
+      return inflight;
     },
     /** Test/reset helper: drop any cached token. */
     clear() {
@@ -186,9 +200,21 @@ export async function submitSubscription(
   { email, clientId, refreshToken, listId },
   { fetchImpl = fetch, cache },
 ) {
-  const accessToken = await cache.getAccessToken(
-    { clientId, refreshToken },
-    fetchImpl,
-  );
-  await addContactToList({ accessToken, email, listId }, fetchImpl);
+  const creds = { clientId, refreshToken };
+  const accessToken = await cache.getAccessToken(creds, fetchImpl);
+  try {
+    await addContactToList({ accessToken, email, listId }, fetchImpl);
+  } catch (err) {
+    // A cached access token can be invalidated upstream before its computed TTL
+    // (revocation, >60s clock skew, or an early Constant Contact expiry). Rather
+    // than 500ing every subscribe until the process restarts, self-heal once:
+    // drop the stale token, mint a fresh one, and retry the add a single time.
+    if (err && err.status === 401) {
+      cache.clear();
+      const fresh = await cache.getAccessToken(creds, fetchImpl);
+      await addContactToList({ accessToken: fresh, email, listId }, fetchImpl);
+      return;
+    }
+    throw err;
+  }
 }

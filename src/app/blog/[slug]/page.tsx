@@ -211,7 +211,7 @@ export default async function BlogPostPage({
         The thoughts and views expressed here are my own.
       </p>
 
-      <SubscribeForm className="mt-12 border-t border-border pt-10" />
+      <SubscribeForm source="blog_post" className="mt-12 border-t border-border pt-10" />
 
       <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">

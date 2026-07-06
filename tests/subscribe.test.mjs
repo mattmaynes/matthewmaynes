@@ -127,19 +127,28 @@ test("addContactToList posts sign_up_form with bearer auth and the payload", asy
   assert.deepEqual(body.list_memberships, ["list-7"]);
 });
 
-test("addContactToList throws on a non-2xx", async () => {
+test("addContactToList throws status-only on a non-2xx (never the response body / PII)", async () => {
   const fakeFetch = async () => ({
     ok: false,
     status: 400,
-    text: async () => "bad list",
+    // A real sign_up_form 4xx body can echo the submitted address; include one to
+    // prove it never reaches the thrown Error (which the route logs to stdout).
+    text: async () => "invalid: reader@example.com is on a suppression list",
   });
-  await assert.rejects(
-    () =>
-      addContactToList(
-        { accessToken: "t", email: "a@b.co", listId: "l" },
-        fakeFetch,
-      ),
-    /sign_up_form responded 400/,
+  const err = await addContactToList(
+    { accessToken: "t", email: "reader@example.com", listId: "l" },
+    fakeFetch,
+  ).then(
+    () => {
+      throw new Error("expected a rejection");
+    },
+    (e) => e,
+  );
+  assert.match(err.message, /sign_up_form responded 400/);
+  assert.equal(err.status, 400, "status attached so callers can branch (401 self-heal)");
+  assert.ok(
+    !/reader@example\.com/.test(err.message),
+    "the error message must not carry the response body / email (PII in logs)",
   );
 });
 
@@ -221,4 +230,106 @@ test("submitSubscription reuses the cached token across two submits", async () =
   await submitSubscription({ email: "a@b.co", ...args }, { fetchImpl: fakeFetch, cache });
   await submitSubscription({ email: "c@d.co", ...args }, { fetchImpl: fakeFetch, cache });
   assert.equal(tokenCalls, 1, "the second submit must reuse the cached token");
+});
+
+test("submitSubscription rejects when sign_up_form fails, without leaking the email", async () => {
+  const fakeFetch = async (url) => {
+    if (url.includes("/oauth2/"))
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: "tok", expires_in: 86400 }),
+      };
+    // A non-401 failure (e.g. 400) propagates - it is not retried - and its body
+    // (which echoes the email) must never reach the thrown Error the route logs.
+    return { ok: false, status: 400, text: async () => "invalid: reader@example.com" };
+  };
+  const cache = createTokenCache();
+  const err = await submitSubscription(
+    { email: "reader@example.com", clientId: "c", refreshToken: "r", listId: "l" },
+    { fetchImpl: fakeFetch, cache },
+  ).then(
+    () => {
+      throw new Error("expected a rejection");
+    },
+    (e) => e,
+  );
+  assert.equal(err.status, 400);
+  assert.ok(
+    !/reader@example\.com/.test(err.message),
+    "the rejection must not carry the email (PII in logs)",
+  );
+});
+
+test("submitSubscription self-heals once on a stale-token 401 (clear + re-mint + retry)", async () => {
+  let tokenCalls = 0;
+  let addCalls = 0;
+  const fakeFetch = async (url) => {
+    if (url.includes("/oauth2/")) {
+      tokenCalls++;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: `tok-${tokenCalls}`, expires_in: 86400 }),
+      };
+    }
+    addCalls++;
+    // The first add sees a token the upstream considers stale -> 401; after the
+    // cache is cleared and a fresh token minted, the single retry succeeds.
+    if (addCalls === 1)
+      return { ok: false, status: 401, text: async () => "token expired" };
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  const cache = createTokenCache();
+  await submitSubscription(
+    { email: "a@b.co", clientId: "c", refreshToken: "r", listId: "l" },
+    { fetchImpl: fakeFetch, cache },
+  );
+  assert.equal(addCalls, 2, "the add is retried exactly once after the 401");
+  assert.equal(tokenCalls, 2, "a fresh token is minted for the retry");
+});
+
+test("submitSubscription does not retry past one 401 (a second 401 rejects)", async () => {
+  const fakeFetch = async (url) => {
+    if (url.includes("/oauth2/"))
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: "tok", expires_in: 86400 }),
+      };
+    return { ok: false, status: 401, text: async () => "token expired" };
+  };
+  const cache = createTokenCache();
+  const err = await submitSubscription(
+    { email: "a@b.co", clientId: "c", refreshToken: "r", listId: "l" },
+    { fetchImpl: fakeFetch, cache },
+  ).then(
+    () => {
+      throw new Error("expected a rejection");
+    },
+    (e) => e,
+  );
+  assert.equal(err.status, 401, "a persistent 401 surfaces rather than looping");
+});
+
+test("createTokenCache dedupes a concurrent cold-cache burst into one mint", async () => {
+  let tokenCalls = 0;
+  const fakeFetch = async () => {
+    tokenCalls++;
+    // Yield so all concurrent callers have entered getAccessToken (and shared the
+    // one in-flight promise) before the first mint resolves.
+    await Promise.resolve();
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ access_token: "tok", expires_in: 86400 }),
+    };
+  };
+  const cache = createTokenCache();
+  const creds = { clientId: "c", refreshToken: "r" };
+  const results = await Promise.all(
+    Array.from({ length: 5 }, () => cache.getAccessToken(creds, fakeFetch)),
+  );
+  assert.deepEqual(results, Array(5).fill("tok"), "all callers get the same token");
+  assert.equal(tokenCalls, 1, "concurrent cold-cache callers share ONE mint");
 });

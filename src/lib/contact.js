@@ -4,20 +4,14 @@
  * without booting a server (the `app/v1/contact` route handler is a thin shell
  * over this - the same testable-seam pattern as `src/lib/theme.js`). No secrets
  * or PII live here: the destination address is read from env in the route and
- * passed in. The generic honeypot / same-origin / rate-limit guards now live in
- * `./http-guards.js` (shared with `/v1/subscribe`, spec 0018) and are re-exported
- * below so existing `@/lib/contact` importers are unaffected.
+ * passed in. The generic honeypot / same-origin / rate-limit guards live in
+ * `./http-guards.js` (shared with `/v1/subscribe`, spec 0018); callers import them
+ * from there directly - this module owns only the contact-specific logic.
  *
  * @typedef {{ name: string, email: string, message: string }} ContactData
  * @typedef {{ ok: true, data: ContactData } | { ok: false, error: string }} ValidationResult
  * @typedef {{ from: string, to: string, reply_to: string, subject: string, text: string }} ResendPayload
  */
-
-export {
-  createRateLimiter,
-  isHoneypotFilled,
-  isSameOrigin,
-} from "./http-guards.js";
 
 /** Field length caps, so a payload can't be unbounded. */
 export const LIMITS = { name: 100, email: 200, message: 5000 };

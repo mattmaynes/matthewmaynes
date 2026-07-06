@@ -76,7 +76,7 @@ export default function BlogPage() {
         <BlogList posts={listPosts} />
       )}
 
-      <SubscribeForm className="mt-16 border-t border-border pt-10" />
+      <SubscribeForm source="blog_index" className="mt-16 border-t border-border pt-10" />
     </section>
   );
 }
