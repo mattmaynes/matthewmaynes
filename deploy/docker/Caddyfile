@@ -14,8 +14,16 @@ matthewmaynes.com {
 	# after a docker-rollout swap. Dynamic A upstreams re-resolve the `site` alias
 	# against Docker's embedded DNS (127.0.0.11) every second, so Caddy load-balances
 	# across whatever instances are live and follows the swap. During a rollout both
-	# instances resolve; when the old one is removed, the next refresh drops it and
-	# the retry settings cover any request that dials the just-gone IP in between.
+	# instances resolve; when the old one is removed, the next refresh drops it. Two
+	# mechanisms close the <=1s window where Caddy's cached set still lists the gone
+	# IP: `fail_duration` (passive health) shelves an upstream that fails to CONNECT,
+	# and `lb_try_duration`/`lb_retries` retry the request onto a live instance. A
+	# warming new instance that is not yet listening likewise fails to dial and is
+	# shelved/retried. `fail_duration` counts only transport/connect failures (no
+	# `unhealthy_status`), so a genuine app 5xx never benches the sole steady-state
+	# upstream - and when the upstream is truly unreachable there is nothing to fail
+	# over to anyway, so shelving it does no harm (review 0019). Tuned (lb_retries 3 +
+	# fail_duration) to close the swap window; verified by polling through a real deploy.
 	reverse_proxy {
 		dynamic a {
 			name site
@@ -26,9 +34,8 @@ matthewmaynes.com {
 			dial_timeout 3s
 		}
 		lb_try_duration 5s
-		lb_retries 2
-		fail_duration 10s
-		unhealthy_status 502 503 504
+		lb_retries 3
+		fail_duration 2s
 	}
 }
 

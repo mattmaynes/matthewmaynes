@@ -132,24 +132,42 @@ Caddyfile handling and `docker compose ... pull` (keep the pre-pull - it moves t
 onto the host before the swap so the rollout's new container starts instantly). Then:
 ensure the pinned `docker-rollout` plugin is present (verified install, idempotent), and
 run `docker rollout -f deploy/docker/compose.site.yml site` in place of `up -d --wait`.
-Keep the label-scoped `docker image prune`. The run-level `concurrency: deploy-main` group
-already serializes deploys, so two rollouts never overlap.
+Then a **post-rollout end-to-end health gate** (review 0019): the container HEALTHCHECK
+only proves the app answers on localhost inside the container, not that Caddy's
+dynamic-upstream routing reaches it - a wrong resolver / alias / IP version would leave
+the deploy green while every visitor gets a 502, and nothing else re-verifies the routing
+per deploy. So after the rollout, `curl` the site through Caddy over loopback
+(`--resolve matthewmaynes.com:443:127.0.0.1`, so it does not depend on DNS/hairpin) and
+`exit 1` if it is not reachable, with a short retry budget. Keep the label-scoped
+`docker image prune`. The run-level `concurrency: deploy-main` group already serializes
+deploys, so two rollouts never overlap.
 
-**One-time cutover.** The first deploy after this lands still finds the legacy
-`container_name: site` container. docker-rollout expects Compose-managed indexed
-containers, so the script guards the transition: if a container literally named `site`
-exists, do one final plain `docker compose up -d` (accepting a last brief blip) to hand
-control to the new naming, then rollout takes over on every deploy after. The guard is a
-name check so it self-clears and never runs again.
+**One-time cutover (zero-downtime, via the same rollout).** The first deploy after this
+lands still finds the legacy `container_name: site` container. Rather than a separate
+`rm`+recreate path (which would be a ~15-25s hard-down window and would not be fail-safe -
+review 0019), the plain `docker rollout` handles it: it adds an indexed instance alongside
+the legacy container (`up --no-recreate --scale site=2`), waits for the new one's health,
+then removes the legacy one - so the cutover is itself zero-downtime, and if the new
+instance never goes healthy it fails cleanly with the legacy container still serving. No
+special-cased branch, and it self-clears once the indexed instance exists. (The transition
+is scratch-tested on the host before merge to confirm rollout handles the legacy-named
+container cleanly.)
 
 **Verification (infra - observe, do not unit-test).** Zero-downtime is a runtime property,
-so the evidence is a real deploy watched from outside: a loop polling
-`https://matthewmaynes.com` (e.g. every 200ms) across a deploy records only `200`s - no
-502 or connection error - and `docker ps` shows the two `site-*` containers coexisting
-mid-rollout then collapsing to one. A deliberately-broken image is confirmed to fail the
-rollout while the old container keeps serving (fail-safe). No repo test suite change:
-this is deploy-pipeline behavior with no app-code seam, mirroring how the deploy is
-already "verified against the running container, not the job status" (learnings 0002).
+so the evidence is a real deploy watched from outside AND a per-deploy gate that reddens a
+regression. (1) *Per-deploy gate*: the post-rollout `curl` above runs on every deploy, so a
+future revert to a static upstream / broken routing fails the deploy that introduced it -
+not just this one. (2) *One-time live proof for this change*: a **high-rate** probe (a tight
+loop with no inter-request sleep, every response recorded, any non-200 or connection error
+counted as a failure - a 200ms serial poll can straddle and miss the sub-second swap gap)
+run across a real deploy shows zero failures, and `docker events` / a watch loop confirms
+the two `site-*` instances coexist mid-rollout then collapse to one. (3) *Fail-safe*: the
+pullable-but-unhealthy path (what `docker rollout` actually guards - a non-pullable tag
+fails earlier at `pull`) is exercised once on a scratch Compose project to confirm rollout
+tears the new instance down and leaves the old serving, converting the acceptance item from
+asserted to verified. No repo test suite change: this is deploy-pipeline behavior with no
+app-code seam, mirroring how the deploy is already "verified against the running container,
+not the job status" (learnings 0002).
 
 ## Acceptance
 
@@ -164,14 +182,21 @@ already "verified against the running container, not the job status" (learnings 
 - [ ] `compose.site.yml` no longer sets `container_name`; the service still has no
       published host port, still joins `edge`, and still reads `.env.site`.
 - [ ] The Caddyfile `matthewmaynes.com` block uses dynamic A upstreams (`resolvers
-      127.0.0.11`, short `refresh`) with retry/passive-health settings; the `www` and
-      `rogueoak.com` blocks are unchanged; `caddy validate` passes and the running config
-      serves the site.
-- [ ] A deliberately-broken image fails the deploy (new container never healthy) while the
-      previously-running container keeps serving - a bad build cannot take the site down.
+      127.0.0.11`, short `refresh`) with connection-level retry (`lb_try_duration`/
+      `lb_retries`) and no passive `fail_duration`/`unhealthy_status` (which would strand a
+      single steady-state upstream); the `www` and `rogueoak.com` blocks are unchanged;
+      `caddy validate` passes and the running config serves the site.
+- [ ] The deploy has a **post-rollout end-to-end health gate**: after the rollout it
+      `curl`s the site through Caddy (loopback `--resolve`, not just the container
+      healthcheck) and fails the deploy on a non-200, so a broken routing/upstream config
+      reddens the deploy instead of shipping a green 502.
+- [ ] The **pullable-but-unhealthy** image path fails the deploy while the previously-running
+      container keeps serving (verified once on a scratch project); a non-pullable tag fails
+      earlier at `pull`. A bad build cannot take the site down.
 - [ ] `IMAGE_TAG` pinning still identifies the running version and a rollback is a
       one-line redeploy of the prior `sha-<commit>` tag.
 - [ ] The one-time cutover from the legacy `container_name: site` container is handled by
-      the deploy script (guarded so it runs at most once), not by hand.
+      the same `docker rollout` (indexed instance up + healthy before the legacy one is
+      removed - zero-downtime, fail-safe), with no separate `rm`+recreate path.
 - [ ] `architecture.md` documents the blue/green rollout + dynamic-upstream routing;
       lint/build of the repo remain clean (no app code changed).
