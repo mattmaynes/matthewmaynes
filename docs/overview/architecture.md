@@ -92,6 +92,14 @@ per-component code. Already implemented in `src/styles/`.
   the new container starts instantly. A broken image never goes healthy, so the old instance keeps
   serving and the deploy fails - a bad build cannot take the site down. A one-time cutover (guarded by
   a name check, self-clearing) replaces the pre-0019 legacy `site` container the first time.
+- **Rollout capacity (feedback 0015):** the blue/green overlap runs **two** site instances at once, so
+  the VM must hold the peak - two Next servers **plus** Caddy and the cohosted rogueoak app - or the
+  swap OOMs the box (it did once, on a 512MB no-swap VM: the host thrashed, `sshd` went unreachable,
+  and Caddy was left with no backend). Guarded now by: a VM with headroom (~1GB) **and swap** (a 2GB
+  swap file; the small box had none); a generous `mem_limit`/`mem_reservation` on the site service so
+  one stack can't starve the shared box and take down its neighbour; and a `timeout-minutes` on the
+  deploy job so a wedged host fails fast instead of hanging. Treat any deploy that changes runtime
+  topology (instance count / memory) as a capacity change - size the host for the overlap first.
 - **Image cache pre-warm (spec 0006):** the `prewarm` job runs after a healthy deploy and hits the
   live site (`node scripts/prewarm-images.mjs $SITE_URL`, via Caddy to the fresh container) to
   populate the on-demand `next/image` optimizer cache, so the first real visitor gets cache HITs
