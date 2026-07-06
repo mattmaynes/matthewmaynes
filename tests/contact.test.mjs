@@ -9,12 +9,14 @@ import assert from "node:assert/strict";
 import {
   LIMITS,
   validateContact,
-  isHoneypotFilled,
-  isSameOrigin,
-  createRateLimiter,
   buildResendPayload,
   sendViaResend,
 } from "../src/lib/contact.js";
+import {
+  isHoneypotFilled,
+  isSameOrigin,
+  createRateLimiter,
+} from "../src/lib/http-guards.js";
 
 test("validateContact accepts and trims a good submission", () => {
   const r = validateContact({
