@@ -38,6 +38,16 @@ Subscribe button stacks full width beneath it; at `sm` and up the input and butt
 inline on one row (input flexes to fill, button hugs its label). The "Subscribe for
 updates" title sits above both.
 
+**Progressive optional name capture (amendment).** By default the box stays exactly as
+above. When the reader **focuses the email field**, a single optional **"Name"** field
+appears directly below the email, between it and the Subscribe button, and the row reflows
+to a stacked layout (email -> Name -> Subscribe) at all widths; the field stays visible
+once revealed. Providing a name is optional - an empty name subscribes exactly as before.
+When a name is given it is split on the first whitespace run: the first token becomes the
+contact's **first name** and the remainder (if any) the **last name**, both stored on the
+Constant Contact contact so later emails can be personalized. This is a low-friction way to
+capture a bit more without a heavier form, and applies to every placement of the box.
+
 ## Scope
 
 In:
@@ -48,6 +58,12 @@ In:
   (the client boundary, learnings 0001), never from `@rogueoak/canopy/*` directly.
 - **Responsive layout**: stacked and full-width below `sm` (input full width, button
   full width beneath); inline single row at `sm+` (input `flex-1`, button auto width).
+- **Progressive name field (amendment)**: an `expanded` state, set true on email focus
+  (and kept true so it stays clickable), reveals an optional "Name" `Input` between the
+  email and the button; while expanded the layout reflows to stacked (email -> Name ->
+  Subscribe) at all widths. Default (unexpanded) layout is unchanged. The Name field has
+  an accessible "Name (optional)" label, `autoComplete="name"`, `maxLength={100}`, and the
+  shared focus-ring. Submit sends `{ email, name, company }`; an empty `name` is fine.
 - **Placement** on two surfaces, both server components rendering the client island:
   - Blog **listing** `src/app/blog/page.tsx` - after the `<BlogList>` block (after
     line 76), before `</section>`, at the container's `max-w-[1200px]` width.
@@ -61,11 +77,16 @@ In:
   validation 400, per-IP rate limit 429), then submits to Constant Contact and returns
   `{ ok: true }` (or a generic 500 that never leaks which config/step failed).
 - A pure, unit-tested `src/lib/subscribe.js` (plain JS + JSDoc, `node --test`-able
-  without a server): `validateSubscribe` (email required, shape, length cap);
-  `buildSignUpPayload(email, listId)` producing the Constant Contact
-  `contacts/sign_up_form` body; `refreshAccessToken(...)` (mint a bearer token from the
-  refresh token); and `submitSubscription(...)` (refresh-then-POST), all with injectable
-  `fetch`/`now` so the network is mocked in tests.
+  without a server): `validateSubscribe` (email required, shape, length cap; **optional
+  `name`, trimmed + length-capped** - amendment); a pure **`splitName(name)` ->
+  `{ firstName?, lastName? }`** (trim/collapse, split on first whitespace, each capped at
+  the Constant Contact 50-char field limit, empty parts omitted - amendment);
+  `buildSignUpPayload(email, listId, { firstName, lastName })` producing the Constant
+  Contact `contacts/sign_up_form` body, **adding `first_name`/`last_name` only when present**
+  (so a nameless signup yields the identical payload as before - amendment);
+  `refreshAccessToken(...)` (mint a bearer token from the refresh token); and
+  `submitSubscription(...)` (refresh-then-POST, now threading the split name), all with
+  injectable `fetch`/`now` so the network is mocked in tests.
 - **Reuse, do not duplicate**, the generic guards from `src/lib/contact.js` -
   `createRateLimiter`, `isHoneypotFilled`, `isSameOrigin` (they carry no
   contact-specific assumptions). See Approach for the import-vs-extract trade-off.
@@ -76,13 +97,17 @@ In:
   token, so there is nothing to persist.
 - A **PII-free** PostHog conversion event on success (outcome only, never the address),
   gated by `clientAnalyticsEnabled()`, with the form wrapped in `ph-no-capture` -
-  mirroring the contact form (learnings feedback 0011).
+  mirroring the contact form (learnings feedback 0011). The submit event also carries a
+  PII-free **`has_name`** boolean (whether a name was provided) and a `source`
+  (`blog_index`/`blog_post`) - never the name or email itself (amendment).
 - Secret wiring **documentation**: add `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`,
   `CTCT_LIST_ID` as empty, commented placeholders in `.env.example` (server-only, never
   `NEXT_PUBLIC_`). The live values already exist in `deploy/docker/.env.site` on the
   host; `compose.site.yml` already reads that `env_file`, so no compose change is needed.
 - Tests: unit tests for `src/lib/subscribe.js` (validation, payload shaping, token
-  refresh, submit success/failure) with `fetch` mocked; a smoke assertion that the
+  refresh, submit success/failure) with `fetch` mocked, **plus `splitName` edge cases
+  (one/two/three+ tokens, extra spaces, empty, over-length) and `buildSignUpPayload`
+  emitting/omitting `first_name`/`last_name` (amendment)**; a smoke assertion that the
   subscribe block renders on **both** the listing and a post page (anchored on
   subscribe-unique copy that can actually fail); guard-path tests (403/400/429/
   honeypot-200) that run with the Constant Contact creds forced empty.
@@ -206,7 +231,16 @@ Contact token-refresh + sign_up_form flow and its secret wiring into architectur
 - [ ] `.env.example` documents the three vars (empty, server-only, commented); nothing
       secret is committed; no `compose.site.yml` change is required.
 - [ ] A PII-free success event is tracked (no address in the payload); the form stays
-      `ph-no-capture`.
+      `ph-no-capture`. The submit event carries a `has_name` boolean (never the name).
+- [ ] *(amendment)* The box is unchanged by default; focusing the email reveals an optional
+      "Name" field between the email and the button, the layout reflows to stacked
+      (email -> Name -> Subscribe), and the field stays visible after blur - on both
+      placements. An empty name subscribes exactly as before (identical request + payload).
+- [ ] *(amendment)* A name splits on the first whitespace: `"Matthew Maynes"` sets
+      `first_name` "Matthew" + `last_name` "Maynes"; a single token sets only `first_name`;
+      three-plus tokens put the remainder in `last_name`. `splitName` and the payload
+      builder are unit-tested (incl. extra spaces, empty, over-length); verified end-to-end
+      against the real list once before merge.
 - [ ] Unit tests cover validation, payload shaping, token refresh, and submit success/
       failure with `fetch` mocked; smoke tests assert the subscribe block on **both**
       surfaces on subscribe-unique copy.

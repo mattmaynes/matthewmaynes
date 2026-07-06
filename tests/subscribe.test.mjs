@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import {
   SUBSCRIBE_LIMITS,
   validateSubscribe,
+  splitName,
   buildSignUpPayload,
   refreshAccessToken,
   addContactToList,
@@ -17,10 +18,62 @@ import {
   submitSubscription,
 } from "../src/lib/subscribe.js";
 
-test("validateSubscribe accepts and trims a good email", () => {
+test("validateSubscribe accepts and trims a good email (name defaults empty)", () => {
   const r = validateSubscribe({ email: "  reader@example.com  " });
   assert.ok(r.ok);
-  assert.deepEqual(r.data, { email: "reader@example.com" });
+  assert.deepEqual(r.data, { email: "reader@example.com", name: "" });
+});
+
+test("validateSubscribe accepts an optional name (trimmed, capped), never required", () => {
+  // Present name is trimmed.
+  const withName = validateSubscribe({ email: "a@b.co", name: "  Matthew Maynes  " });
+  assert.ok(withName.ok);
+  assert.equal(withName.data.name, "Matthew Maynes");
+  // Absent / blank / non-string name still validates, normalized to "".
+  for (const input of [
+    { email: "a@b.co" },
+    { email: "a@b.co", name: "   " },
+    { email: "a@b.co", name: 5 },
+  ]) {
+    const r = validateSubscribe(input);
+    assert.ok(r.ok, "an empty/absent name must still validate");
+    assert.equal(r.data.name, "");
+  }
+  // Over-length name is capped, not rejected.
+  const long = validateSubscribe({ email: "a@b.co", name: "x".repeat(500) });
+  assert.ok(long.ok);
+  assert.equal(long.data.name.length, SUBSCRIBE_LIMITS.name);
+});
+
+test("splitName splits on the first space into first/last name", () => {
+  assert.deepEqual(splitName("Matthew"), { firstName: "Matthew" });
+  assert.deepEqual(splitName("Matthew Maynes"), {
+    firstName: "Matthew",
+    lastName: "Maynes",
+  });
+  // Three+ tokens: the remainder (incl. a middle name) folds into the last name.
+  assert.deepEqual(splitName("Matthew James Maynes"), {
+    firstName: "Matthew",
+    lastName: "James Maynes",
+  });
+});
+
+test("splitName normalizes whitespace and handles empties", () => {
+  assert.deepEqual(splitName("  Matthew   Maynes  "), {
+    firstName: "Matthew",
+    lastName: "Maynes",
+  });
+  for (const empty of ["", "   ", undefined, null, 42]) {
+    assert.deepEqual(splitName(empty), {}, `expected {} for ${JSON.stringify(empty)}`);
+  }
+});
+
+test("splitName caps each part at the Constant Contact field limit", () => {
+  const first = "a".repeat(80);
+  const last = "b".repeat(80);
+  const parts = splitName(`${first} ${last}`);
+  assert.equal(parts.firstName.length, SUBSCRIBE_LIMITS.part);
+  assert.equal(parts.lastName.length, SUBSCRIBE_LIMITS.part);
 });
 
 test("validateSubscribe rejects missing, blank, or non-string emails", () => {
@@ -54,6 +107,35 @@ test("buildSignUpPayload shapes the create-or-update body with the list membersh
     create_source: "Contact",
     list_memberships: ["list-123"],
   });
+});
+
+test("buildSignUpPayload omits first/last name when absent (identical to before)", () => {
+  // A nameless signup must produce the exact same payload as the no-name feature.
+  const noArg = buildSignUpPayload("a@b.co", "l");
+  const emptyParts = buildSignUpPayload("a@b.co", "l", {});
+  const expected = {
+    email_address: "a@b.co",
+    create_source: "Contact",
+    list_memberships: ["l"],
+  };
+  assert.deepEqual(noArg, expected);
+  assert.deepEqual(emptyParts, expected);
+  assert.ok(!("first_name" in emptyParts) && !("last_name" in emptyParts));
+});
+
+test("buildSignUpPayload adds first/last name only when present", () => {
+  assert.deepEqual(buildSignUpPayload("a@b.co", "l", { firstName: "Matthew" }), {
+    email_address: "a@b.co",
+    create_source: "Contact",
+    list_memberships: ["l"],
+    first_name: "Matthew",
+  });
+  const both = buildSignUpPayload("a@b.co", "l", {
+    firstName: "Matthew",
+    lastName: "Maynes",
+  });
+  assert.equal(both.first_name, "Matthew");
+  assert.equal(both.last_name, "Maynes");
 });
 
 test("refreshAccessToken posts the refresh grant and returns the token + ttl", async () => {
@@ -210,6 +292,54 @@ test("submitSubscription gets a token then adds the contact to the list", async 
   assert.equal(calls.length, 2, "expected a token call then a sign_up_form call");
   assert.match(calls[0], /oauth2\/default\/v1\/token/);
   assert.match(calls[1], /contacts\/sign_up_form/);
+});
+
+test("submitSubscription threads a split name into the sign_up_form body", async () => {
+  let signupBody;
+  const fakeFetch = async (url, opts) => {
+    if (url.includes("/oauth2/"))
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: "tok", expires_in: 86400 }),
+      };
+    signupBody = JSON.parse(opts.body);
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  const cache = createTokenCache();
+  await submitSubscription(
+    {
+      email: "reader@example.com",
+      name: "Matthew James Maynes",
+      clientId: "c",
+      refreshToken: "r",
+      listId: "l",
+    },
+    { fetchImpl: fakeFetch, cache },
+  );
+  assert.equal(signupBody.first_name, "Matthew");
+  assert.equal(signupBody.last_name, "James Maynes");
+  assert.equal(signupBody.email_address, "reader@example.com");
+});
+
+test("submitSubscription with no name sends no first/last name", async () => {
+  let signupBody;
+  const fakeFetch = async (url, opts) => {
+    if (url.includes("/oauth2/"))
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: "tok", expires_in: 86400 }),
+      };
+    signupBody = JSON.parse(opts.body);
+    return { ok: true, status: 200, text: async () => "" };
+  };
+  const cache = createTokenCache();
+  await submitSubscription(
+    { email: "a@b.co", clientId: "c", refreshToken: "r", listId: "l" },
+    { fetchImpl: fakeFetch, cache },
+  );
+  assert.ok(!("first_name" in signupBody) && !("last_name" in signupBody));
 });
 
 test("submitSubscription reuses the cached token across two submits", async () => {

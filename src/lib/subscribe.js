@@ -10,13 +10,16 @@
  * are mocked in tests. The generic honeypot / same-origin / rate-limit guards live
  * in `./http-guards.js` and are used directly by the route.
  *
- * @typedef {{ email: string }} SubscribeData
+ * @typedef {{ email: string, name: string }} SubscribeData
  * @typedef {{ ok: true, data: SubscribeData } | { ok: false, error: string }} SubscribeValidation
+ * @typedef {{ firstName?: string, lastName?: string }} NameParts
  * @typedef {{ clientId: string, refreshToken: string, listId: string }} CtctCreds
  */
 
-/** Field length cap, so a payload can't be unbounded. */
-export const SUBSCRIBE_LIMITS = { email: 200 };
+// Field length caps, so a payload can't be unbounded. `email`/`name` bound the
+// raw inputs; `part` is the Constant Contact first_name/last_name field limit, so
+// a split part never overflows the API.
+export const SUBSCRIBE_LIMITS = { email: 200, name: 100, part: 50 };
 
 // Same deliberately-loose shape as the contact core: one @, a dot in the domain,
 // no whitespace. Gates obvious garbage, not RFC-perfect addresses.
@@ -35,32 +38,70 @@ const EXPIRY_SKEW_SEC = 60;
 
 /**
  * Validate + normalize a raw submission. Trims the email, requires it, checks a
- * basic shape, and enforces the length cap.
- * @param {{ email?: unknown }} input
+ * basic shape, and enforces the length cap. The `name` is OPTIONAL (spec 0018
+ * amendment): trimmed and length-capped, but never required - a missing/empty name
+ * still validates and subscribes exactly as before.
+ * @param {{ email?: unknown, name?: unknown }} input
  * @returns {SubscribeValidation}
  */
 export function validateSubscribe(input) {
   const email = typeof input.email === "string" ? input.email.trim() : "";
   if (!email || email.length > SUBSCRIBE_LIMITS.email || !EMAIL_RE.test(email))
     return { ok: false, error: "Please enter a valid email address." };
-  return { ok: true, data: { email } };
+  const name =
+    typeof input.name === "string"
+      ? input.name.trim().slice(0, SUBSCRIBE_LIMITS.name)
+      : "";
+  return { ok: true, data: { email, name } };
+}
+
+/**
+ * Split an optional free-text name into Constant Contact first/last name parts
+ * (spec 0018 amendment). Low-friction single field: the FIRST whitespace-separated
+ * token is the first name and the remainder (if any) the last name; a middle name
+ * folds into the last name, which is fine. Trims, collapses internal whitespace,
+ * caps each part at the Constant Contact field limit, and omits empty parts - so
+ * an empty name yields `{}` and adds nothing to the payload.
+ * @param {unknown} name
+ * @returns {NameParts}
+ */
+export function splitName(name) {
+  const norm = typeof name === "string" ? name.trim().replace(/\s+/g, " ") : "";
+  if (!norm) return {};
+  const sp = norm.indexOf(" ");
+  const first = (sp === -1 ? norm : norm.slice(0, sp)).slice(
+    0,
+    SUBSCRIBE_LIMITS.part,
+  );
+  const rest = sp === -1 ? "" : norm.slice(sp + 1).slice(0, SUBSCRIBE_LIMITS.part);
+  /** @type {NameParts} */
+  const parts = {};
+  if (first) parts.firstName = first;
+  if (rest) parts.lastName = rest;
+  return parts;
 }
 
 /**
  * Shape a validated email into a Constant Contact `sign_up_form` body.
  * `create_source: "Contact"` marks it as a visitor self-signup (contrast the
  * one-off manual `"Account"` bootstrap). The list id is supplied by the caller
- * from env and never hard-coded here.
+ * from env and never hard-coded here. Optional `first_name`/`last_name` (spec 0018
+ * amendment) are added ONLY when present, so a nameless signup produces the exact
+ * same payload as before.
  * @param {string} email
  * @param {string} listId
- * @returns {{ email_address: string, create_source: "Contact", list_memberships: string[] }}
+ * @param {NameParts} [nameParts]
+ * @returns {{ email_address: string, create_source: "Contact", list_memberships: string[], first_name?: string, last_name?: string }}
  */
-export function buildSignUpPayload(email, listId) {
-  return {
+export function buildSignUpPayload(email, listId, nameParts = {}) {
+  const payload = {
     email_address: email,
     create_source: "Contact",
     list_memberships: [listId],
   };
+  if (nameParts.firstName) payload.first_name = nameParts.firstName;
+  if (nameParts.lastName) payload.last_name = nameParts.lastName;
+  return payload;
 }
 
 /**
@@ -110,12 +151,13 @@ export async function refreshAccessToken(
 
 /**
  * Add (or update) a contact on the target list via `sign_up_form`. Throws on a
- * non-2xx. `fetchImpl` is injectable for tests.
- * @param {{ accessToken: string, email: string, listId: string }} args
+ * non-2xx. Optional `nameParts` (spec 0018 amendment) become first/last name on the
+ * contact. `fetchImpl` is injectable for tests.
+ * @param {{ accessToken: string, email: string, listId: string, nameParts?: NameParts }} args
  * @param {typeof fetch} [fetchImpl]
  */
 export async function addContactToList(
-  { accessToken, email, listId },
+  { accessToken, email, listId, nameParts },
   fetchImpl = fetch,
 ) {
   const res = await fetchImpl(SIGNUP_URL, {
@@ -125,7 +167,7 @@ export async function addContactToList(
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-    body: JSON.stringify(buildSignUpPayload(email, listId)),
+    body: JSON.stringify(buildSignUpPayload(email, listId, nameParts)),
     signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
@@ -193,17 +235,20 @@ export function createTokenCache(now = Date.now) {
  * contact to the list. Throws on any non-2xx so the route maps it to a generic
  * 500. The `cache` is supplied by the route (module-scoped) so it persists across
  * requests; `fetchImpl` is injectable for tests.
- * @param {{ email: string } & CtctCreds} args
+ * The optional `name` (spec 0018 amendment) is split into first/last name here and
+ * stored on the contact; an empty/absent name adds nothing to the payload.
+ * @param {{ email: string, name?: string } & CtctCreds} args
  * @param {{ fetchImpl?: typeof fetch, cache: ReturnType<typeof createTokenCache> }} deps
  */
 export async function submitSubscription(
-  { email, clientId, refreshToken, listId },
+  { email, name, clientId, refreshToken, listId },
   { fetchImpl = fetch, cache },
 ) {
   const creds = { clientId, refreshToken };
+  const nameParts = splitName(name);
   const accessToken = await cache.getAccessToken(creds, fetchImpl);
   try {
-    await addContactToList({ accessToken, email, listId }, fetchImpl);
+    await addContactToList({ accessToken, email, listId, nameParts }, fetchImpl);
   } catch (err) {
     // A cached access token can be invalidated upstream before its computed TTL
     // (revocation, >60s clock skew, or an early Constant Contact expiry). Rather
@@ -212,7 +257,10 @@ export async function submitSubscription(
     if (err && err.status === 401) {
       cache.clear();
       const fresh = await cache.getAccessToken(creds, fetchImpl);
-      await addContactToList({ accessToken: fresh, email, listId }, fetchImpl);
+      await addContactToList(
+        { accessToken: fresh, email, listId, nameParts },
+        fetchImpl,
+      );
       return;
     }
     throw err;

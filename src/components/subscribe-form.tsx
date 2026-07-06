@@ -31,6 +31,10 @@ export function SubscribeForm({
   source: "blog_index" | "blog_post";
 }) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  // Progressive disclosure (spec 0018 amendment): the optional Name field stays
+  // hidden until the reader focuses the email, then stays revealed (never hidden
+  // again, so it does not vanish out from under a click).
+  const [expanded, setExpanded] = useState(false);
   const posthog = usePostHog();
 
   // Track the conversion as explicit, PII-FREE events: the form is
@@ -46,13 +50,18 @@ export function SubscribeForm({
     const form = event.currentTarget;
     const data = new FormData(form);
     setStatus({ kind: "submitting" });
-    track("blog_subscribe_submitted", { source });
+    // `has_name` is PII-free (a boolean, never the name itself) so we can see how
+    // often the optional field is used without capturing what was typed.
+    const nameVal = data.get("name");
+    const hasName = typeof nameVal === "string" && nameVal.trim() !== "";
+    track("blog_subscribe_submitted", { source, has_name: hasName });
     try {
       const res = await fetch("/v1/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: data.get("email"),
+          name: data.get("name"), // optional; split into first/last server-side
           company: data.get("company"), // honeypot
         }),
       });
@@ -92,8 +101,17 @@ export function SubscribeForm({
       {/* `ph-no-capture` masks this subtree in session replay and keeps its input
           out of autocapture (spec 0014), so an email can never enter a recording. */}
       <form onSubmit={handleSubmit} className="ph-no-capture mt-5" noValidate>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <FormField className="w-full sm:flex-1">
+        {/* Default: email + button inline at sm+ (stacked on mobile). Once the
+            optional Name field is revealed, the row reflows to fully stacked
+            (email -> Name -> Subscribe) at all widths so Name sits between them. */}
+        <div
+          className={
+            expanded
+              ? "flex flex-col gap-3"
+              : "flex flex-col gap-3 sm:flex-row sm:items-end"
+          }
+        >
+          <FormField className={expanded ? "w-full" : "w-full sm:flex-1"}>
             <FormFieldLabel className="sr-only">Email address</FormFieldLabel>
             <FormFieldControl>
               <Input
@@ -103,11 +121,32 @@ export function SubscribeForm({
                 autoComplete="email"
                 required
                 maxLength={200}
+                onFocus={() => setExpanded(true)}
               />
             </FormFieldControl>
           </FormField>
 
-          <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+          {/* Optional Name (spec 0018 amendment). Always in the DOM (so its label
+              ships in the SSR HTML) but display:none until revealed, so it is not
+              focusable or announced until the reader shows intent. */}
+          <FormField className={expanded ? "w-full" : "hidden"}>
+            <FormFieldLabel className="sr-only">Name (optional)</FormFieldLabel>
+            <FormFieldControl>
+              <Input
+                name="name"
+                type="text"
+                placeholder="Name (optional)"
+                autoComplete="name"
+                maxLength={100}
+              />
+            </FormFieldControl>
+          </FormField>
+
+          <Button
+            type="submit"
+            disabled={submitting}
+            className={expanded ? "w-full" : "w-full sm:w-auto"}
+          >
             {submitting ? "Subscribing..." : "Subscribe"}
           </Button>
         </div>
