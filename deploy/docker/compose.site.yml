@@ -1,14 +1,18 @@
 # Production site stack. Runs the prebuilt GHCR image behind the edge proxy.
-# No host port is published: Caddy reaches it as `site:3000` over the `edge`
+# No host port is published: Caddy reaches the `site` service alias over the `edge`
 # network. The image carries its own HEALTHCHECK (see Dockerfile).
-# Deploy/update (CD pins IMAGE_TAG to the commit's sha-<full> tag; defaults to latest):
-#   IMAGE_TAG=sha-<commit> docker compose -f compose.site.yml up -d --wait
+# Deploy/update: zero-downtime via docker-rollout (spec 0019), which scales the
+# service to two instances, waits for the new one's health, then removes the old:
+#   IMAGE_TAG=sha-<commit> docker rollout -f compose.site.yml site
 name: site # explicit project name so it never collides with the proxy stack
 
 services:
   site:
     image: ghcr.io/mattmaynes/matthewmaynes:${IMAGE_TAG:-latest}
-    container_name: site
+    # No container_name on purpose: docker-rollout (spec 0019) runs two
+    # Compose-indexed instances (site-site-1 / site-site-2) during a rollout, so a
+    # fixed name would block the overlap. The service keeps the `site` network
+    # alias, which Caddy resolves via Docker DNS to whichever instances are live.
     restart: unless-stopped
     expose:
       - "3000"

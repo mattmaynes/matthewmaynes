@@ -451,6 +451,39 @@ Capture lessons as you go.
   IDENTIFICATION HAS CHANGED" before running anything. Regenerate with `ssh-keyscan <hostname>` (not
   just the IP) so the key matches the identifier being connected to.
 
+## Zero-downtime deploys (spec 0019, feedback 0014)
+
+- **Verify a user-facing deploy property at the EDGE the user hits, not the component you changed.**
+  The blue/green rollout first gated only on the container's internal HEALTHCHECK (`localhost:3000`
+  inside the container). That proves the app answers, not that Caddy's new dynamic-upstream routing
+  reaches it - a wrong resolver/alias/IP-version leaves every container healthy and the deploy green
+  while every visitor gets a 502. Fix: a post-rollout `curl` through Caddy over loopback
+  (`--resolve host:443:127.0.0.1`, no DNS/hairpin dependency) that fails the deploy on non-200. The
+  inner healthcheck passing is not the same as the outer path working, and they disagree exactly when
+  it matters (availability, routing, latency).
+- **A load-bearing but silently-revertible config needs a PER-DEPLOY gate, not a one-time check.** The
+  Caddy dynamic-upstream block is the whole zero-downtime guarantee; reverting it to a static
+  `reverse_proxy site:3000` would restore per-deploy downtime with nothing reddening. The post-rollout
+  health gate re-verifies routing on every deploy, so a future regression fails the deploy that
+  introduced it - a manual one-time poll cannot.
+- **Caddy caches a static upstream's resolved IP; use dynamic upstreams to follow a container swap.**
+  `reverse_proxy site:3000` resolves the alias once and reuses the IP, so after a rollout it keeps
+  hitting the removed container. `dynamic a` with `resolvers 127.0.0.11` + a short `refresh` re-resolves
+  the Docker service alias (embedded DNS returns all live instance IPs), so Caddy load-balances across
+  whatever is up. Cover the sub-refresh window with `lb_try_duration`/`lb_retries` (a dial failure to
+  the just-removed IP retries the live one). Avoid passive `fail_duration`/`unhealthy_status` for a
+  single steady-state upstream: they would mark the only backend down on one 5xx/blip with nowhere to
+  fail over.
+- **Prefer the general tool's built-in transition over a special-cased path.** The first-cut one-time
+  cutover (`docker rm -f site` then recreate) reintroduced the exact hard-down window and was not
+  fail-safe. `docker rollout` already adds an indexed instance alongside the legacy one and removes the
+  old only once the new is healthy - so plain rollout does the legacy->indexed cutover zero-downtime
+  and fails cleanly; the special branch was more code and strictly worse.
+- **`docker-rollout` needs no `container_name` and a reverse proxy that re-resolves.** Removing
+  `container_name` lets Compose run two indexed instances sharing the service network alias; the plugin
+  is a host-run shell script, so pin it to a commit SHA and verify its sha256 before `chmod +x` (treat
+  it like the SHA-pinned Actions - supply chain).
+
 ## Blog subscribe / Constant Contact (spec 0018, feedback 0013)
 
 - **A layout/visual smoke marker must be UNIQUE to the unit on that route - a Tailwind utility
