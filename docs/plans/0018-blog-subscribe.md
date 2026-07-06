@@ -164,3 +164,27 @@ Run in the worktree (`npm ci` already done):
   event). Spawn each as a sub-agent posting inline file:line comments.
 - Address every major/blocker (capture as feedback + roll into learnings); re-test;
   merge on developer approval. Remove the worktree after merge.
+
+## Amendment: optional name capture (folded into spec 0018)
+
+A follow-up increment (its own PR against `main`), added after the base subscribe
+feature merged. Progressive optional name capture, split into Constant Contact
+first/last name. Files touched:
+
+- `src/lib/subscribe.js` - new pure `splitName(name)` (split on first whitespace,
+  cap each part at the 50-char CTCT field limit, omit empties); `validateSubscribe`
+  now normalizes an optional `name`; `buildSignUpPayload` adds `first_name`/
+  `last_name` only when present (nameless payload byte-identical to before);
+  `submitSubscription`/`addContactToList` thread the split name.
+- `src/app/v1/subscribe/route.ts` - reads `name` from the body, passes it through.
+- `src/components/subscribe-form.tsx` - `expanded` state set on email focus reveals
+  an optional "Name" field (in SSR DOM, `display:none` until revealed) between email
+  and button; layout reflows to stacked when expanded; posts `name`; adds a PII-free
+  `has_name` boolean to the submit event.
+- `tests/subscribe.test.mjs` - `splitName` edge cases, optional-name validation,
+  payload with/without name parts, split name reaching the sign_up_form body.
+- `tests/smoke.test.mjs` - "Name (optional)" marker on both blog surfaces.
+- `docs/overview/features.md`, `docs/overview/architecture.md` - documented.
+
+Verify: unit + smoke green; lint + build clean; one real end-to-end signup with a
+name confirms first/last land on the contact.

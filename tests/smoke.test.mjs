@@ -119,6 +119,13 @@ const routes = [
       "Subscribe for updates",
       "No spam; unsubscribe anytime.",
       "sm:flex-row sm:items-end",
+      // Optional Name affordance (spec 0018 amendment): its label ships in the
+      // SSR HTML even though the field is display:none until the email is focused,
+      // so a dropped Name field reddens this. The client-only reveal (onFocus ->
+      // reflow) is not SSR-observable, but the DEFAULT-collapsed state IS guarded:
+      // "sm:flex-row sm:items-end" above only ships while unexpanded (expanded drops
+      // it), so flipping the default to expanded would redden that marker (review 0018).
+      "Name (optional)",
     ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
@@ -150,6 +157,13 @@ const routes = [
       "Subscribe for updates",
       "No spam; unsubscribe anytime.",
       "sm:flex-row sm:items-end",
+      // Optional Name affordance (spec 0018 amendment): its label ships in the
+      // SSR HTML even though the field is display:none until the email is focused,
+      // so a dropped Name field reddens this. The client-only reveal (onFocus ->
+      // reflow) is not SSR-observable, but the DEFAULT-collapsed state IS guarded:
+      // "sm:flex-row sm:items-end" above only ships while unexpanded (expanded drops
+      // it), so flipping the default to expanded would redden that marker (review 0018).
+      "Name (optional)",
     ],
     absent: ["Placeholder"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
