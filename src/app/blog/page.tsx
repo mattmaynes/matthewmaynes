@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getAllPosts, newPostSlug, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 import { BlogList, type BlogListPost } from "@/components/blog-list";
+import { SubscribeForm } from "@/components/subscribe-form";
 import { Button } from "@/components/ui";
 import { RssIcon } from "@/components/blog-icons";
 import { blogFeedTitle } from "@/lib/site";
@@ -74,6 +75,8 @@ export default function BlogPage() {
       ) : (
         <BlogList posts={listPosts} />
       )}
+
+      <SubscribeForm className="mt-16 border-t border-border pt-10" />
     </section>
   );
 }

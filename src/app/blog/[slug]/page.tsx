@@ -6,6 +6,7 @@ import { Button } from "@/components/ui";
 import { RssIcon, ClockIcon } from "@/components/blog-icons";
 import { PostBody, InlineMdx } from "@/components/post-body";
 import { ReadingTimePill } from "@/components/reading-time-pill";
+import { SubscribeForm } from "@/components/subscribe-form";
 import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site, blogFeedTitle } from "@/lib/site";
@@ -209,6 +210,8 @@ export default async function BlogPostPage({
       <p className="mt-10 text-caption text-text-subtle italic">
         The thoughts and views expressed here are my own.
       </p>
+
+      <SubscribeForm className="mt-12 border-t border-border pt-10" />
 
       <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">

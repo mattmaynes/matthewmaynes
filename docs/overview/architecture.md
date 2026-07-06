@@ -97,15 +97,19 @@ per-component code. Already implemented in `src/styles/`.
 ## Configuration & secrets
 
 - The repo is **public**. No secrets, PII, or real contact details in tracked files or history.
-- Env vars: `NODE_ENV`, `SITE_URL` (`https://matthewmaynes.com`), and — for the contact form
-  (spec 0008) — `RESEND_API_KEY`, `CONTACT_TO_EMAIL` (the private destination), and
-  `CONTACT_FROM_EMAIL` (verified-domain sender). All server-only (never `NEXT_PUBLIC_`), provided at
-  runtime, never committed. `.env*` stays git-ignored; locally they live in `.env.local`.
-- **Contact secrets on the host:** `deploy/docker/compose.site.yml` reads them via
+- Env vars: `NODE_ENV`, `SITE_URL` (`https://matthewmaynes.com`); for the contact form
+  (spec 0008) `RESEND_API_KEY`, `CONTACT_TO_EMAIL` (the private destination), and
+  `CONTACT_FROM_EMAIL` (verified-domain sender); and for the blog subscribe (spec 0018)
+  `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`, and `CTCT_LIST_ID` (the Constant Contact OAuth credentials
+  + target list). All server-only (never `NEXT_PUBLIC_`), provided at runtime, never committed.
+  `.env*` stays git-ignored; locally they live in `.env.local`.
+- **Contact + subscribe secrets on the host:** `deploy/docker/compose.site.yml` reads them via
   `env_file: [.env.site]` (`required: false`). The operator creates `deploy/docker/.env.site` once
   (`chmod 600`); it is git-ignored and untracked, so the deploy's `git reset --hard` (no `git clean`)
-  leaves it in place across deploys. No new GitHub Actions secret is needed — the image is
-  config-free and reads env at runtime.
+  leaves it in place across deploys. The Constant Contact credentials were added to the same file
+  (the refresh token was bootstrapped once via the device flow), so subscribe needed no compose or
+  CI change. No new GitHub Actions secret is needed — the image is config-free and reads env at
+  runtime.
 - **PostHog key is build-time, not runtime (spec 0014).** `NEXT_PUBLIC_POSTHOG_KEY` /
   `NEXT_PUBLIC_POSTHOG_HOST` differ in kind from the contact secrets: a `NEXT_PUBLIC_*` value is
   **inlined by `next build`** into the client bundle, not read at runtime. So the "config-free image,
@@ -129,6 +133,33 @@ per-component code. Already implemented in `src/styles/`.
   host vs the request Host - forgeable, so it thins drive-by traffic rather than being a boundary).
   The privacy rule is enforced structurally: the destination is env-only, so it cannot appear in the
   client bundle or repo (a smoke/grep check guards against regressions).
+- **Shared guards (spec 0018).** The honeypot, same-origin, and per-IP rate-limit helpers were
+  extracted from `contact.js` into `src/lib/http-guards.js`; `contact.js` re-exports them (so
+  `@/lib/contact` importers are unchanged) and `/v1/subscribe` imports them directly. They carry no
+  feature-specific assumptions, so the two public endpoints share one implementation rather than
+  duplicating it.
+
+## Subscribe endpoint (spec 0018)
+
+- **Versioned route handler, `POST /v1/subscribe`** (`src/app/v1/subscribe/route.ts`) - a thin HTTP
+  shell over the pure `src/lib/subscribe.js` (email validation, the Constant Contact `sign_up_form`
+  payload, the OAuth refresh-token exchange, the add-contact call, and an access-token cache) plus
+  the shared `http-guards.js`. Same plain-JS testable seam as the contact core; the route maps
+  request/env/outcomes to status codes (400/403/413/429/500, honeypot -> silent 200) and reads the
+  secrets. Two `fetch` calls to Constant Contact, no SDK.
+- **Token handling.** The route mints a 24h bearer token from the long-lived, **non-rotating**
+  refresh token and caches it in module scope (with an expiry skew) so a burst of submits does not
+  re-mint each time. Non-rotating means a refresh yields a new access token but the same refresh
+  token, so nothing is persisted back; a restart just re-mints. The add-contact call hits the
+  create-or-update `sign_up_form` endpoint with `create_source: "Contact"`, so a repeat email is
+  idempotent (no duplicate error).
+- **Spam guards** are the same layered set as the contact endpoint (honeypot, validation, per-IP
+  rate limit, same-origin), via the shared `http-guards.js`. The OAuth credentials are env-only, so
+  they cannot reach the client bundle or repo (guarded structurally, like the contact destination).
+- **Consent (CASL).** The visible "Subscribe for updates" intent is the express-consent signal;
+  Constant Contact owns the unsubscribe link and consent record on every send. Confirmed (double)
+  opt-in, if ever wanted, is a Constant Contact account setting, not app code. No consent state is
+  stored in the app.
 
 ## Analytics & observability (spec 0014)
 
@@ -146,10 +177,11 @@ per-component code. Already implemented in `src/styles/`.
   Config: `capture_pageview: false` (App Router soft-navigates, so `src/components/posthog-pageview.tsx`
   fires `$pageview` per route change behind a `Suspense`), `capture_pageleave`, `capture_exceptions`
   (client autocapture), `persistence: "localStorage"` (cookieless), and `session_recording.maskAllInputs`.
-- **Conversion tracking**: because `ph-no-capture` on the contact form also hides its submit from
-  autocapture, the form fires explicit, PII-free events (`contact_form_submitted`/`_succeeded`/`_failed`,
+- **Conversion tracking**: because `ph-no-capture` on the contact and subscribe forms also hides
+  their submits from autocapture, each form fires explicit, PII-free events
+  (`contact_form_submitted`/`_succeeded`/`_failed` and `blog_subscribe_submitted`/`_succeeded`/`_failed`,
   outcome only, no field values) from `handleSubmit` - the mask stays for replay privacy while the
-  one conversion stays measurable (feedback 0011).
+  conversions stay measurable (feedback 0011).
 - **Server errors**: `src/instrumentation.ts` exports `onRequestError` (Node-runtime-guarded) which
   lazy-imports `src/lib/posthog-server.ts` (a singleton posthog-node client, `flushAt:1`) and calls
   `captureExceptionImmediate`, so RSC/route-handler/`/v1/contact` failures reach Error tracking.

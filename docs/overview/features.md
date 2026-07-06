@@ -11,8 +11,8 @@ pending) · 📋 planned.
 | `/about` | ✅ | The "whole person" story in first person: how Matthew works (problem solver, leader who still builds), a leadership belief, and a personal "Beyond the Code" section (5 acres + reforestation, family, dog, hobbies). |
 | `/resume` | ✅ | Detailed professional resume rendered from structured data, with a **download PDF** button serving an in-sync, contact-free PDF. |
 | `/projects` | 🚧 | Card grid of notable work, sourced from data files. **Unlisted** while in progress: the route exists but is not linked from the nav, home page, or sitemap. |
-| `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, a reading-time pill (spec 0015, the same `Clock` + "N min read" treatment as the post page), excerpt, and tag labels. Interactive discovery (spec 0012): tag-chip filters (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. |
-| `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
+| `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, a reading-time pill (spec 0015, the same `Clock` + "N min read" treatment as the post page), excerpt, and tag labels. Interactive discovery (spec 0012): tag-chip filters (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. An email "Subscribe for updates" block (spec 0018) sits at the bottom. |
+| `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, an email "Subscribe for updates" block (spec 0018), and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017) documenting what the site actually does: PostHog analytics with masked-input session replay, the Resend-relayed contact form, transient IP use, self-hosted assets, no tracking cookies/ads/database. Cookieless legitimate-interest basis (no consent banner). Linked from the footer, not the top nav or sitemap. Lists a dedicated public `privacy@` address for data requests - the only email on the site. |
 
@@ -125,3 +125,23 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 - Spam protection ships with it (not deferred): a honeypot field, server-side validation + length
   caps, a best-effort per-IP rate limit, and a same-origin check. A CAPTCHA/Turnstile is the next
   follow-up if bots get through. See `architecture.md`.
+
+## Blog subscribe
+
+- ✅ Live (spec 0018). A "Subscribe for updates" block (title + email input + Subscribe button)
+  sits at the bottom of the `/blog` listing and immediately after the content on each
+  `/blog/[slug]` post (after the disclaimer, before the Back/RSS row). A `"use client"` island
+  (`src/components/subscribe-form.tsx`) `POST`s JSON to the versioned route `/v1/subscribe`, which
+  validates, applies the same shared spam guards as the contact form, and adds the email to the
+  "Matthew Maynes Blog" list in Constant Contact. The block is mobile-first: input and button stack
+  full width below `sm` and go inline on one row at `sm+`.
+- The Constant Contact OAuth credentials live only in server env (`CTCT_CLIENT_ID`,
+  `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID`) and never reach the browser or the repo. The route mints a
+  24h access token from the non-rotating refresh token (cached in-memory across requests) and calls
+  the create-or-update `sign_up_form` endpoint, so a repeat email is idempotent. See
+  `architecture.md`.
+- The submit is tracked as a PII-free conversion event (`blog_subscribe_*`); the form is
+  `ph-no-capture`, so the address never enters autocapture or session replay.
+- Spam guards are shared with the contact form: the honeypot, same-origin, and per-IP rate-limit
+  helpers were extracted into `src/lib/http-guards.js`, which both `/v1/contact` and `/v1/subscribe`
+  import. A CAPTCHA/Turnstile remains the follow-up if bots get through.
