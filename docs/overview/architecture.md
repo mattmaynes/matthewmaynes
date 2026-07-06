@@ -75,8 +75,23 @@ per-component code. Already implemented in `src/styles/`.
   the small server never runs a Next build. Tagged `latest` + immutable `sha-<commit>` for rollback.
 - **CI/CD:** `.github/workflows/deploy.yml` - push to `main` runs verify (lint/build/test) →
   build+push to GHCR → SSH deploy to the server (`git pull`, ensure `edge` + validate/up the Caddy
-  proxy, `compose pull && up -d`) → **prewarm**.
+  proxy, `compose pull` then a **zero-downtime rollout**) → **prewarm**.
   GHCR push uses the built-in `GITHUB_TOKEN`; the only repo secrets are the deploy SSH credentials.
+- **Zero-downtime deploys (spec 0019):** the site is swapped **blue/green** with
+  [`docker-rollout`](https://github.com/Wowu/docker-rollout) - a pinned, checksum-verified Docker CLI
+  plugin (installed idempotently on the host by the deploy, treated as supply-chain surface like the
+  SHA-pinned Actions). Instead of `compose up -d` recreating the one fixed-name container in place
+  (stop→start = a hard-down window), rollout scales the `site` service to **two** Compose-indexed
+  instances, waits for the new one's HEALTHCHECK, then removes the old. For Caddy to follow the swap
+  the site block uses **dynamic A-record upstreams** (`dynamic a`, `resolvers 127.0.0.11`,
+  `refresh 1s`) re-resolving the `site` alias against Docker's embedded DNS, so it load-balances
+  across whatever instances are live; `lb_try_duration`/`lb_retries` + passive `fail_duration` cover
+  the sub-second window between the old container's removal and the next refresh. A static
+  `reverse_proxy site:3000` cannot do this - it resolves once and caches the old IP. `container_name`
+  is dropped from `compose.site.yml` so two instances can coexist; the image is still pre-pulled so
+  the new container starts instantly. A broken image never goes healthy, so the old instance keeps
+  serving and the deploy fails - a bad build cannot take the site down. A one-time cutover (guarded by
+  a name check, self-clearing) replaces the pre-0019 legacy `site` container the first time.
 - **Image cache pre-warm (spec 0006):** the `prewarm` job runs after a healthy deploy and hits the
   live site (`node scripts/prewarm-images.mjs $SITE_URL`, via Caddy to the fresh container) to
   populate the on-demand `next/image` optimizer cache, so the first real visitor gets cache HITs

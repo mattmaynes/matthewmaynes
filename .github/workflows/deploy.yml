@@ -123,10 +123,66 @@ jobs:
               done
             fi
             export IMAGE_TAG
+            # Pre-pull so the rollout's new container starts instantly (no pull mid-swap).
             docker compose -f deploy/docker/compose.site.yml pull
-            # --wait blocks until the container passes its HEALTHCHECK, so a broken
-            # image is a red deploy instead of a silently flapping container.
-            docker compose -f deploy/docker/compose.site.yml up -d --wait
+
+            # Zero-downtime deploy (spec 0019) via docker-rollout: scale the site
+            # service to two instances, wait for the new one's HEALTHCHECK, then
+            # remove the old - so Caddy (dynamic-A upstreams re-resolving the `site`
+            # alias) always has a live backend. The plugin is a shell script that
+            # runs on the host during a privileged deploy, so it is pinned to a
+            # commit SHA and checksum-verified before use, like the SHA-pinned
+            # Actions (feedback 0002, supply chain).
+            # docker-rollout v0.13: github.com/Wowu/docker-rollout/releases/tag/v0.13
+            ROLLOUT_SHA=39b8066d56cc1edc76d1ae898db46623cc93bc24
+            ROLLOUT_SHA256=fa0df004de84747142cb627c55210aaa914bbae76666e7b95a2ac46805d81a84
+            plugin="$HOME/.docker/cli-plugins/docker-rollout"
+            if ! printf '%s  %s\n' "$ROLLOUT_SHA256" "$plugin" | sha256sum -c - >/dev/null 2>&1; then
+              mkdir -p "$HOME/.docker/cli-plugins"
+              tmp=$(mktemp)
+              # Clean up the temp file even if the download or checksum verify aborts
+              # the deploy under `set -e` (review 0019).
+              trap 'rm -f "$tmp"' EXIT
+              # Verify-then-exec: download to $tmp, checksum $tmp, and only then make
+              # it executable and move it into the plugin dir - it is never runnable
+              # before the checksum passes. HTTPS pinned; bounded so a hung fetch
+              # cannot wedge the deploy (review 0019, security).
+              curl -fsSL --proto '=https' --tlsv1.2 --max-time 30 \
+                "https://raw.githubusercontent.com/Wowu/docker-rollout/$ROLLOUT_SHA/docker-rollout" -o "$tmp"
+              printf '%s  %s\n' "$ROLLOUT_SHA256" "$tmp" | sha256sum -c -
+              chmod +x "$tmp"
+              mv "$tmp" "$plugin"
+              trap - EXIT
+            fi
+
+            # Roll out the new version with no downtime. docker-rollout scales the
+            # `site` service to two Compose-indexed instances, waits up to 90s for the
+            # new one's HEALTHCHECK (image start-period 15s), holds a short grace so
+            # Caddy's 1s DNS refresh sees the new IP, then removes the old. It is
+            # fail-safe: a broken (pullable but unhealthy) image never goes healthy, so
+            # rollout tears the new instance back down and exits non-zero while the old
+            # one keeps serving - a bad build cannot take the site down. (A non-pullable
+            # tag would already have failed the `pull` above, before anything swapped.)
+            # This also performs the ONE-TIME cutover from the pre-0019 legacy `site`
+            # container: rollout adds an indexed instance alongside it (--no-recreate)
+            # and only removes the legacy one once the new is healthy, so the cutover is
+            # itself zero-downtime; if it cannot, it fails cleanly with the site still up.
+            docker rollout -t 90 --wait-after-healthy 5 -f deploy/docker/compose.site.yml site
+
+            # Gate on the FULL public path, not just the container's internal
+            # HEALTHCHECK: a Caddy/dynamic-upstream misconfig can leave the container
+            # healthy while every visitor gets a 502, and nothing else re-verifies the
+            # routing on each deploy (review 0019). Hit the site through Caddy over
+            # loopback (--resolve, so it does not depend on DNS/hairpin) and fail the
+            # deploy if it is not reachable end-to-end.
+            ok=""
+            for _ in $(seq 1 10); do
+              if curl -fsS --max-time 10 --resolve matthewmaynes.com:443:127.0.0.1 \
+                  -o /dev/null https://matthewmaynes.com; then ok=1; break; fi
+              sleep 2
+            done
+            [ -n "$ok" ] || { echo "post-rollout health check failed: matthewmaynes.com is not reachable end-to-end"; exit 1; }
+
             # Prune only THIS project's dangling images (label-scoped), so a
             # cohosted stack's images are never touched.
             docker image prune -f \
