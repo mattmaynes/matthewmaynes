@@ -450,3 +450,39 @@ Capture lessons as you go.
   server, its pinned host key is stale after the DNS cutover and the deploy fails with "REMOTE HOST
   IDENTIFICATION HAS CHANGED" before running anything. Regenerate with `ssh-keyscan <hostname>` (not
   just the IP) so the key matches the identifier being connected to.
+
+## Blog subscribe / Constant Contact (spec 0018, feedback 0013)
+
+- **A layout/visual smoke marker must be UNIQUE to the unit on that route - a Tailwind utility
+  shared by chrome cannot fail.** The subscribe block was guarded by the bare class `"sm:flex-row"`,
+  but the shared `footer.tsx` (and `blog-list.tsx`) emit it too, so it appeared in the HTML whether
+  or not the form rendered - dropping the form or its responsive layout stayed green. This is the
+  recurring "assert what the unit uniquely produces" trap (feedback 0001/0003/0006/0009, learnings
+  0011) applied to a *class-based* marker. Fix: anchor on unit-unique copy (the form's own subtext)
+  and a class *combination* nothing else on the route emits (`"sm:flex-row sm:items-end"`). Grep the
+  other components for a utility before trusting it as a guard.
+- **When copying an error-shaping pattern across integrations, re-check whether the NEW upstream's
+  error body can carry PII.** The contact core throws `status + body-slice` safely because Resend's
+  error body has no submitted PII; the subscribe core copied that shape, but Constant Contact's
+  `sign_up_form` 4xx body can echo the submitted `email_address`, and the route logs thrown errors -
+  so a subscriber's email would land in container logs. Throw status-only for that call (attach
+  `err.status` for branching); keep the body only where the upstream body is known PII-free.
+- **A cached OAuth access token needs a stale-token recovery path AND concurrent-mint dedup, or a
+  module-scoped cache is a foot-gun.** A token invalidated upstream before its computed TTL
+  (revocation, clock skew, early expiry) would otherwise 500 every request until the process
+  restarts - self-heal once on a 401 (clear, re-mint, retry a single time; a second 401 surfaces,
+  no loop). And memoize the in-flight refresh promise so a cold-cache burst shares one mint instead
+  of N. Both paths are invisible on the warm sequential path, so unit-test them explicitly (inject a
+  401-then-2xx fetch; fire N concurrent `getAccessToken` calls and assert one token call).
+- **A component that renders in more than one place needs a PII-free placement dimension on its
+  events.** The `blog_subscribe_*` events first carried no `source`, so listing vs. post conversions
+  were indistinguishable. Thread a `source` prop (`blog_index`/`blog_post`) into every event - a
+  placement label, never the address - so the two surfaces are attributable.
+- **Do not re-declare styling a design-system component already owns.** The subscribe input first
+  re-applied the exact Canopy focus ring via a local `RING` constant; Canopy's `Input` already ships
+  it (the sibling contact form relies on the built-in). Duplicating component-owned classes diverges
+  siblings and invites drift - delete it and trust the component.
+- **After extracting a shared module, migrate ALL callers off the old path - do not leave a
+  re-export shim as a second canonical import.** The shared HTTP guards moved to `http-guards.js`,
+  but the contact route kept importing them via a `contact.js` re-export, leaving two import paths
+  for the same symbols. Point every caller (route + tests) at the new module and drop the shim.

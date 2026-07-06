@@ -108,6 +108,17 @@ const routes = [
       // Its href is absolute (metadataBase), so this mimetype marker - not the
       // root-relative subscribe href above - is what guards the head link.
       'application/rss+xml',
+      // Email subscribe block (spec 0018) at the bottom of the listing. These
+      // markers are UNIQUE to the subscribe form on this route, so they can
+      // actually fail (feedback 0013 / the recurring "assert what the unit
+      // uniquely produces" learning): the bare "sm:flex-row" utility is emitted by
+      // the shared footer too, so it could NOT catch a dropped form. Instead:
+      // - the subtext copy proves the form body rendered (unique string), and
+      // - "sm:flex-row sm:items-end" is the form's own row container class combo,
+      //   which nothing else on /blog emits, so it guards the responsive layout.
+      "Subscribe for updates",
+      "No spam; unsubscribe anytime.",
+      "sm:flex-row sm:items-end",
     ],
     absent: ["Placeholder", "No posts yet"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
@@ -131,6 +142,14 @@ const routes = [
       // RSS subscribe link + feed autodiscovery on the post page (spec 0013).
       'href="/blog/feed.xml"',
       'application/rss+xml',
+      // Email subscribe block (spec 0018) after the post content. Unit-unique
+      // markers, same rationale as the listing (feedback 0013): the subtext copy
+      // proves the form rendered, and "sm:flex-row sm:items-end" (the form's own
+      // row container) guards the responsive layout - the bare "sm:flex-row"
+      // utility is shared by chrome and could not fail.
+      "Subscribe for updates",
+      "No spam; unsubscribe anytime.",
+      "sm:flex-row sm:items-end",
     ],
     absent: ["Placeholder"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
@@ -213,6 +232,13 @@ before(async () => {
       RESEND_API_KEY: "",
       CONTACT_TO_EMAIL: "",
       CONTACT_FROM_EMAIL: "",
+      // Same for the subscribe creds: the /v1/subscribe guard tests below all
+      // return BEFORE the send, so with these empty the suite never calls
+      // Constant Contact (spec 0018), even on a developer machine with real
+      // values in .env.local.
+      CTCT_CLIENT_ID: "",
+      CTCT_REFRESH_TOKEN: "",
+      CTCT_LIST_ID: "",
     },
   });
   await waitForReady();
@@ -402,6 +428,82 @@ test("POST /v1/contact fails closed (500) when unconfigured, without leaking con
   assert.doesNotMatch(
     JSON.stringify(json),
     /RESEND|CONTACT_TO|api[_-]?key/i,
+    "the error response must not name the missing config",
+  );
+});
+
+// Subscribe endpoint guards (spec 0018). Same shape as the contact guards: we
+// exercise every path that does NOT call Constant Contact - cross-origin, honeypot,
+// invalid body, wrong method, rate limit, and the unconfigured 500 - so the suite
+// needs no CTCT creds and never touches the real API. The happy path (which would
+// call Constant Contact) is unit-tested in tests/subscribe.test.mjs with an
+// injected fetch.
+test("POST /v1/subscribe rejects a cross-origin request (403)", async () => {
+  const res = await fetch(BASE + "/v1/subscribe", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "https://evil.example" },
+    body: JSON.stringify({ email: "a@b.co" }),
+  });
+  assert.equal(res.status, 403, "expected 403 for a cross-origin POST");
+});
+
+test("POST /v1/subscribe silently drops a honeypot hit (200, no call)", async () => {
+  const res = await fetch(BASE + "/v1/subscribe", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+    body: JSON.stringify({ email: "a@b.co", company: "i am a bot" }),
+  });
+  assert.equal(res.status, 200, "expected 200 for a honeypot hit");
+  assert.equal((await res.json()).ok, true, "expected { ok: true } (silent drop)");
+});
+
+test("POST /v1/subscribe rejects an invalid email (400)", async () => {
+  const res = await fetch(BASE + "/v1/subscribe", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+    body: JSON.stringify({ email: "nope" }),
+  });
+  assert.equal(res.status, 400, "expected 400 for an invalid email");
+});
+
+test("GET /v1/subscribe is not allowed (405)", async () => {
+  const res = await fetch(BASE + "/v1/subscribe", { method: "GET" });
+  assert.equal(res.status, 405, "expected 405 for a non-POST method");
+});
+
+test("POST /v1/subscribe rate-limits a burst from one IP (429)", async () => {
+  const headers = {
+    "content-type": "application/json",
+    origin: BASE,
+    "x-forwarded-for": "203.0.113.9", // isolate this test's limiter key
+  };
+  const body = JSON.stringify({ email: "reader@example.com" });
+  let last;
+  // Limit is 5 per window; the 6th valid submission from one IP is blocked. The
+  // earlier ones return 500 (creds forced empty in the before hook), so no real
+  // Constant Contact call is ever made while exercising the limiter.
+  for (let i = 0; i < 6; i++) {
+    last = await fetch(BASE + "/v1/subscribe", { method: "POST", headers, body });
+  }
+  assert.equal(last.status, 429, "expected the 6th rapid submission to be rate-limited");
+});
+
+test("POST /v1/subscribe fails closed (500) when unconfigured, without leaking config", async () => {
+  const res = await fetch(BASE + "/v1/subscribe", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: BASE,
+      "x-forwarded-for": "203.0.113.10", // distinct key so the 429 test can't taint this
+    },
+    body: JSON.stringify({ email: "reader@example.com" }),
+  });
+  assert.equal(res.status, 500, "expected 500 when the CTCT creds are unset");
+  const json = await res.json();
+  assert.equal(json.ok, false);
+  assert.doesNotMatch(
+    JSON.stringify(json),
+    /CTCT|CLIENT_ID|REFRESH|LIST_ID|token/i,
     "the error response must not name the missing config",
   );
 });
@@ -617,6 +719,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   const stack = [staticDir];
   let scanned = 0;
   let sawConversionEvent = false;
+  let sawSubscribeEvent = false;
   while (stack.length) {
     const cur = stack.pop();
     let entries;
@@ -638,16 +741,21 @@ test("no personal PostHog key (phx_) in any client asset", () => {
           `personal (phx_) PostHog key must never reach a client asset: ${full}`,
         );
         if (js.includes("contact_form_submitted")) sawConversionEvent = true;
+        if (js.includes("blog_subscribe_submitted")) sawSubscribeEvent = true;
       }
     }
   }
   assert.ok(scanned > 0, "expected to scan at least one client .js asset");
-  // The core conversion is tracked by explicit PII-free events (autocapture
-  // can't see the ph-no-capture form's submit), so the event name must ship in
-  // some client chunk (the contact-form island).
+  // The core conversions are tracked by explicit PII-free events (autocapture
+  // can't see the ph-no-capture forms' submits), so each event name must ship in
+  // some client chunk (the contact-form and subscribe-form islands).
   assert.ok(
     sawConversionEvent,
     "expected a client chunk to fire the contact_form_submitted event",
+  );
+  assert.ok(
+    sawSubscribeEvent,
+    "expected a client chunk to fire the blog_subscribe_submitted event (spec 0018)",
   );
 });
 

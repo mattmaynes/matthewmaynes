@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  buildResendPayload,
   createRateLimiter,
   isHoneypotFilled,
   isSameOrigin,
+} from "@/lib/http-guards";
+import {
+  buildResendPayload,
   sendViaResend,
   validateContact,
 } from "@/lib/contact";
