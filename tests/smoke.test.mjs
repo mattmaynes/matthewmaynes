@@ -15,6 +15,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { assembleStandalone } from "../scripts/lib/standalone.mjs";
+import { getAllPosts, getAdjacentPosts } from "../src/lib/blog.js";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
@@ -674,6 +675,53 @@ test("GET /blog/feed.xml serves an RSS feed listing the seed post", async () => 
   assert.ok(
     xml.includes("I Picked the Wrong Elective"),
     "expected the feed to list the seed post title",
+  );
+});
+
+// Previous/next post navigation (spec 0021). Derive the expected neighbours from
+// the SAME source the page renders from (getAllPosts + getAdjacentPosts), so this
+// never becomes a time-bomb that reddens on every new post (the /blog "New" badge
+// dodges the same trap). The oldest post always has a Next and no Previous, and the
+// newest always has a Previous and no Next (>= 2 posts) - so this covers both the
+// single-sided cases and the direction of each tile.
+test("a post renders previous/next navigation to its chronological neighbours", async () => {
+  const posts = getAllPosts();
+  if (posts.length < 2) return; // nothing adjacent to link with a single post
+
+  const oldest = posts[posts.length - 1];
+  const oldestAdj = getAdjacentPosts(posts, oldest.slug);
+  const oldestHtml = await (await fetch(BASE + `/blog/${oldest.slug}`)).text();
+  assert.ok(oldestAdj.next, "fixture sanity: the oldest post has a newer neighbour");
+  assert.ok(
+    oldestHtml.includes("Next post"),
+    "expected the oldest post to render a 'Next post' tile",
+  );
+  assert.ok(
+    oldestHtml.includes(`href="/blog/${oldestAdj.next.slug}"`),
+    `expected the Next tile to link to /blog/${oldestAdj.next.slug}`,
+  );
+  assert.equal(oldestAdj.previous, null, "fixture sanity: the oldest post has no previous");
+  assert.ok(
+    !oldestHtml.includes("Previous post"),
+    "the oldest post must not render a Previous tile",
+  );
+
+  const newest = posts[0];
+  const newestAdj = getAdjacentPosts(posts, newest.slug);
+  const newestHtml = await (await fetch(BASE + `/blog/${newest.slug}`)).text();
+  assert.ok(newestAdj.previous, "fixture sanity: the newest post has an older neighbour");
+  assert.ok(
+    newestHtml.includes("Previous post"),
+    "expected the newest post to render a 'Previous post' tile",
+  );
+  assert.ok(
+    newestHtml.includes(`href="/blog/${newestAdj.previous.slug}"`),
+    `expected the Previous tile to link to /blog/${newestAdj.previous.slug}`,
+  );
+  assert.equal(newestAdj.next, null, "fixture sanity: the newest post has no next");
+  assert.ok(
+    !newestHtml.includes("Next post"),
+    "the newest post must not render a Next tile",
   );
 });
 

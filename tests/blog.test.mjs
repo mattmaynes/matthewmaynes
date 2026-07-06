@@ -11,6 +11,7 @@ import {
   sortPostsNewestFirst,
   getAllPosts,
   getPostBySlug,
+  getAdjacentPosts,
   estimateReadingMinutes,
   isRecent,
   newPostSlug,
@@ -217,6 +218,46 @@ test("getPostBySlug returns one post with its raw MDX body, or null", () => {
   assert.ok(post, "expected the seed post");
   assert.match(post.content, /accidentally designed a metaphor/);
   assert.equal(getPostBySlug("does-not-exist"), null);
+});
+
+test("getAdjacentPosts returns older `previous` and newer `next`, null at boundaries", () => {
+  // A multi-post fixture (deliberately NOT pre-sorted): the real content dir is
+  // tiny, so this pure test is what actually guards the ordering (learnings 0009).
+  const posts = [
+    { slug: "mid", date: "2025-12-31" },
+    { slug: "newest", date: "2026-06-30" },
+    { slug: "old", date: "2025-01-01" },
+  ];
+  const snapshot = posts.map((p) => p.slug);
+
+  // Middle post: previous is the older neighbour, next is the newer neighbour.
+  assert.deepEqual(
+    (({ previous, next }) => ({ previous: previous?.slug, next: next?.slug }))(
+      getAdjacentPosts(posts, "mid"),
+    ),
+    { previous: "old", next: "newest" },
+  );
+  // Newest post has no newer neighbour -> next is null, previous is the runner-up.
+  const atNewest = getAdjacentPosts(posts, "newest");
+  assert.equal(atNewest.next, null, "newest post has no next");
+  assert.equal(atNewest.previous?.slug, "mid");
+  // Oldest post has no older neighbour -> previous is null, next is the runner-up.
+  const atOldest = getAdjacentPosts(posts, "old");
+  assert.equal(atOldest.previous, null, "oldest post has no previous");
+  assert.equal(atOldest.next?.slug, "mid");
+  // Unknown slug -> both null (never throws).
+  assert.deepEqual(getAdjacentPosts(posts, "nope"), { previous: null, next: null });
+  // A lone post -> both null.
+  assert.deepEqual(getAdjacentPosts([{ slug: "only", date: "2026-01-01" }], "only"), {
+    previous: null,
+    next: null,
+  });
+  // Purity: must not reorder or mutate the input.
+  assert.deepEqual(
+    posts.map((p) => p.slug),
+    snapshot,
+    "getAdjacentPosts must not mutate its input array",
+  );
 });
 
 // --- blog-view: pure, fs-free listing helpers (tag filter + search) ---------
