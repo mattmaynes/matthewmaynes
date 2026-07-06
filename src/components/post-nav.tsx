@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/components/blog-icons";
+import { FOCUS_RING } from "@/lib/focus-ring";
 import type { BlogImage } from "@/lib/blog-images";
 
 /**
@@ -25,11 +26,6 @@ export type PostNavItem = {
   cover?: BlogImage;
 };
 
-// The shared focus-ring treatment (matches the blog listing cards): a 2px ring
-// offset off the element, in the Harbor ring tokens.
-const RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset";
-
 function NavTile({
   item,
   direction,
@@ -42,7 +38,7 @@ function NavTile({
   return (
     <Link
       href={`/blog/${item.slug}`}
-      className={`group flex w-full items-center gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-border-strong sm:w-[calc(50%-0.5rem)] ${RING} ${
+      className={`group flex w-full items-center gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-border-strong sm:w-[calc(50%-0.5rem)] ${FOCUS_RING} ${
         // For "next", reverse the row so the text sits left and the arrow right,
         // and right-align the label/title. DOM order stays arrow -> cover -> text.
         isPrev ? "" : "flex-row-reverse text-right"
@@ -55,7 +51,7 @@ function NavTile({
           alt=""
           sizes="96px"
           placeholder={item.cover.pixelated ? "empty" : "blur"}
-          className="h-14 w-20 shrink-0 rounded-md border-[0.5px] border-border object-cover"
+          className="aspect-[16/10] w-24 shrink-0 rounded-md border-[0.5px] border-border object-cover"
           style={item.cover.pixelated ? { imageRendering: "pixelated" } : undefined}
         />
       ) : null}

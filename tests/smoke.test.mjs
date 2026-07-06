@@ -705,6 +705,23 @@ test("a post renders previous/next navigation to its chronological neighbours", 
     !oldestHtml.includes("Previous post"),
     "the oldest post must not render a Previous tile",
   );
+  // Layout guards (acceptance #3). These classes are unique to post-nav.tsx, so
+  // they can actually fail: `flex-col-reverse` is the mobile next-first stack, and
+  // a lone Next tile must align to the RIGHT edge (`sm:justify-end`) so next stays
+  // on the right even when solo. `flex-row-reverse` mirrors the Next tile (text
+  // left, arrow right). Reverting any of these would otherwise ship green.
+  assert.ok(
+    oldestHtml.includes("flex-col-reverse"),
+    "expected the mobile next-first stack (flex-col-reverse)",
+  );
+  assert.ok(
+    oldestHtml.includes("sm:justify-end"),
+    "expected a lone Next tile to align to the right edge (sm:justify-end)",
+  );
+  assert.ok(
+    oldestHtml.includes("flex-row-reverse"),
+    "expected the Next tile to mirror (text left, arrow right: flex-row-reverse)",
+  );
 
   const newest = posts[0];
   const newestAdj = getAdjacentPosts(posts, newest.slug);
@@ -722,6 +739,12 @@ test("a post renders previous/next navigation to its chronological neighbours", 
   assert.ok(
     !newestHtml.includes("Next post"),
     "the newest post must not render a Next tile",
+  );
+  // A lone Previous tile must align to the LEFT edge (sm:justify-start) so previous
+  // stays on the left even when solo - the mirror of the oldest-post guard above.
+  assert.ok(
+    newestHtml.includes("sm:justify-start"),
+    "expected a lone Previous tile to align to the left edge (sm:justify-start)",
   );
 });
 
