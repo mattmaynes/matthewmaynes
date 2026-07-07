@@ -29,5 +29,5 @@ combination is illegible. (This is what flagged the original dark primary - a mi
 failed AA against any foreground - now a lighter step that passes.)
 
 The generated CSS and the `brand/harbor/*.json` sources are inputs to the resume-PDF freshness
-hash (`scripts/generate-resume-pdf.mjs`), so changing the palette makes `npm run resume:pdf:check`
+hash (`scripts/generate-resume-pdf.ts`), so changing the palette makes `npm run resume:pdf:check`
 require a regenerated `public/resume.pdf`.

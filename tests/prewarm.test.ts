@@ -10,8 +10,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { assembleStandalone } from "../scripts/lib/standalone.mjs";
-import { extractImageUrls, prewarm } from "../scripts/lib/prewarm.mjs";
+import { assembleStandalone } from "../scripts/lib/standalone.ts";
+import { extractImageUrls, prewarm } from "../scripts/lib/prewarm.ts";
 
 // --- unit: extractImageUrls ------------------------------------------------
 
@@ -189,7 +189,7 @@ test("prewarm warms the home page images and flips MISS -> HIT", async () => {
 test("entry script exits 1 when the site is unreachable", () => {
   const res = spawnSync(
     "node",
-    [join(root, "scripts/prewarm-images.mjs"), "http://127.0.0.1:1/"],
+    [join(root, "scripts/prewarm-images.ts"), "http://127.0.0.1:1/"],
     { encoding: "utf8" },
   );
   assert.equal(res.status, 1, "expected exit 1 when no page responds");
@@ -198,7 +198,7 @@ test("entry script exits 1 when the site is unreachable", () => {
 test("entry script exits 0 and warms against a healthy server", () => {
   const res = spawnSync(
     "node",
-    [join(root, "scripts/prewarm-images.mjs"), BASE],
+    [join(root, "scripts/prewarm-images.ts"), BASE],
     { encoding: "utf8" },
   );
   assert.equal(res.status, 0, `expected exit 0, got ${res.status}`);

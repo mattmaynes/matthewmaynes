@@ -7,10 +7,10 @@ import { cpSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * @param {string} root       repo root (where .next and public live)
- * @param {string} targetDir  the standalone dir that holds server.js
+ * @param root       repo root (where .next and public live)
+ * @param targetDir  the standalone dir that holds server.js
  */
-export function assembleStandalone(root, targetDir) {
+export function assembleStandalone(root: string, targetDir: string): void {
   cpSync(join(root, ".next", "static"), join(targetDir, ".next", "static"), {
     recursive: true,
   });

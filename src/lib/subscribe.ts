@@ -4,17 +4,32 @@
  * access-token exchange, the add-contact call, and a small in-memory access-token
  * cache. Kept free of Next / request objects so it is unit-tested without booting
  * a server (the `app/v1/subscribe` route handler is a thin shell over this - the
- * same testable-seam pattern as `src/lib/contact.js`). No secrets live here: the
+ * same testable-seam pattern as `src/lib/contact.ts`). No secrets live here: the
  * Constant Contact client id, refresh token, and list id are read from env in the
  * route and passed in. `fetch` and `now` are injectable so the network and clock
  * are mocked in tests. The generic honeypot / same-origin / rate-limit guards live
- * in `./http-guards.js` and are used directly by the route.
- *
- * @typedef {{ email: string, name: string }} SubscribeData
- * @typedef {{ ok: true, data: SubscribeData } | { ok: false, error: string }} SubscribeValidation
- * @typedef {{ firstName?: string, lastName?: string }} NameParts
- * @typedef {{ clientId: string, refreshToken: string, listId: string }} CtctCreds
+ * in `./http-guards.ts` and are used directly by the route.
  */
+
+export type SubscribeData = { email: string; name: string };
+export type SubscribeValidation =
+  | { ok: true; data: SubscribeData }
+  | { ok: false; error: string };
+export type NameParts = { firstName?: string; lastName?: string };
+export type CtctCreds = {
+  clientId: string;
+  refreshToken: string;
+  listId: string;
+};
+
+/** A Constant Contact `sign_up_form` request body. */
+export type SignUpPayload = {
+  email_address: string;
+  create_source: "Contact";
+  list_memberships: string[];
+  first_name?: string;
+  last_name?: string;
+};
 
 // Field length caps, so a payload can't be unbounded. `email`/`name` bound the
 // raw inputs; `part` is the Constant Contact first_name/last_name field limit, so
@@ -24,7 +39,7 @@ export const SUBSCRIBE_LIMITS = { email: 200, name: 100, part: 50 };
 // Cap a string to at most `n` Unicode code points (not UTF-16 units), so a hard
 // slice can never split an astral character (e.g. an emoji or a rare CJK glyph)
 // into a lone surrogate (review 0018-amendment).
-function capChars(str, n) {
+function capChars(str: string, n: number): string {
   const cp = Array.from(str);
   return cp.length > n ? cp.slice(0, n).join("") : str;
 }
@@ -49,10 +64,11 @@ const EXPIRY_SKEW_SEC = 60;
  * basic shape, and enforces the length cap. The `name` is OPTIONAL (spec 0018
  * amendment): trimmed and length-capped, but never required - a missing/empty name
  * still validates and subscribes exactly as before.
- * @param {{ email?: unknown, name?: unknown }} input
- * @returns {SubscribeValidation}
  */
-export function validateSubscribe(input) {
+export function validateSubscribe(input: {
+  email?: unknown;
+  name?: unknown;
+}): SubscribeValidation {
   const email = typeof input.email === "string" ? input.email.trim() : "";
   if (!email || email.length > SUBSCRIBE_LIMITS.email || !EMAIL_RE.test(email))
     return { ok: false, error: "Please enter a valid email address." };
@@ -70,17 +86,14 @@ export function validateSubscribe(input) {
  * folds into the last name, which is fine. Trims, collapses internal whitespace,
  * caps each part at the Constant Contact field limit, and omits empty parts - so
  * an empty name yields `{}` and adds nothing to the payload.
- * @param {unknown} name
- * @returns {NameParts}
  */
-export function splitName(name) {
+export function splitName(name: unknown): NameParts {
   const norm = typeof name === "string" ? name.trim().replace(/\s+/g, " ") : "";
   if (!norm) return {};
   const sp = norm.indexOf(" ");
   const first = capChars(sp === -1 ? norm : norm.slice(0, sp), SUBSCRIBE_LIMITS.part);
   const rest = sp === -1 ? "" : capChars(norm.slice(sp + 1), SUBSCRIBE_LIMITS.part);
-  /** @type {NameParts} */
-  const parts = {};
+  const parts: NameParts = {};
   if (first) parts.firstName = first;
   if (rest) parts.lastName = rest;
   return parts;
@@ -93,13 +106,13 @@ export function splitName(name) {
  * from env and never hard-coded here. Optional `first_name`/`last_name` (spec 0018
  * amendment) are added ONLY when present, so a nameless signup produces the exact
  * same payload as before.
- * @param {string} email
- * @param {string} listId
- * @param {NameParts} [nameParts]
- * @returns {{ email_address: string, create_source: "Contact", list_memberships: string[], first_name?: string, last_name?: string }}
  */
-export function buildSignUpPayload(email, listId, nameParts = {}) {
-  const payload = {
+export function buildSignUpPayload(
+  email: string,
+  listId: string,
+  nameParts: NameParts = {},
+): SignUpPayload {
+  const payload: SignUpPayload = {
     email_address: email,
     create_source: "Contact",
     list_memberships: [listId],
@@ -113,14 +126,11 @@ export function buildSignUpPayload(email, listId, nameParts = {}) {
  * Exchange the long-lived (non-rotating) refresh token for a 24h bearer access
  * token. Public client, so no client secret is sent. Throws on a non-2xx so the
  * route returns a generic 500. `fetchImpl` is injectable for tests.
- * @param {{ clientId: string, refreshToken: string }} creds
- * @param {typeof fetch} [fetchImpl]
- * @returns {Promise<{ accessToken: string, expiresInSec: number }>}
  */
 export async function refreshAccessToken(
-  { clientId, refreshToken },
-  fetchImpl = fetch,
-) {
+  { clientId, refreshToken }: { clientId: string; refreshToken: string },
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ accessToken: string; expiresInSec: number }> {
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: refreshToken,
@@ -154,17 +164,23 @@ export async function refreshAccessToken(
   };
 }
 
+/** An HTTP error carrying the upstream status, so callers can branch on it. */
+type StatusError = Error & { status?: number };
+
 /**
  * Add (or update) a contact on the target list via `sign_up_form`. Throws on a
  * non-2xx. Optional `nameParts` (spec 0018 amendment) become first/last name on the
  * contact. `fetchImpl` is injectable for tests.
- * @param {{ accessToken: string, email: string, listId: string, nameParts?: NameParts }} args
- * @param {typeof fetch} [fetchImpl]
  */
 export async function addContactToList(
-  { accessToken, email, listId, nameParts },
-  fetchImpl = fetch,
-) {
+  {
+    accessToken,
+    email,
+    listId,
+    nameParts,
+  }: { accessToken: string; email: string; listId: string; nameParts?: NameParts },
+  fetchImpl: typeof fetch = fetch,
+): Promise<Response> {
   const res = await fetchImpl(SIGNUP_URL, {
     method: "POST",
     headers: {
@@ -180,12 +196,23 @@ export async function addContactToList(
     // echo the submitted email_address, and the route logs thrown errors - that
     // would leak a subscriber's email into container logs. Status only. Attach it
     // as `err.status` so callers can branch (e.g. self-heal on a stale-token 401).
-    const err = new Error(`Constant Contact sign_up_form responded ${res.status}`);
+    const err: StatusError = new Error(
+      `Constant Contact sign_up_form responded ${res.status}`,
+    );
     err.status = res.status;
     throw err;
   }
   return res;
 }
+
+/** The in-memory access-token cache returned by `createTokenCache`. */
+export type TokenCache = {
+  getAccessToken(
+    creds: { clientId: string; refreshToken: string },
+    fetchImpl?: typeof fetch,
+  ): Promise<string>;
+  clear(): void;
+};
 
 /**
  * A tiny in-memory access-token cache. Mints a token on the first call, then
@@ -194,20 +221,17 @@ export async function addContactToList(
  * yields a new access token but the same refresh token, so there is nothing to
  * persist. Single-process by design (module-scoped in the route); a restart just
  * re-mints. `now` is injectable so expiry is unit-testable without a real clock.
- * @param {() => number} [now] - returns epoch ms
+ * @param now - returns epoch ms
  */
-export function createTokenCache(now = Date.now) {
-  /** @type {{ token: string, expiresAtMs: number } | null} */
-  let cached = null;
-  /** @type {Promise<string> | null} in-flight mint, shared by concurrent callers */
-  let inflight = null;
+export function createTokenCache(now: () => number = Date.now): TokenCache {
+  let cached: { token: string; expiresAtMs: number } | null = null;
+  /** in-flight mint, shared by concurrent callers */
+  let inflight: Promise<string> | null = null;
   return {
-    /**
-     * @param {{ clientId: string, refreshToken: string }} creds
-     * @param {typeof fetch} [fetchImpl]
-     * @returns {Promise<string>} a valid bearer access token
-     */
-    getAccessToken(creds, fetchImpl = fetch) {
+    getAccessToken(
+      creds: { clientId: string; refreshToken: string },
+      fetchImpl: typeof fetch = fetch,
+    ): Promise<string> {
       if (cached && now() < cached.expiresAtMs)
         return Promise.resolve(cached.token);
       // Memoize the in-flight refresh so a cold-cache burst shares ONE mint
@@ -242,13 +266,17 @@ export function createTokenCache(now = Date.now) {
  * requests; `fetchImpl` is injectable for tests.
  * The optional `name` (spec 0018 amendment) is split into first/last name here and
  * stored on the contact; an empty/absent name adds nothing to the payload.
- * @param {{ email: string, name?: string } & CtctCreds} args
- * @param {{ fetchImpl?: typeof fetch, cache: ReturnType<typeof createTokenCache> }} deps
  */
 export async function submitSubscription(
-  { email, name, clientId, refreshToken, listId },
-  { fetchImpl = fetch, cache },
-) {
+  {
+    email,
+    name,
+    clientId,
+    refreshToken,
+    listId,
+  }: { email: string; name?: string } & CtctCreds,
+  { fetchImpl = fetch, cache }: { fetchImpl?: typeof fetch; cache: TokenCache },
+): Promise<void> {
   const creds = { clientId, refreshToken };
   const nameParts = splitName(name);
   const accessToken = await cache.getAccessToken(creds, fetchImpl);
@@ -259,7 +287,12 @@ export async function submitSubscription(
     // (revocation, >60s clock skew, or an early Constant Contact expiry). Rather
     // than 500ing every subscribe until the process restarts, self-heal once:
     // drop the stale token, mint a fresh one, and retry the add a single time.
-    if (err && err.status === 401) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "status" in err &&
+      (err as StatusError).status === 401
+    ) {
       cache.clear();
       const fresh = await cache.getAccessToken(creds, fetchImpl);
       await addContactToList(

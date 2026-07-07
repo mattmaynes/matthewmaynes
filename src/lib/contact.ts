@@ -2,16 +2,24 @@
  * Pure, I/O-free core for the contact endpoint: input validation and the Resend
  * request shaping + send. Kept free of Next / request objects so it is unit-tested
  * without booting a server (the `app/v1/contact` route handler is a thin shell
- * over this - the same testable-seam pattern as `src/lib/theme.js`). No secrets
+ * over this - the same testable-seam pattern as `src/lib/theme.ts`). No secrets
  * or PII live here: the destination address is read from env in the route and
  * passed in. The generic honeypot / same-origin / rate-limit guards live in
- * `./http-guards.js` (shared with `/v1/subscribe`, spec 0018); callers import them
+ * `./http-guards.ts` (shared with `/v1/subscribe`, spec 0018); callers import them
  * from there directly - this module owns only the contact-specific logic.
- *
- * @typedef {{ name: string, email: string, message: string }} ContactData
- * @typedef {{ ok: true, data: ContactData } | { ok: false, error: string }} ValidationResult
- * @typedef {{ from: string, to: string, reply_to: string, subject: string, text: string }} ResendPayload
  */
+
+export type ContactData = { name: string; email: string; message: string };
+export type ValidationResult =
+  | { ok: true; data: ContactData }
+  | { ok: false; error: string };
+export type ResendPayload = {
+  from: string;
+  to: string;
+  reply_to: string;
+  subject: string;
+  text: string;
+};
 
 /** Field length caps, so a payload can't be unbounded. */
 export const LIMITS = { name: 100, email: 200, message: 5000 };
@@ -23,10 +31,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /**
  * Validate + normalize a raw submission. Trims strings, requires name/email/
  * message, checks a basic email shape, and enforces the length caps.
- * @param {{ name?: unknown, email?: unknown, message?: unknown }} input
- * @returns {ValidationResult}
  */
-export function validateContact(input) {
+export function validateContact(input: {
+  name?: unknown;
+  email?: unknown;
+  message?: unknown;
+}): ValidationResult {
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const email = typeof input.email === "string" ? input.email.trim() : "";
   const message = typeof input.message === "string" ? input.message.trim() : "";
@@ -48,10 +58,14 @@ export function validateContact(input) {
  * address is the `reply_to`, so replying in the inbox reaches them; the private
  * destination (`to`) and verified sender (`from`) are supplied by the caller
  * from env and never hard-coded here.
- * @param {ContactData & { to: string, from: string }} args
- * @returns {ResendPayload}
  */
-export function buildResendPayload({ name, email, message, to, from }) {
+export function buildResendPayload({
+  name,
+  email,
+  message,
+  to,
+  from,
+}: ContactData & { to: string; from: string }): ResendPayload {
   return {
     from,
     to,
@@ -65,7 +79,7 @@ export function buildResendPayload({ name, email, message, to, from }) {
 }
 
 /** Collapse runs of control characters to a single space and trim. */
-function singleLine(value) {
+function singleLine(value: string): string {
   return value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim();
 }
 
@@ -73,11 +87,12 @@ function singleLine(value) {
  * POST the message to Resend. Throws on a non-2xx so the route returns a generic
  * 500. `fetchImpl` is injectable so the send path is unit-tested without a real
  * network call.
- * @param {ResendPayload} payload
- * @param {string} apiKey
- * @param {typeof fetch} [fetchImpl]
  */
-export async function sendViaResend(payload, apiKey, fetchImpl = fetch) {
+export async function sendViaResend(
+  payload: ResendPayload,
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<Response> {
   const res = await fetchImpl("https://api.resend.com/emails", {
     method: "POST",
     headers: {

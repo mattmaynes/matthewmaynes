@@ -8,7 +8,7 @@ import {
   isLocalHost,
   isClientAnalyticsEnabled,
   isServerAnalyticsEnabled,
-} from "../src/lib/analytics-env.js";
+} from "../src/lib/analytics-env.ts";
 
 test("isLocalHost recognizes every local form (port stripped)", () => {
   for (const h of [

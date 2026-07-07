@@ -68,7 +68,7 @@ Capture lessons as you go.
 - **`next/og` (satori) cannot read woff2.** `@fontsource-variable/figtree` ships woff2 only, so
   passing it to `ImageResponse` fails. satori does read woff/ttf/otf - and the *static*
   `@fontsource/figtree` package ships woff (plus its OFL license), so add it as a pinned
-  devDependency and derive the card fonts from it (`scripts/build-og-fonts.mjs`) rather than
+  devDependency and derive the card fonts from it (`scripts/build-og-fonts.ts`) rather than
   downloading ad-hoc binaries with no provenance. Colocate the woff in `src/app/_og/` and load via
   `new URL('./_og/figtree-NNN.woff', import.meta.url)` so they are traced into the `output:
   standalone` build (a `process.cwd()`-relative read of `src/` would not be - `src/` is not
@@ -85,7 +85,7 @@ Capture lessons as you go.
   (`cp -al node_modules <export>/node_modules`) - fast on one APFS volume, and the build only writes
   to `.next`.
 - **No new dependency for the icon set.** macOS `sips` resizes and a ~40-line stdlib ICO packer
-  (`scripts/build-icons.mjs`) writes a multi-res `favicon.ico` with PNG payloads. Reproducible from
+  (`scripts/build-icons.ts`) writes a multi-res `favicon.ico` with PNG payloads. Reproducible from
   one master (`public/brand/logo-m.png`), no ImageMagick.
 
 ## Images (spec 0005)
@@ -237,7 +237,7 @@ Capture lessons as you go.
   hash covers `src/lib/resume.ts` + `src/lib/site.ts`, NOT `src/app/resume/page.tsx`. Swapping
   the sidebar icons changed the page but not the hash, so `npm run resume:pdf` reported "nothing
   to regenerate" and the committed PDF would have kept the old glyphs. Run
-  `node scripts/generate-resume-pdf.mjs --force` when the resume *page* (not its data) changes.
+  `node scripts/generate-resume-pdf.ts --force` when the resume *page* (not its data) changes.
 
 ## Contact form (spec 0008, feedback 0009)
 
@@ -265,9 +265,10 @@ Capture lessons as you go.
   have passed. Anchor on form-unique copy (the textarea placeholder). The privacy criterion is
   now an automated `/contact` assertion (flags any email but the example placeholder), mirroring
   the `/resume` PII guard - a public-site PII rule belongs in a test, not human review.
-- **The contact core is a pure `.js` seam (`src/lib/contact.js`), like `theme.js`.** Validation,
+- **The contact core is a pure, fs-free seam (`src/lib/contact.ts`), like `theme.ts`.** Validation,
   honeypot, same-origin (host-compare, scheme-agnostic), the bounded in-memory rate limiter, and
-  the Resend payload/send live there so `node --test` covers them without a TS build; the
+  the Resend payload/send live there so `node --test` covers them directly (Node strips the TS
+  types at load, no build step); the
   `POST /v1/contact` route handler is a thin shell that maps request/env/outcome to status codes.
   Send is a plain `fetch` (timeout-bounded) to Resend's REST API - no SDK dependency for one POST.
 
