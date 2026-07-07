@@ -903,6 +903,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   let scanned = 0;
   let sawConversionEvent = false;
   let sawSubscribeEvent = false;
+  let sawSuccessBadge = false;
   while (stack.length) {
     const cur = stack.pop();
     let entries;
@@ -925,6 +926,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
         );
         if (js.includes("contact_form_submitted")) sawConversionEvent = true;
         if (js.includes("blog_subscribe_submitted")) sawSubscribeEvent = true;
+        if (js.includes("You are on the list")) sawSuccessBadge = true;
       }
     }
   }
@@ -939,6 +941,14 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   assert.ok(
     sawSubscribeEvent,
     "expected a client chunk to fire the blog_subscribe_submitted event (spec 0018)",
+  );
+  // The success confirmation is client-only (shown after a successful POST, which the
+  // smoke server can't reach with creds forced empty), so its copy is not in the SSR
+  // HTML. Assert the badge text ships in a client chunk, so a dropped success UI
+  // reddens (spec 0025).
+  assert.ok(
+    sawSuccessBadge,
+    "expected a client chunk to carry the subscribe success badge copy (spec 0025)",
   );
 });
 
