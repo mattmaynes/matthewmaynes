@@ -78,6 +78,19 @@ export default function SubscribePage() {
                 <ReadingTimePill minutes={readingMinutes(latest)} />
               </div>
               <p className="mt-3 text-body text-text-muted">{latest.excerpt}</p>
+              {latest.tags.length > 0 ? (
+                // Tags, matching the blog-listing row treatment (spec 0024).
+                <ul className="mt-4 flex flex-wrap gap-2">
+                  {latest.tags.map((tag) => (
+                    <li
+                      key={tag}
+                      className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
+                    >
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           </article>
 

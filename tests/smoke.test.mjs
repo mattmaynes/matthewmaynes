@@ -121,24 +121,22 @@ const routes = [
       "No spam; unsubscribe anytime.",
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
-      // SSR HTML even though the field is display:none until the email is focused,
-      // so a dropped Name field reddens this. NOTE: the client-only reveal itself
-      // (onFocus -> setExpanded(true) -> reflow) is not SSR-observable, so no smoke
-      // marker covers that live transition - an acknowledged gap (there is no
-      // subscribe-form unit test; /blog only renders the collapsed state and
-      // /subscribe uses alwaysShowName). The static states on both routes ARE guarded.
+      // SSR HTML even though the field is collapsed until the email is focused, so a
+      // dropped Name field reddens this. NOTE: the client-only reveal itself
+      // (onFocus -> setExpanded(true) -> animate open) is not SSR-observable, so no
+      // smoke marker covers that live transition - an acknowledged gap (/blog renders
+      // the collapsed state; /subscribe renders the revealed state via alwaysShowName).
       "Name (optional)",
+      // DEFAULT-collapsed guard (spec 0024): the Name field now ALWAYS carries
+      // `sm:flex-1` (it animates via max-width rather than display-toggling), so
+      // sm:flex-1 no longer distinguishes the two states. The collapsed wrapper
+      // instead carries `sm:max-w-0` (clamped shut) while the revealed wrapper carries
+      // `sm:max-w-md`; so `sm:max-w-0` present here proves the field is collapsed by
+      // default, and `sm:max-w-md` in `absent` below proves it is NOT revealed. Both
+      // are unique to the subscribe form (grep-confirmed).
+      "sm:max-w-0",
     ],
-    // The DEFAULT-collapsed state is guarded via `sm:flex-1` in `absent` below:
-    // spec 0020 keeps the row inline (`sm:flex-row sm:items-end`) whether or not the
-    // Name field is revealed, so that combo no longer distinguishes the two states.
-    // Instead, the Name field's wrapper only carries `sm:flex-1` once revealed (email
-    // is `sm:flex-[2]`), so its ABSENCE here proves the field is hidden by default -
-    // and its PRESENCE on /subscribe (which renders alwaysShowName) proves the
-    // inline-reveal fix. This marker is unique to the subscribe form (grep confirms
-    // nothing else on the route emits `sm:flex-1`; the layout's `<main>` uses the
-    // unprefixed `flex-1`).
-    absent: ["Placeholder", "No posts yet", "sm:flex-1"],
+    absent: ["Placeholder", "No posts yet", "sm:max-w-md"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -180,12 +178,14 @@ const routes = [
       "No spam; unsubscribe anytime.",
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
-      // SSR HTML even though the field is display:none until the email is focused,
-      // so a dropped Name field reddens this. The DEFAULT-collapsed state is guarded
-      // by `sm:flex-1` in `absent` below (spec 0020 - see the /blog entry above).
+      // SSR HTML even though the field is collapsed until the email is focused, so a
+      // dropped Name field reddens this. The DEFAULT-collapsed state is guarded by
+      // `sm:max-w-0` present here and `sm:max-w-md` in `absent` below (spec 0024 -
+      // see the /blog entry above).
       "Name (optional)",
+      "sm:max-w-0",
     ],
-    absent: ["Placeholder", "sm:flex-1"],
+    absent: ["Placeholder", "sm:max-w-md"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
     // placeholder, so its data-URL must appear (feedback 0005).
     hasBlur: true,
@@ -225,20 +225,24 @@ const routes = [
       // from the blog boxes' "No spam; unsubscribe anytime." subtext.
       "I will not send you many emails",
       // The form renders with all three fields inline: `sm:flex-row sm:items-end`
-      // is the row container, and `sm:flex-1` proves the Name field is SHOWN inline
-      // (alwaysShowName) rather than reflowing to stacked - the spec-0020 inline fix.
-      // This is the positive counterpart to the `/blog` `absent: sm:flex-1` guard.
+      // is the row container, and `sm:max-w-md` proves the Name field is SHOWN inline
+      // (alwaysShowName -> revealed) rather than collapsed - the positive counterpart
+      // to the `/blog` `absent: sm:max-w-md` guard (spec 0024; the field animates via
+      // max-width now, so `sm:max-w-md` is the revealed marker, not `sm:flex-1`).
       "sm:flex-row sm:items-end",
-      "sm:flex-1",
+      "sm:max-w-md",
       "Name (optional)",
       // The "Latest post" block rendered: the section label, the card's reading-time
       // pill ("min read" is unique to the card on this route, and every post has a
-      // reading time), and the link out to the full listing. These are DURABLE - we
-      // deliberately do NOT pin the newest post's title/slug, which changes with every
-      // new post (the same time-bomb the /blog "New" badge avoids); the ordering that
-      // picks the newest post is covered by the sortPostsNewestFirst unit test.
+      // reading time), the tag chips (spec 0024 - the tag-chip class combo is unique
+      // to the card's tags on this route; DURABLE, not pinned to specific tag values),
+      // and the link out to the full listing. These are DURABLE - we deliberately do
+      // NOT pin the newest post's title/slug, which changes with every new post (the
+      // same time-bomb the /blog "New" badge avoids); the ordering that picks the
+      // newest post is covered by the sortPostsNewestFirst unit test.
       "Latest post",
       "min read",
+      "bg-muted px-3 py-1 text-caption text-secondary",
       "See all posts",
       'href="/blog"',
     ],
