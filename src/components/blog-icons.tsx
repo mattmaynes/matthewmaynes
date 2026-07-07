@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Rss, Search, type IconBaseProps } from "@rogueoak/icons";
+import { ArrowLeft, ArrowRight, Clock, Rss, Search, type IconBaseProps } from "@rogueoak/icons";
 
 /**
  * Decorative glyphs for the blog surfaces (post meta, listing controls). Thin
@@ -30,4 +30,17 @@ export function SearchIcon(props: IconBaseProps) {
  */
 export function RssIcon(props: IconBaseProps) {
   return <Rss aria-hidden {...props} />;
+}
+
+/**
+ * Directional arrows for the previous/next post navigation (spec 0021).
+ * `aria-hidden` because each tile's own "Previous"/"Next" label + post title
+ * carries the accessible name; the arrow only reinforces the direction visually.
+ */
+export function ArrowLeftIcon(props: IconBaseProps) {
+  return <ArrowLeft aria-hidden {...props} />;
+}
+
+export function ArrowRightIcon(props: IconBaseProps) {
+  return <ArrowRight aria-hidden {...props} />;
 }

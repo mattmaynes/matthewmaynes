@@ -237,3 +237,30 @@ export function getPostBySlug(slug) {
   if (!file) return null;
   return readPost(file);
 }
+
+/**
+ * The chronological neighbours of the post identified by `slug` (spec 0021), for
+ * previous/next post navigation. Pure and non-mutating (sorts a copy newest-first
+ * via `sortPostsNewestFirst`), so it is unit-tested against a multi-post fixture -
+ * a single-post content dir would never exercise the ordering (learnings 0009).
+ *
+ * With posts ordered newest-first, the entry BEFORE the current one is the newer
+ * post and the entry AFTER it is the older post, so `next` is the newer post and
+ * `previous` is the older one. Either is `null` at a boundary (newest post has no
+ * next, oldest has no previous), and both are `null` when `slug` is not found.
+ *
+ * @template {{ slug: string, date: string }} T
+ * @param {T[]} posts
+ * @param {string} slug
+ * @returns {{ previous: T | null, next: T | null }}
+ */
+export function getAdjacentPosts(posts, slug) {
+  const sorted = sortPostsNewestFirst(posts);
+  const i = sorted.findIndex((p) => p.slug === slug);
+  if (i === -1) return { previous: null, next: null };
+  return {
+    // Newer post sits at the smaller index; older post at the larger index.
+    next: i > 0 ? sorted[i - 1] : null,
+    previous: i < sorted.length - 1 ? sorted[i + 1] : null,
+  };
+}

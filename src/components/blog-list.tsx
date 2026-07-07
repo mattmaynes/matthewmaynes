@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { StaticImageData } from "next/image";
 import { SearchIcon } from "@/components/blog-icons";
 import { ReadingTimePill } from "@/components/reading-time-pill";
+import { FOCUS_RING as RING } from "@/lib/focus-ring";
 import {
   formatPostDate,
   deriveTags,
@@ -60,10 +61,6 @@ function subscribeUrlTag(callback: () => void) {
 function readUrlTag() {
   return new URLSearchParams(window.location.search).get("tag") ?? "";
 }
-
-/** Shared focus-ring classes, matching the existing links on this page. */
-const RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset";
 
 /**
  * The blog listing's filter/search island. Owns the tag-chip + search UI and
