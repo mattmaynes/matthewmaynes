@@ -6,7 +6,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolveDark, themeScriptSource } from "../src/lib/theme.js";
+import { resolveDark, themeScriptSource } from "../src/lib/theme.ts";
 
 // Run the real inline IIFE with stubbed localStorage/window/document and report
 // whether it set the `.dark` class. Mirrors what the browser does pre-paint.

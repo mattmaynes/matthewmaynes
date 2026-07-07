@@ -38,12 +38,12 @@
   default Open Graph / Twitter / robots metadata, a `viewport` `themeColor`, and a JSON-LD `Person`.
 - **One source of truth:** identity/description/social come from `src/lib/site.ts`; sitemap routes
   come from its `nav`. Nothing is duplicated across the meta tags, sitemap, JSON-LD, and manifest.
-- **Icons are generated, not hand-placed:** `scripts/build-icons.mjs` resizes the
+- **Icons are generated, not hand-placed:** `scripts/build-icons.ts` resizes the
   `public/brand/logo-m.png` master with macOS `sips` and packs the multi-res `favicon.ico` with a
   stdlib ICO writer - no ImageMagick, no npm dependency. Re-run it to refresh every size at once.
 - **OG image asset loading:** satori (the `next/og` engine) cannot read the woff2 that
   `@fontsource-variable` ships, so the static `@fontsource/figtree` package (a pinned devDependency,
-  which ships woff + its OFL license) is the source. `scripts/build-og-fonts.mjs` copies the woff +
+  which ships woff + its OFL license) is the source. `scripts/build-og-fonts.ts` copies the woff +
   LICENSE into `src/app/_og/`, where `opengraph-image.tsx` loads them via
   `new URL(..., import.meta.url)` (traced into the standalone output). The card's headshot reads
   from `public/`, which the standalone/Docker copy step deploys next to `server.js`.
@@ -105,7 +105,7 @@ per-component code. Already implemented in `src/styles/`.
   deploy job so a wedged host fails fast instead of hanging. Treat any deploy that changes runtime
   topology (instance count / memory) as a capacity change - size the host for the overlap first.
 - **Image cache pre-warm (spec 0006):** the `prewarm` job runs after a healthy deploy and hits the
-  live site (`node scripts/prewarm-images.mjs $SITE_URL`, via Caddy to the fresh container) to
+  live site (`node scripts/prewarm-images.ts $SITE_URL`, via Caddy to the fresh container) to
   populate the on-demand `next/image` optimizer cache, so the first real visitor gets cache HITs
   instead of waiting on encodes. Best-effort: it only fails if the site is wholly unreachable.
   Browser-side caching needs no help - optimized images are content-hashed and returned
@@ -149,9 +149,9 @@ per-component code. Already implemented in `src/styles/`.
 ## Contact endpoint (spec 0008)
 
 - **Versioned route handler, `POST /v1/contact`** (`src/app/v1/contact/route.ts`) - a thin HTTP
-  shell over the pure `src/lib/contact.js` (validation, honeypot, same-origin, rate limiter, Resend
-  payload + send). The logic lives in a plain-JS seam so it is unit-tested by `node --test` without
-  booting a server (same pattern as `src/lib/theme.js`); the route only maps request/env/outcomes to
+  shell over the pure `src/lib/contact.ts` (validation, honeypot, same-origin, rate limiter, Resend
+  payload + send). The logic lives in a pure, fs-free seam so it is unit-tested by `node --test`
+  without booting a server (same pattern as `src/lib/theme.ts`); the route only maps request/env/outcomes to
   status codes (400/403/429/500, honeypot -> silent 200) and reads the secrets. Sends via `fetch` to
   Resend's REST API - no SDK dependency for one POST.
 - **Spam guards are layered, not a single gate:** an offset honeypot (`company`, silent-drop),

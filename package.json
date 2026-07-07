@@ -2,15 +2,16 @@
   "name": "matthewmaynes",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
-    "resume:pdf": "node scripts/generate-resume-pdf.mjs",
-    "resume:pdf:check": "node scripts/generate-resume-pdf.mjs --check",
-    "prewarm": "node scripts/prewarm-images.mjs",
+    "test": "node --test --test-concurrency=1 tests/*.test.ts",
+    "resume:pdf": "node scripts/generate-resume-pdf.ts",
+    "resume:pdf:check": "node scripts/generate-resume-pdf.ts --check",
+    "prewarm": "node scripts/prewarm-images.ts",
     "theme:build": "roots-brand brand/harbor/brand.config.json"
   },
   "dependencies": {

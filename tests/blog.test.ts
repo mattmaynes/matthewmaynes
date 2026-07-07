@@ -15,13 +15,13 @@ import {
   estimateReadingMinutes,
   isRecent,
   newPostSlug,
-} from "../src/lib/blog.js";
+} from "../src/lib/blog.ts";
 import {
   formatPostDate,
   deriveTags,
   resolveActiveTag,
   filterPosts,
-} from "../src/lib/blog-view.js";
+} from "../src/lib/blog-view.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const at = (dateStr) => Date.parse(`${dateStr}T00:00:00Z`);

@@ -10,10 +10,8 @@
 /**
  * The honeypot is a hidden field a real user never sees or fills; a naive bot
  * that fills every input trips it. A filled honeypot means "drop silently".
- * @param {unknown} value
- * @returns {boolean}
  */
-export function isHoneypotFilled(value) {
+export function isHoneypotFilled(value: unknown): boolean {
   return typeof value === "string" && value.trim() !== "";
 }
 
@@ -24,12 +22,15 @@ export function isHoneypotFilled(value) {
  * Referer is rejected: a browser form POST always carries one; a drive-by script
  * often does not. Forgeable, so this thins drive-by spam - it is not a security
  * boundary (the honeypot + rate limit are the real guards).
- * @param {string | null} origin - the `Origin` header
- * @param {string | null} referer - the `Referer` header
- * @param {string | null} host - the `Host` header
- * @returns {boolean}
+ * @param origin - the `Origin` header
+ * @param referer - the `Referer` header
+ * @param host - the `Host` header
  */
-export function isSameOrigin(origin, referer, host) {
+export function isSameOrigin(
+  origin: string | null,
+  referer: string | null,
+  host: string | null,
+): boolean {
   if (!host) return false;
   const src = origin ?? referer;
   if (!src) return false;
@@ -40,24 +41,30 @@ export function isSameOrigin(origin, referer, host) {
   }
 }
 
+/** A per-key rate limiter: `check` returns true if allowed, false if over. */
+export type RateLimiter = { check(key: string, now?: number): boolean };
+
 /**
  * Best-effort in-process rate limiter: at most `max` hits per `windowMs` per key
  * (client IP). Single-container by design - state is lost on restart and is not
  * shared across replicas - which is fine for a low-traffic personal site: it thins
  * bursts, it is not a hard quota. `now` is injectable so the window logic is
  * unit-testable without a real clock.
- * @param {{ max: number, windowMs: number, maxKeys?: number }} opts
  */
-export function createRateLimiter({ max, windowMs, maxKeys = 10_000 }) {
-  /** @type {Map<string, number[]>} key -> recent hit timestamps */
-  const hits = new Map();
+export function createRateLimiter({
+  max,
+  windowMs,
+  maxKeys = 10_000,
+}: {
+  max: number;
+  windowMs: number;
+  maxKeys?: number;
+}): RateLimiter {
+  /** key -> recent hit timestamps */
+  const hits = new Map<string, number[]>();
   return {
-    /**
-     * @param {string} key
-     * @param {number} [now]
-     * @returns {boolean} true if allowed, false if over the limit
-     */
-    check(key, now = Date.now()) {
+    /** @returns true if allowed, false if over the limit */
+    check(key: string, now: number = Date.now()): boolean {
       const cutoff = now - windowMs;
       // Opportunistic sweep so the Map cannot grow without bound from one-off
       // keys that are never re-checked: once it is large, evict every key with

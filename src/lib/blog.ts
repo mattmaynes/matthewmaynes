@@ -1,18 +1,20 @@
 /**
- * Typed wrappers over the plain-JS blog core (src/lib/blog.js). The core is JS
- * so `node --test` can cover the parsing/slug/sort logic without a TS build;
- * this module gives the TS callers (the listing, post page, OG route) a typed
- * surface and a shared `Post` type.
+ * Blog content loader - the single seam every blog surface (listing, post page,
+ * per-post OG route) reads. The pure parsing/slug/sort/reading-time logic is
+ * unit-tested by `node --test` (tests/blog.test.ts) directly against this module;
+ * Node strips the types at load, so there is no separate build step.
+ *
+ * Frontmatter is hand-parsed (no `gray-matter` dep, per the repo's no-new-dep
+ * tradition): the listing reads only frontmatter, cheaply, and MDX is compiled
+ * only on the post page (src/components/post-body.tsx). We only ever read our
+ * own tracked files under content/blog/, never user input.
  */
-import {
-  getAllPosts as getAllPostsJs,
-  getPostBySlug as getPostBySlugJs,
-  getAdjacentPosts as getAdjacentPostsJs,
-  estimateReadingMinutes as estimateReadingMinutesJs,
-  isRecent as isRecentJs,
-  newPostSlug as newPostSlugJs,
-} from "./blog.js";
 
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { formatPostDate } from "./blog-view.ts";
+
+/** A blog post: frontmatter fields plus the raw MDX body (compiled on the page). */
 export type Post = {
   slug: string;
   title: string;
@@ -27,12 +29,245 @@ export type Post = {
   content: string;
 };
 
-export function getAllPosts(): Post[] {
-  return getAllPostsJs() as Post[];
+/** The parsed frontmatter block: the known keys we read off each post. */
+export type Frontmatter = {
+  title: string;
+  date: string;
+  tags: string[];
+  excerpt: string;
+  cover?: string;
+  coverCaption?: string;
+};
+
+// Re-exported so the Server Component post page and the `"use client"` listing
+// island share ONE date formatter (the island cannot import this module, whose
+// graph pulls in `node:fs`).
+export { formatPostDate };
+
+// content/blog lives at the repo root; resolve relative to process.cwd() (the
+// project root at build time, where `next build` runs and enumerates posts).
+const BLOG_DIR = join(process.cwd(), "content", "blog");
+
+// Frontmatter fields that must be present, or the build fails loudly.
+const REQUIRED_FIELDS = ["title", "date", "tags", "excerpt"] as const;
+
+/**
+ * Parse a leading `---\n ... \n---` frontmatter block plus the MDX body.
+ * Reads only our known keys: title, date, excerpt, cover, coverCaption (strings)
+ * and tags (an inline array like `[Life]` or `[A, B]`). Throws if the block is
+ * missing or a required field (title, date, tags, excerpt) is absent.
+ *
+ * @param raw - the full .mdx file contents
+ */
+export function parseFrontmatter(raw: string): {
+  data: Frontmatter;
+  content: string;
+} {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+  if (!match) {
+    throw new Error("Missing frontmatter block (expected a leading '---' fence)");
+  }
+  const [, block, body] = match;
+
+  const data: Record<string, string | string[]> = {};
+  for (const line of block.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
+    if (!kv) continue;
+    const key = kv[1];
+    const value = kv[2].trim();
+
+    if (key === "tags") {
+      // Inline array: [Life] or [A, B]. Strip the brackets and split.
+      const inner = value.replace(/^\[/, "").replace(/\]$/, "").trim();
+      data.tags = inner
+        ? inner.split(",").map((t) => stripQuotes(t.trim())).filter(Boolean)
+        : [];
+    } else if (
+      ["title", "date", "excerpt", "cover", "coverCaption"].includes(key)
+    ) {
+      data[key] = stripQuotes(value);
+    }
+  }
+
+  for (const field of REQUIRED_FIELDS) {
+    const v = data[field];
+    const missing =
+      v === undefined ||
+      v === "" ||
+      (field === "tags" && (!Array.isArray(v) || v.length === 0));
+    if (missing) {
+      throw new Error(`Frontmatter is missing required field: ${field}`);
+    }
+  }
+
+  return { data: data as unknown as Frontmatter, content: body };
 }
 
+/** Strip a single pair of matching surrounding quotes, if present. */
+function stripQuotes(s: string): string {
+  return s.replace(/^["'](.*)["']$/, "$1");
+}
+
+/** Words a typical adult reads per minute; the estimate divides by this. */
+const WORDS_PER_MINUTE = 200;
+
+/**
+ * Estimate a post's reading time in whole minutes from its MDX body. Pure and
+ * deterministic (no Date, no Math.random): strips the markup that is not prose
+ * (fenced code blocks, JSX tags like PostImage, markdown link URLs, and inline
+ * heading/emphasis markers) then counts the remaining whitespace-separated words
+ * and divides by ~200 wpm. Floors at 1 so even a one-word post reads as
+ * "1 min read".
+ *
+ * @param content - the raw MDX body (frontmatter already stripped)
+ * @returns whole minutes, always >= 1
+ */
+export function estimateReadingMinutes(content: string): number {
+  const prose = String(content ?? "")
+    // Fenced code blocks - not prose, drop entirely.
+    .replace(/```[\s\S]*?```/g, " ")
+    // Inline code spans - drop the markup and its contents.
+    .replace(/`[^`]*`/g, " ")
+    // JSX/HTML tags such as <PostImage name="..."/> - drop the whole tag.
+    .replace(/<[^>]+>/g, " ")
+    // Markdown links [text](url): keep the link text, drop the URL.
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    // Bare markdown/emphasis markers left over.
+    .replace(/[#>*_~`|-]+/g, " ");
+  const words = prose.split(/\s+/).filter(Boolean);
+  return Math.max(1, Math.round(words.length / WORDS_PER_MINUTE));
+}
+
+/** Reading time for a post, in whole minutes (always >= 1). */
+export function readingMinutes(post: Post): number {
+  return estimateReadingMinutes(post.content);
+}
+
+/** Milliseconds in one day, for the recency window. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a post date is within `days` of a reference time. Pure and
+ * deterministic - the caller injects `nowMs` (never `Date.now()` inside), so the
+ * "New" badge logic is unit-testable with a fixed clock. `dateStr` is parsed as
+ * UTC midnight, exactly like `formatPostDate`, so a negative-offset timezone
+ * never shifts the boundary by a day. True when the post is published (not in the
+ * future) and no older than `days` days; the window is inclusive at exactly N days.
+ *
+ * @param dateStr - a YYYY-MM-DD post date
+ * @param nowMs - the reference time in epoch ms (injected)
+ * @param days - the recency window, in days
+ */
+export function isRecent(dateStr: string, nowMs: number, days: number): boolean {
+  const dateMs = Date.parse(`${dateStr}T00:00:00Z`);
+  if (Number.isNaN(dateMs)) return false;
+  const ageMs = nowMs - dateMs;
+  return ageMs >= 0 && ageMs <= days * DAY_MS;
+}
+
+/**
+ * The slug of the post that should carry the "New" badge, or null. It is the
+ * newest post (by date) but only while that post is still within the recency
+ * window (`isRecent`), so the badge is not permanent furniture. Pure and
+ * non-mutating (sorts a copy) and clock-injected via `nowMs`, so it is unit-
+ * testable against a multi-post fixture with a fixed clock.
+ *
+ * @param nowMs - the reference time in epoch ms (injected)
+ * @param days - the recency window, in days
+ */
+export function newPostSlug<T extends { slug: string; date: string }>(
+  posts: T[],
+  nowMs: number,
+  days = 30,
+): string | null {
+  if (!Array.isArray(posts) || posts.length === 0) return null;
+  // Ignore future-dated posts (a scheduled post or a `2027-` typo): otherwise
+  // the newest-by-date entry is future, `isRecent` rejects it (age < 0), and the
+  // badge would be suppressed on every post - including the genuinely-newest
+  // published one. Pick the newest post that is already published.
+  const published = posts.filter((p) => {
+    const ms = Date.parse(`${p.date}T00:00:00Z`);
+    return !Number.isNaN(ms) && ms <= nowMs;
+  });
+  if (published.length === 0) return null;
+  const newest = sortPostsNewestFirst(published)[0];
+  return isRecent(newest.date, nowMs, days) ? newest.slug : null;
+}
+
+/**
+ * Slugify a string: lowercase, non-alphanumerics collapse to a single dash,
+ * trim leading/trailing dashes. e.g. "I Picked the Wrong Elective" ->
+ * "i-picked-the-wrong-elective".
+ */
+export function slugify(s: string): string {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Read + parse one .mdx file into a post record (frontmatter only, plus body). */
+function readPost(filename: string): Post {
+  const slug = filename.replace(/\.mdx$/, "");
+  const raw = readFileSync(join(BLOG_DIR, filename), "utf8");
+  const { data, content } = parseFrontmatter(raw);
+  // The slug is the filename; enforce that it matches the slugified title so a
+  // filename/title drift fails the build loudly instead of shipping a URL that
+  // does not read as the title (the documented content/blog naming rule).
+  const expected = slugify(data.title);
+  if (slug !== expected) {
+    throw new Error(
+      `Blog post filename slug "${slug}" does not match its title "${data.title}" (rename to "${expected}.mdx")`,
+    );
+  }
+  return {
+    slug,
+    title: data.title,
+    date: data.date,
+    tags: data.tags,
+    excerpt: data.excerpt,
+    coverKey: data.cover,
+    coverCaption: data.coverCaption,
+    content,
+  };
+}
+
+/** List the .mdx filenames under content/blog (empty if the dir is absent). */
+function listPostFiles(): string[] {
+  try {
+    return readdirSync(BLOG_DIR).filter((f) => f.endsWith(".mdx"));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Sort posts newest-first by `date`. Pure and non-mutating (copies first), so
+ * `node --test` can cover the ordering without touching the filesystem.
+ */
+export function sortPostsNewestFirst<T extends { date: string }>(
+  posts: T[],
+): T[] {
+  return [...posts].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+/**
+ * All posts, newest-first by `date`. Parses frontmatter only (does NOT compile
+ * MDX), so the listing is cheap. Slug is the filename basename.
+ */
+export function getAllPosts(): Post[] {
+  return sortPostsNewestFirst(listPostFiles().map(readPost));
+}
+
+/**
+ * One post by slug, including its raw MDX `content` for the page to compile.
+ * Returns null if no matching file exists.
+ */
 export function getPostBySlug(slug: string): Post | null {
-  return getPostBySlugJs(slug) as Post | null;
+  const file = listPostFiles().find((f) => f.replace(/\.mdx$/, "") === slug);
+  if (!file) return null;
+  return readPost(file);
 }
 
 /** The chronological neighbours of a post: the older (`previous`) and newer
@@ -40,60 +275,26 @@ export function getPostBySlug(slug: string): Post | null {
 export type AdjacentPosts = { previous: Post | null; next: Post | null };
 
 /**
- * Typed wrapper over the pure JS adjacency core (spec 0021): the older/newer
- * neighbours of `slug`, for previous/next post navigation. Named to match the core
- * export so the `./blog.js` import resolves under TypeScript, like the wrappers
- * above. Delegates to the JS so the ordering is unit-tested without a TS build.
+ * The chronological neighbours of the post identified by `slug` (spec 0021), for
+ * previous/next post navigation. Pure and non-mutating (sorts a copy newest-first
+ * via `sortPostsNewestFirst`), so it is unit-tested against a multi-post fixture -
+ * a single-post content dir would never exercise the ordering (learnings 0009).
+ *
+ * With posts ordered newest-first, the entry BEFORE the current one is the newer
+ * post and the entry AFTER it is the older post, so `next` is the newer post and
+ * `previous` is the older one. Either is `null` at a boundary (newest post has no
+ * next, oldest has no previous), and both are `null` when `slug` is not found.
  */
-export function getAdjacentPosts(posts: Post[], slug: string): AdjacentPosts {
-  return getAdjacentPostsJs(posts, slug) as AdjacentPosts;
+export function getAdjacentPosts<T extends { slug: string; date: string }>(
+  posts: T[],
+  slug: string,
+): { previous: T | null; next: T | null } {
+  const sorted = sortPostsNewestFirst(posts);
+  const i = sorted.findIndex((p) => p.slug === slug);
+  if (i === -1) return { previous: null, next: null };
+  return {
+    // Newer post sits at the smaller index; older post at the larger index.
+    next: i > 0 ? sorted[i - 1] : null,
+    previous: i < sorted.length - 1 ? sorted[i + 1] : null,
+  };
 }
-
-/**
- * Typed wrapper over the pure JS reading-time core. Named to match the core
- * export so the `./blog.js` import resolves under TypeScript (which maps the
- * `.js` specifier to this sibling `.ts` at type-check time), exactly like the
- * `getAllPosts`/`getPostBySlug` wrappers above.
- */
-export function estimateReadingMinutes(content: string): number {
-  return estimateReadingMinutesJs(content);
-}
-
-/**
- * Estimated reading time for a post, in whole minutes (always >= 1). Delegates
- * to the pure JS core so the estimate is unit-tested without a TS build.
- */
-export function readingMinutes(post: Post): number {
-  return estimateReadingMinutes(post.content);
-}
-
-/**
- * Typed wrapper over the pure JS recency check. Named to match the core export
- * so the `./blog.js` import resolves under TypeScript (which maps the `.js`
- * specifier to this sibling `.ts` at type-check time), like the wrappers above.
- * True when `date` (YYYY-MM-DD) is within `days` of the injected `nowMs`.
- */
-export function isRecent(date: string, nowMs: number, days: number): boolean {
-  return isRecentJs(date, nowMs, days);
-}
-
-/**
- * Typed wrapper over the pure JS "which post is New" rule: the slug of the
- * newest post while it is still within the recency window, else null. Clock is
- * injected via `nowMs` so the badge logic stays deterministic and testable.
- */
-export function newPostSlug(
-  posts: Array<{ slug: string; date: string }>,
-  nowMs: number,
-  days = 30,
-): string | null {
-  return newPostSlugJs(posts, nowMs, days);
-}
-
-/**
- * Format a YYYY-MM-DD date string as a human-readable date (e.g. "June 28,
- * 2026"). Re-exported from the fs-free `blog-view.js` so the Server Component
- * post page and the `"use client"` listing island share ONE formatter (the
- * island cannot import this module, whose graph pulls in `node:fs`).
- */
-export { formatPostDate } from "./blog-view.js";

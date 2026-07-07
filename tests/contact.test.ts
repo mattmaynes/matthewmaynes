@@ -11,12 +11,12 @@ import {
   validateContact,
   buildResendPayload,
   sendViaResend,
-} from "../src/lib/contact.js";
+} from "../src/lib/contact.ts";
 import {
   isHoneypotFilled,
   isSameOrigin,
   createRateLimiter,
-} from "../src/lib/http-guards.js";
+} from "../src/lib/http-guards.ts";
 
 test("validateContact accepts and trims a good submission", () => {
   const r = validateContact({
