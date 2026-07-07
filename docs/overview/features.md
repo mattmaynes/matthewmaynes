@@ -169,7 +169,8 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 - On success the fields + button are replaced in place by a compact, badge-shaped "You are on the
   list" confirmation (a check glyph + text in the success tokens, roughly the size of the Subscribe
   button; `role="status"` so it is announced), so the outcome reads at a glance and the form no
-  longer invites a second submit (spec 0025).
+  longer invites a second submit (spec 0025). The badge animates in with a subtle fade + scale-up
+  (~200ms ease-out, matching the name-field reveal; instant under `prefers-reduced-motion`, spec 0026).
 - The submit is tracked as a PII-free conversion event (`blog_subscribe_*`); the form is
   `ph-no-capture`, so the address never enters autocapture or session replay.
 - Spam guards are shared with the contact form: the honeypot, same-origin, and per-IP rate-limit

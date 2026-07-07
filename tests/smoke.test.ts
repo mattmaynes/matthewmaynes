@@ -952,6 +952,52 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   );
 });
 
+// The subscribe success badge animates in via the `subscribe-badge-in` keyframe
+// (spec 0026). The `.subscribe-badge-enter` class ships with the badge JSX, but the
+// keyframe + the reduced-motion opt-out are authored CSS, so guard BOTH halves of the
+// spec's acceptance against the built CSS:
+//  - the `@keyframes` DECLARATION (not the bare name, which also appears in the class's
+//    `animation:` reference - so matching the name alone would survive a dropped
+//    keyframe and false-pass; recurring "a cosmetic change needs a guard that can fail"
+//    lesson, feedback 0005 / review 0011); and
+//  - the `prefers-reduced-motion` rule that sets the class's animation to none (unique
+//    substring: the normal rule references the keyframe, only the reduced-motion rule
+//    zeroes it), so a removed @media block re-enabling motion reddens.
+// Keyframe names / class names are not minifier-renamed.
+test("the subscribe badge entrance keyframe + reduced-motion opt-out ship in the built CSS", () => {
+  const staticDir = join(root, ".next", "static");
+  const stack = [staticDir];
+  let sawKeyframe = false;
+  let sawReducedMotion = false;
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      const full = join(cur, e.name);
+      if (e.isDirectory()) {
+        stack.push(full);
+      } else if (e.name.endsWith(".css")) {
+        const css = readFileSync(full, "utf8");
+        if (css.includes("@keyframes subscribe-badge-in")) sawKeyframe = true;
+        if (css.includes(".subscribe-badge-enter{animation:none")) sawReducedMotion = true;
+      }
+    }
+  }
+  assert.ok(
+    sawKeyframe,
+    "expected the built CSS to declare the @keyframes subscribe-badge-in animation (spec 0026)",
+  );
+  assert.ok(
+    sawReducedMotion,
+    "expected the built CSS to disable the badge animation under prefers-reduced-motion (spec 0026)",
+  );
+});
+
 // The same-origin /ingest reverse proxy (spec 0014 acceptance) must be
 // configured, or all PostHog capture breaks with a green suite. Assert the built
 // routes manifest carries the three ingest rewrites to US Cloud - network-free,

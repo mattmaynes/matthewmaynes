@@ -135,7 +135,7 @@ export function SubscribeForm({
         {status.kind === "success" ? (
           <div
             role="status"
-            className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-body font-medium text-success"
+            className="subscribe-badge-enter inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-body font-medium text-success"
           >
             <Check aria-hidden className="h-4 w-4" />
             You are on the list
