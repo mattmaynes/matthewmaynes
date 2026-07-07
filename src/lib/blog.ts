@@ -7,6 +7,7 @@
 import {
   getAllPosts as getAllPostsJs,
   getPostBySlug as getPostBySlugJs,
+  getAdjacentPosts as getAdjacentPostsJs,
   estimateReadingMinutes as estimateReadingMinutesJs,
   isRecent as isRecentJs,
   newPostSlug as newPostSlugJs,
@@ -32,6 +33,20 @@ export function getAllPosts(): Post[] {
 
 export function getPostBySlug(slug: string): Post | null {
   return getPostBySlugJs(slug) as Post | null;
+}
+
+/** The chronological neighbours of a post: the older (`previous`) and newer
+ *  (`next`) post, either `null` at a boundary. */
+export type AdjacentPosts = { previous: Post | null; next: Post | null };
+
+/**
+ * Typed wrapper over the pure JS adjacency core (spec 0021): the older/newer
+ * neighbours of `slug`, for previous/next post navigation. Named to match the core
+ * export so the `./blog.js` import resolves under TypeScript, like the wrappers
+ * above. Delegates to the JS so the ordering is unit-tested without a TS build.
+ */
+export function getAdjacentPosts(posts: Post[], slug: string): AdjacentPosts {
+  return getAdjacentPostsJs(posts, slug) as AdjacentPosts;
 }
 
 /**

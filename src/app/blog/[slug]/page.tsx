@@ -7,7 +7,14 @@ import { RssIcon, ClockIcon } from "@/components/blog-icons";
 import { PostBody, InlineMdx } from "@/components/post-body";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
-import { getAllPosts, getPostBySlug, formatPostDate, readingMinutes } from "@/lib/blog";
+import { PostNav, type PostNavItem } from "@/components/post-nav";
+import {
+  getAllPosts,
+  getPostBySlug,
+  getAdjacentPosts,
+  formatPostDate,
+  readingMinutes,
+} from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site, blogFeedTitle } from "@/lib/site";
 
@@ -134,6 +141,18 @@ export default async function BlogPostPage({
   const pixelated = cover?.pixelated === true;
   const minutes = readingMinutes(post);
 
+  // Chronological neighbours for the previous/next nav (spec 0021). Resolve their
+  // covers on the server so each tile carries its blurDataURL, like the listing.
+  const { previous, next } = getAdjacentPosts(getAllPosts(), slug);
+  const toNavItem = (p: typeof previous): PostNavItem | null =>
+    p
+      ? {
+          slug: p.slug,
+          title: p.title,
+          cover: p.coverKey ? getBlogImage(p.coverKey) : undefined,
+        }
+      : null;
+
   return (
     <article className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
       {cover ? (
@@ -212,6 +231,12 @@ export default async function BlogPostPage({
       </p>
 
       <SubscribeForm source="blog_post" className="mt-12 border-t border-border pt-10" />
+
+      <PostNav
+        previous={toNavItem(previous)}
+        next={toNavItem(next)}
+        className="mt-12 border-t border-border pt-10"
+      />
 
       <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">
