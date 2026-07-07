@@ -157,6 +157,17 @@ const routes = [
       "By Matthew Maynes",
       "views expressed here are my own",
       "text-body-lg",
+      // Breadcrumb trail (spec 0022): the Canopy Breadcrumb renders a
+      // `nav aria-label="breadcrumb"` landmark - unique to this component (the
+      // header nav uses "Primary", post-nav uses "More posts"), so its absence
+      // reddens if the trail is dropped. The landmark alone only proves the <nav>
+      // shell, so also assert the trail's CONTENT: `BreadcrumbPage` (the current
+      // crumb) is the only element on the post page that emits `aria-disabled="true"`
+      // - so an empty/broken BreadcrumbList reddens too. (NOT `aria-current="page"`:
+      // the header's active Blog link emits that on every /blog/* route, so it would
+      // be a false guard - review 0022.)
+      'aria-label="breadcrumb"',
+      'aria-disabled="true"',
       // RSS subscribe link + feed autodiscovery on the post page (spec 0013).
       'href="/blog/feed.xml"',
       'application/rss+xml',
