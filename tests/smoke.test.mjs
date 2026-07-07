@@ -157,6 +157,12 @@ const routes = [
       "By Matthew Maynes",
       "views expressed here are my own",
       "text-body-lg",
+      // Breadcrumb trail (spec 0022): the Canopy Breadcrumb renders a
+      // `nav aria-label="breadcrumb"` landmark - unique to this component (the
+      // header nav uses a different label), so its absence reddens if the trail is
+      // dropped. `href="/blog"` also appears via "Back to blog", so the landmark
+      // label is the unit-unique guard; the trail's Home/Blog crumbs ship with it.
+      'aria-label="breadcrumb"',
       // RSS subscribe link + feed autodiscovery on the post page (spec 0013).
       'href="/blog/feed.xml"',
       'application/rss+xml',

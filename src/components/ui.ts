@@ -14,6 +14,12 @@
 
 export { Badge, Button, Input, Textarea } from "@rogueoak/canopy/seeds";
 export {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
   Card,
   CardContent,
   CardDescription,
