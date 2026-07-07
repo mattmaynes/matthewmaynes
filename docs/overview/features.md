@@ -14,6 +14,7 @@ pending) · 📋 planned.
 | `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, a reading-time pill (spec 0015, the same `Clock` + "N min read" treatment as the post page), excerpt, and tag labels. Interactive discovery (spec 0012): tag-chip filters (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. An email "Subscribe for updates" block (spec 0018) sits at the bottom. |
 | `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, an email "Subscribe for updates" block (spec 0018), and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
+| `/subscribe` | ✅ | A focused, shareable mailing-list landing page (spec 0020): a heading + short invitation, the subscribe form with all three fields (email, name, button) shown up front, then a "Latest post" card (newest post) and a "See all posts" button to `/blog`. **Not** in the top nav (the shared nav/footer still render), but it **is** in the sitemap so the URL is crawlable when shared. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017) documenting what the site actually does: PostHog analytics with masked-input session replay, the Resend-relayed contact form, transient IP use, self-hosted assets, no tracking cookies/ads/database. Cookieless legitimate-interest basis (no consent banner). Linked from the footer, not the top nav or sitemap. Lists a dedicated public `privacy@` address for data requests - the only email on the site. |
 
 ## Navigation
@@ -22,6 +23,8 @@ pending) · 📋 planned.
   (mobile: a left-aligned hamburger that opens Canopy's disclosure panel). Projects is intentionally
   omitted while it is an in-progress stub - the `/projects` route still exists and is reachable
   directly, but it is not linked from the nav, the home page, or the sitemap until it ships.
+  `/subscribe` (spec 0020) is likewise kept out of the nav, but - unlike `/projects` - it *is* in
+  the sitemap, since it is a landing page meant to be shared and discovered.
 - Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as icon-only Canopy
   ghost-icon Buttons, plus the copyright and a `Privacy` link to `/privacy` (spec 0017). Icons come
   from `@rogueoak/icons` (the curated Canopy set), as does the header theme toggle's sun/moon - the
@@ -136,11 +139,17 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
   "Matthew Maynes Blog" list in Constant Contact. The block is mobile-first: input and button stack
   full width below `sm` and go inline on one row at `sm+`.
 - **Optional name capture (spec 0018 amendment).** The box stays as above by default; focusing the
-  email reveals a single optional "Name" field between the email and the button, and the row reflows
-  to stacked (email -> Name -> Subscribe). Providing a name is optional; when given it is split on
-  the first space (first token -> first name, remainder -> last name) and stored on the Constant
-  Contact contact for later personalization. A PII-free `has_name` boolean rides the submit event
-  (never the name itself).
+  email reveals a single optional "Name" field between the email and the button. On `sm+` the row
+  stays inline as it reveals (spec 0020): the email shortens (`sm:flex-[2]`) and the Name field
+  slides in between it and the button (`sm:flex-1`), so the button does not jump - below `sm` the
+  fields stack. Providing a name is optional; when given it is split on the first space (first token
+  -> first name, remainder -> last name) and stored on the Constant Contact contact for later
+  personalization. A PII-free `has_name` boolean rides the submit event (never the name itself).
+- **Dedicated `/subscribe` page (spec 0020).** The same form island, with all three fields shown
+  from first paint (`alwaysShowName`) and its built-in heading suppressed (`heading={false}`) so the
+  page supplies its own H1 + invitation copy. Below the form it shows the latest post and a link to
+  the full listing. Submits carry a `source: "subscribe_page"` analytics dimension (PII-free), so
+  the three surfaces (listing, post, landing page) are attributable.
 - The Constant Contact OAuth credentials live only in server env (`CTCT_CLIENT_ID`,
   `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID`) and never reach the browser or the repo. The route mints a
   24h access token from the non-rotating refresh token (cached in-memory across requests) and calls
