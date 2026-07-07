@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check } from "@rogueoak/icons";
 import { usePostHog } from "posthog-js/react";
 import { clientAnalyticsEnabled } from "@/lib/posthog-browser";
 import { Button, FormField, FormFieldControl, FormFieldLabel, Input } from "@/components/ui";
@@ -125,11 +126,22 @@ export function SubscribeForm({
         className={`ph-no-capture ${heading ? "mt-5" : ""}`}
         noValidate
       >
-        {/* The row stays inline at sm+ whether or not the optional Name field is
-            revealed: email flexes wider (sm:flex-[2]) and shortens to make room, and
-            the revealed Name sits between it and the button (sm:flex-1). Below sm the
-            fields stack. DOM order (email -> Name -> button) is the visual order. */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        {/* On a successful subscribe (spec 0025), the fields + button are replaced in
+            place by a compact, badge-shaped confirmation - roughly the size of the
+            Subscribe button it stands in for - so the outcome reads at a glance.
+            Otherwise the input row renders: it stays inline at sm+ whether or not the
+            optional Name field is revealed (email sm:flex-[2] shortens; the revealed
+            Name sits between it and the button); below sm the fields stack. */}
+        {status.kind === "success" ? (
+          <div
+            role="status"
+            className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-body font-medium text-success"
+          >
+            <Check aria-hidden className="h-4 w-4" />
+            You are on the list
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <FormField className="w-full sm:flex-[2]">
             <FormFieldLabel className="sr-only">Email address</FormFieldLabel>
             <FormFieldControl>
@@ -178,7 +190,8 @@ export function SubscribeForm({
           <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
             {submitting ? "Subscribing..." : "Subscribe"}
           </Button>
-        </div>
+          </div>
+        )}
 
         {/* Honeypot: hidden from users and assistive tech; a naive bot that fills
             every input trips it and the server drops the request silently. */}
@@ -189,11 +202,6 @@ export function SubscribeForm({
           </label>
         </div>
 
-        {status.kind === "success" && (
-          <p role="status" className="mt-3 text-body text-success">
-            Thanks - you are on the list.
-          </p>
-        )}
         {status.kind === "error" && (
           <p role="alert" className="mt-3 text-body text-danger">
             {status.message}

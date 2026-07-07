@@ -166,6 +166,10 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
   24h access token from the non-rotating refresh token (cached in-memory across requests) and calls
   the create-or-update `sign_up_form` endpoint, so a repeat email is idempotent. See
   `architecture.md`.
+- On success the fields + button are replaced in place by a compact, badge-shaped "You are on the
+  list" confirmation (a check glyph + text in the success tokens, roughly the size of the Subscribe
+  button; `role="status"` so it is announced), so the outcome reads at a glance and the form no
+  longer invites a second submit (spec 0025).
 - The submit is tracked as a PII-free conversion event (`blog_subscribe_*`); the form is
   `ph-no-capture`, so the address never enters autocapture or session replay.
 - Spam guards are shared with the contact form: the honeypot, same-origin, and per-IP rate-limit
