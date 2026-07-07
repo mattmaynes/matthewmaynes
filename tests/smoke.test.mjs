@@ -733,6 +733,23 @@ test("a post renders previous/next navigation to its chronological neighbours", 
     oldestHtml.includes("flex-row-reverse"),
     "expected the Next tile to mirror (text left, arrow right: flex-row-reverse)",
   );
+  // Metadata badges (spec 0023): the tile shows the neighbour's reading time + tags.
+  // Scope to the post-nav <nav> block so a tag word that also appears in the current
+  // post's prose can't false-pass; the reading-time "min read" also appears in the
+  // current post's own header, so it must be asserted inside the block too.
+  const oldestNav =
+    oldestHtml.match(/<nav aria-label="More posts"[\s\S]*?<\/nav>/)?.[0] ?? "";
+  assert.ok(
+    oldestNav.includes("min read"),
+    "expected the Next tile to show a reading-time pill",
+  );
+  assert.ok(oldestAdj.next.tags.length > 0, "fixture sanity: the neighbour has tags");
+  for (const tag of oldestAdj.next.tags) {
+    assert.ok(
+      oldestNav.includes(tag),
+      `expected the Next tile to show the neighbour tag "${tag}"`,
+    );
+  }
 
   const newest = posts[0];
   const newestAdj = getAdjacentPosts(posts, newest.slug);

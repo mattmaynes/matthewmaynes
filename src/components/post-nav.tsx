@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/components/blog-icons";
+import { ReadingTimePill } from "@/components/reading-time-pill";
 import { FOCUS_RING } from "@/lib/focus-ring";
 import type { BlogImage } from "@/lib/blog-images";
 
@@ -24,6 +25,10 @@ export type PostNavItem = {
   slug: string;
   title: string;
   cover?: BlogImage;
+  /** Reading-time estimate (whole minutes) + tags, shown as badges under the
+   *  title so the preview carries the same metadata as a listing row (spec 0023). */
+  minutes: number;
+  tags: string[];
 };
 
 function NavTile({
@@ -62,6 +67,24 @@ function NavTile({
         <span className="mt-0.5 line-clamp-2 text-body font-semibold text-text group-hover:text-primary">
           {item.title}
         </span>
+        {/* Metadata badges (spec 0023): the same reading-time pill + tag chips the
+            listing rows carry, so the preview conveys length and topic. On the Next
+            tile (reversed, right-aligned) the row hugs the right edge to match. */}
+        <div
+          className={`mt-2 flex flex-wrap items-center gap-1.5 ${
+            isPrev ? "" : "justify-end"
+          }`}
+        >
+          <ReadingTimePill minutes={item.minutes} />
+          {item.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-border bg-muted px-2.5 py-1 text-caption text-secondary"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
       </div>
     </Link>
   );
