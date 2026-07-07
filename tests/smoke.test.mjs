@@ -121,13 +121,23 @@ const routes = [
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is display:none until the email is focused,
-      // so a dropped Name field reddens this. The client-only reveal (onFocus ->
-      // reflow) is not SSR-observable, but the DEFAULT-collapsed state IS guarded:
-      // "sm:flex-row sm:items-end" above only ships while unexpanded (expanded drops
-      // it), so flipping the default to expanded would redden that marker (review 0018).
+      // so a dropped Name field reddens this. NOTE: the client-only reveal itself
+      // (onFocus -> setExpanded(true) -> reflow) is not SSR-observable, so no smoke
+      // marker covers that live transition - an acknowledged gap (there is no
+      // subscribe-form unit test; /blog only renders the collapsed state and
+      // /subscribe uses alwaysShowName). The static states on both routes ARE guarded.
       "Name (optional)",
     ],
-    absent: ["Placeholder", "No posts yet"],
+    // The DEFAULT-collapsed state is guarded via `sm:flex-1` in `absent` below:
+    // spec 0020 keeps the row inline (`sm:flex-row sm:items-end`) whether or not the
+    // Name field is revealed, so that combo no longer distinguishes the two states.
+    // Instead, the Name field's wrapper only carries `sm:flex-1` once revealed (email
+    // is `sm:flex-[2]`), so its ABSENCE here proves the field is hidden by default -
+    // and its PRESENCE on /subscribe (which renders alwaysShowName) proves the
+    // inline-reveal fix. This marker is unique to the subscribe form (grep confirms
+    // nothing else on the route emits `sm:flex-1`; the layout's `<main>` uses the
+    // unprefixed `flex-1`).
+    absent: ["Placeholder", "No posts yet", "sm:flex-1"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -159,13 +169,11 @@ const routes = [
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is display:none until the email is focused,
-      // so a dropped Name field reddens this. The client-only reveal (onFocus ->
-      // reflow) is not SSR-observable, but the DEFAULT-collapsed state IS guarded:
-      // "sm:flex-row sm:items-end" above only ships while unexpanded (expanded drops
-      // it), so flipping the default to expanded would redden that marker (review 0018).
+      // so a dropped Name field reddens this. The DEFAULT-collapsed state is guarded
+      // by `sm:flex-1` in `absent` below (spec 0020 - see the /blog entry above).
       "Name (optional)",
     ],
-    absent: ["Placeholder"],
+    absent: ["Placeholder", "sm:flex-1"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
     // placeholder, so its data-URL must appear (feedback 0005).
     hasBlur: true,
@@ -194,6 +202,42 @@ const routes = [
     // row still renders (learnings 0001: assert what the unit uniquely produces).
     contains: ["Say hello", "Find me elsewhere"],
     absent: ["Placeholder", "coming soon", "does not send anything yet"],
+  },
+  {
+    // The dedicated subscribe landing page (spec 0020).
+    path: "/subscribe",
+    title: "Subscribe - Matthew Maynes",
+    contains: [
+      // Page-unique invitation copy proves the real page body rendered (not just
+      // <head> on an error shell). A phrase from the promise, so it is distinct
+      // from the blog boxes' "No spam; unsubscribe anytime." subtext.
+      "I will not send you many emails",
+      // The form renders with all three fields inline: `sm:flex-row sm:items-end`
+      // is the row container, and `sm:flex-1` proves the Name field is SHOWN inline
+      // (alwaysShowName) rather than reflowing to stacked - the spec-0020 inline fix.
+      // This is the positive counterpart to the `/blog` `absent: sm:flex-1` guard.
+      "sm:flex-row sm:items-end",
+      "sm:flex-1",
+      "Name (optional)",
+      // The "Latest post" block rendered: the section label, the card's reading-time
+      // pill ("min read" is unique to the card on this route, and every post has a
+      // reading time), and the link out to the full listing. These are DURABLE - we
+      // deliberately do NOT pin the newest post's title/slug, which changes with every
+      // new post (the same time-bomb the /blog "New" badge avoids); the ordering that
+      // picks the newest post is covered by the sortPostsNewestFirst unit test.
+      "Latest post",
+      "min read",
+      "See all posts",
+      'href="/blog"',
+    ],
+    // No heading={false}: the form's own "Subscribe for updates" h2 must be gone
+    // here (the page supplies its own H1 + copy), so a regression that re-enabled
+    // it would be a duplicate heading.
+    absent: ["Placeholder", "Subscribe for updates"],
+    // No hasBlur assertion: it would only pass while the newest post's cover happens
+    // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
+    // inlined blurDataURL), so it would redden on unrelated content changes. The blur
+    // treatment is guarded on the stable image-bearing routes instead (feedback 0005).
   },
 ];
 
