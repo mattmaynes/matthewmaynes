@@ -158,6 +158,9 @@ export default async function BlogPostPage({
           slug: p.slug,
           title: p.title,
           cover: p.coverKey ? getBlogImage(p.coverKey) : undefined,
+          // Reading time + tags for the tile badges (spec 0023).
+          minutes: readingMinutes(p),
+          tags: p.tags,
         }
       : null;
 
