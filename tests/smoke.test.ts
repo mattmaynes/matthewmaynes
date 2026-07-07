@@ -102,7 +102,9 @@ const routes = [
       // smoke test does not become a time-bomb (the seed post is dated 2026-06-28).
       "Search posts",
       ">All<",
-      "Reflection",
+      // A tag chip/filter renders (one of the seed posts' tags). Uses the niche,
+      // SEO-oriented tag set (the tags are content, editable in frontmatter).
+      "Career Reflection",
       // RSS subscribe link (spec 0013) must render, pointing at the feed.
       'href="/blog/feed.xml"',
       // Feed autodiscovery <link rel="alternate" type="application/rss+xml">.
