@@ -135,6 +135,12 @@ const routes = [
       // default, and `sm:max-w-md` in `absent` below proves it is NOT revealed. Both
       // are unique to the subscribe form (grep-confirmed).
       "sm:max-w-0",
+      // Guard the headline of spec 0024 - that the reveal ANIMATES, not just that it
+      // collapses. The transition wiring is static in the className (always emitted,
+      // not behind the expanded/collapsed ternary) and grep-unique to the form, so it
+      // ships in SSR HTML: a partial revert that keeps the max-w collapse but strips
+      // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
+      "transition-all duration-200 ease-out motion-reduce:transition-none",
     ],
     absent: ["Placeholder", "No posts yet", "sm:max-w-md"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
