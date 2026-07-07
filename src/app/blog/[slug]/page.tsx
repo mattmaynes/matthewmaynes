@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Button } from "@/components/ui";
+import {
+  Button,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui";
 import { RssIcon, ClockIcon } from "@/components/blog-icons";
 import { PostBody, InlineMdx } from "@/components/post-body";
 import { ReadingTimePill } from "@/components/reading-time-pill";
@@ -155,6 +163,26 @@ export default async function BlogPostPage({
 
   return (
     <article className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
+      {/* Breadcrumb trail (spec 0022): a persistent way back up to the listing from
+          the top of the post. Canopy's Breadcrumb Twig set, via the ui.ts client
+          boundary; BreadcrumbLink `asChild` wraps a Next <Link> so routing stays
+          client-side. The post title is the current, non-interactive crumb. The
+          trail starts at Blog (not Home) - the listing is the only ancestor a reader
+          needs to step back to. */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/blog">Blog</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{post.title}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {cover ? (
         // Hero cover. At >= sm the title, tags, and byline overlay the image on a
         // bottom gradient. On mobile a short wide cover has no room for a legible
