@@ -30,6 +30,32 @@
   --text-body-lg--font-weight: var(--font-weight-normal);
 }
 
+/* Entrance for the subscribe success badge (spec 0026): a subtle fade + scale-in on
+   mount, matching the form's 200ms ease-out motion (the name-field reveal). A freshly
+   mounted node has no from-state to transition from, so this is a keyframe animation,
+   not a transition. Reduced-motion users get it instantly. Authored here in the
+   Tailwind entry (not theme-harbor.css) so it does not churn the resume-PDF hash. */
+@keyframes subscribe-badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.subscribe-badge-enter {
+  animation: subscribe-badge-in 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subscribe-badge-enter {
+    animation: none;
+  }
+}
+
 /* Print: the resume (the only print-intended page) is built entirely from
    rem-based type tokens, so shrinking the root font-size scales the whole
    document proportionally. This dials the rendered PDF down to two Letter

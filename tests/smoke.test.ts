@@ -952,6 +952,38 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   );
 });
 
+// The subscribe success badge animates in via the `subscribe-badge-in` keyframe
+// (spec 0026). The `.subscribe-badge-enter` class ships with the badge JSX, but the
+// keyframe is authored CSS - if it were dropped from globals.css the class would
+// become a silent no-op with the badge still rendering. Scan the built CSS for the
+// keyframe (its name is not minifier-renamed) so a removed animation reddens.
+test("the subscribe success badge entrance keyframe ships in the built CSS", () => {
+  const staticDir = join(root, ".next", "static");
+  const stack = [staticDir];
+  let sawKeyframe = false;
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      const full = join(cur, e.name);
+      if (e.isDirectory()) {
+        stack.push(full);
+      } else if (e.name.endsWith(".css")) {
+        if (readFileSync(full, "utf8").includes("subscribe-badge-in")) sawKeyframe = true;
+      }
+    }
+  }
+  assert.ok(
+    sawKeyframe,
+    "expected the built CSS to define the subscribe-badge-in keyframe (spec 0026)",
+  );
+});
+
 // The same-origin /ingest reverse proxy (spec 0014 acceptance) must be
 // configured, or all PostHog capture breaks with a green suite. Assert the built
 // routes manifest carries the three ingest rewrites to US Cloud - network-free,
