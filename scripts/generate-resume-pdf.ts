@@ -20,10 +20,10 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
+import { createServer, type AddressInfo } from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { assembleStandalone } from "./lib/standalone.mjs";
+import { assembleStandalone } from "./lib/standalone.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PDF_PATH = join(root, "public", "resume.pdf");
@@ -46,10 +46,10 @@ const INPUT_FILES = [
   "brand/harbor/semantic.dark.json",
   "src/styles/brand-harbor.generated.css",
   "src/styles/theme-harbor.css",
-  "scripts/generate-resume-pdf.mjs",
+  "scripts/generate-resume-pdf.ts",
 ];
 
-function sourceHash() {
+function sourceHash(): string {
   const hash = createHash("sha256");
   for (const rel of INPUT_FILES) {
     hash.update(rel);
@@ -60,7 +60,7 @@ function sourceHash() {
   return hash.digest("hex");
 }
 
-function fail(message) {
+function fail(message: string): never {
   console.error(`resume:pdf - ${message}`);
   process.exit(1);
 }
@@ -100,7 +100,7 @@ if (
 
 // Locate a Chrome/Chromium binary. CHROME_PATH wins; otherwise probe the usual
 // install locations on macOS and Linux.
-function findChrome() {
+function findChrome(): string | null {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
   const candidates = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
@@ -123,13 +123,13 @@ function findChrome() {
 
 // Ask the OS for a free port instead of guessing, so a busy port can't turn
 // into a silent 60s readiness timeout (review 0007).
-function getFreePort() {
+function getFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const srv = createServer();
     srv.unref();
     srv.on("error", reject);
     srv.listen(0, "127.0.0.1", () => {
-      const { port } = srv.address();
+      const { port } = srv.address() as AddressInfo;
       srv.close(() => resolve(port));
     });
   });
@@ -161,7 +161,7 @@ assembleStandalone(root, standaloneDir);
 const PORT = String(await getFreePort());
 const BASE = `http://127.0.0.1:${PORT}`;
 
-async function waitForReady(timeoutMs = 60000) {
+async function waitForReady(timeoutMs = 60000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
@@ -215,7 +215,7 @@ try {
   writeFileSync(HASH_PATH, expected + "\n");
   console.log(`resume:pdf - wrote public/resume.pdf and public/resume.pdf.hash`);
 } catch (err) {
-  console.error(`resume:pdf - ${err.message}`);
+  console.error(`resume:pdf - ${err instanceof Error ? err.message : String(err)}`);
   exitCode = 1;
 } finally {
   server.kill("SIGTERM");

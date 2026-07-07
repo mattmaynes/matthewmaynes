@@ -5,7 +5,7 @@
 // (PNG-payload ICO, supported by every modern browser). No ImageMagick, no npm
 // dependency, so the icons are reproducible from one command:
 //
-//   node scripts/build-icons.mjs
+//   node scripts/build-icons.ts
 //
 // Outputs (committed, do not hand-edit):
 //   src/app/favicon.ico    - 16/32/48 multi-res, legacy + scraper fallback
@@ -24,7 +24,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const master = join(root, "public/brand/logo-m.png");
 
 // `-Z N` fits the image within an NxN box, preserving the square aspect ratio.
-function resize(size, out) {
+function resize(size: number, out: string): void {
   execFileSync(
     "sips",
     ["-s", "format", "png", "-Z", String(size), master, "--out", out],
@@ -52,14 +52,14 @@ try {
 
 // ICO = ICONDIR header (6 bytes) + one ICONDIRENTRY (16 bytes) per frame +
 // the raw PNG bodies. width/height of 0 encode 256; ours are all < 256.
-function buildIco(frames) {
+function buildIco(frames: { size: number; buf: Buffer }[]): Buffer {
   const header = Buffer.alloc(6);
   header.writeUInt16LE(0, 0); // reserved
   header.writeUInt16LE(1, 2); // type: 1 = icon
   header.writeUInt16LE(frames.length, 4);
 
   const entries = Buffer.alloc(16 * frames.length);
-  const bodies = [];
+  const bodies: Buffer[] = [];
   let offset = header.length + entries.length;
 
   frames.forEach((frame, i) => {

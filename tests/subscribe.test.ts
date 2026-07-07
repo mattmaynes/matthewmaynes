@@ -16,7 +16,7 @@ import {
   addContactToList,
   createTokenCache,
   submitSubscription,
-} from "../src/lib/subscribe.js";
+} from "../src/lib/subscribe.ts";
 
 test("validateSubscribe accepts and trims a good email (name defaults empty)", () => {
   const r = validateSubscribe({ email: "  reader@example.com  " });

@@ -3,7 +3,7 @@
 // `prewarm` CD job after deploy; also runnable locally against a dev/standalone
 // server: `npm run prewarm -- http://127.0.0.1:3000`. (spec 0006)
 
-import { prewarm } from "./lib/prewarm.mjs";
+import { prewarm } from "./lib/prewarm.ts";
 
 const baseUrl =
   process.argv[2] ||

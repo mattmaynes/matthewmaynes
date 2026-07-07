@@ -1,15 +1,20 @@
 /**
  * Pure, fs-free RSS 2.0 feed builder for the blog. Split out from the route
- * handler (like `blog-view.js`) so the XML-escaping and date formatting run
+ * handler (like `blog-view.ts`) so the XML-escaping and date formatting run
  * under `node --test` without booting a server. The route is a thin shell that
  * loads posts and returns this module's string with the right headers.
  *
  * Deterministic by design: `lastBuildDate` is the newest post's date (not
  * `Date.now()`), so the feed is a pure function of the content and fully
  * unit-testable.
- *
- * @typedef {{ slug: string, title: string, date: string, excerpt: string }} FeedPost
  */
+
+export type FeedPost = {
+  slug: string;
+  title: string;
+  date: string;
+  excerpt: string;
+};
 
 // Fixed day/month name tables so RFC-822 dates never depend on the host locale
 // (unlike toLocaleDateString), keeping the feed byte-identical across machines.
@@ -23,10 +28,8 @@ const MONTHS = [
  * Escape the five XML metacharacters so any interpolated title/excerpt is safe
  * inside element text or attributes. Ampersand is replaced FIRST, otherwise the
  * `&` in the other entities (`&lt;` etc.) would be double-escaped.
- * @param {string} str
- * @returns {string}
  */
-export function escapeXml(str) {
+export function escapeXml(str: string): string {
   return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -40,14 +43,12 @@ export function escapeXml(str) {
  * "Sun, 28 Jun 2026 00:00:00 GMT". Parsed as UTC midnight (like
  * `formatPostDate`) and built from the fixed name tables above, so there is no
  * locale or timezone dependence.
- * @param {string} dateStr
- * @returns {string}
  */
-export function toRfc822(dateStr) {
+export function toRfc822(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00Z`);
   // Fail loudly on a malformed date rather than emitting an invalid
   // "NaN undefined NaN" pubDate that feed readers reject (a typo'd frontmatter
-  // date should break the build, like blog.js's required-field check).
+  // date should break the build, like blog.ts's required-field check).
   if (Number.isNaN(d.getTime())) {
     throw new Error(`toRfc822: unparseable date "${dateStr}"`);
   }
@@ -64,14 +65,21 @@ export function toRfc822(dateStr) {
  * guid is absolute (joined against `siteUrl`), and every interpolated title and
  * excerpt is XML-escaped. `lastBuildDate` is the newest post's RFC-822 date for
  * deterministic output; an empty feed omits it.
- *
- * @param {{ posts: FeedPost[], siteUrl: string, title: string, description: string }} args
- * @returns {string}
  */
-export function buildBlogFeed({ posts, siteUrl, title, description }) {
+export function buildBlogFeed({
+  posts,
+  siteUrl,
+  title,
+  description,
+}: {
+  posts: FeedPost[];
+  siteUrl: string;
+  title: string;
+  description: string;
+}): string {
   // Join paths against the site origin so links are absolute (feed readers need
   // absolute URLs). `new URL` normalizes a trailing slash on siteUrl.
-  const abs = (path) => new URL(path, siteUrl).toString();
+  const abs = (path: string) => new URL(path, siteUrl).toString();
   const blogUrl = abs("/blog");
   const feedUrl = abs("/blog/feed.xml");
 

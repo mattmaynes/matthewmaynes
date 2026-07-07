@@ -17,23 +17,27 @@ const IMAGE_ACCEPT = "image/avif,image/webp,image/apng,*/*";
 // try/catch around each fetch absorbs the AbortError, keeping best-effort intact.
 const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
 
+/** The message off an unknown thrown value, without assuming it is an Error. */
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 /**
  * Pull every `/_next/image?...` URL out of a page's HTML - from both `src` and
  * `srcset` (each srcset width is a distinct URL to warm). Unescapes `&amp;`,
  * dedupes, and absolutizes against `origin` when given.
  *
- * @param {string} html
- * @param {string} [origin]  e.g. "https://example.com"; omit for relative URLs
- * @returns {string[]}
+ * @param html
+ * @param origin  e.g. "https://example.com"; omit for relative URLs
  */
-export function extractImageUrls(html, origin = "") {
-  const urls = new Set();
+export function extractImageUrls(html: string, origin = ""): string[] {
+  const urls = new Set<string>();
   // Stop at whitespace, quotes, or `>` so a srcset "url 640w, url 750w" yields
   // each URL without its width descriptor or the comma separator. Assumes Next's
   // actual output: HTML-escaped as `&amp;` (not numeric entities) and srcset
   // candidates separated by ", " (a space) - both always true for next/image.
   const re = /\/_next\/image\?[^"'\s>]+/g;
-  let m;
+  let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     const decoded = m[0].replace(/&amp;/g, "&").replace(/,+$/, "");
     urls.add(origin ? new URL(decoded, origin).toString() : decoded);
@@ -41,8 +45,12 @@ export function extractImageUrls(html, origin = "") {
   return [...urls];
 }
 
-async function mapWithConcurrency(items, limit, worker) {
-  const results = new Array(items.length);
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
   let next = 0;
   async function run() {
     while (next < items.length) {
@@ -54,18 +62,17 @@ async function mapWithConcurrency(items, limit, worker) {
   return results;
 }
 
+export type PrewarmResult = {
+  urls: string[];
+  warmed: number;
+  failed: number;
+  pagesOk: number;
+};
+
 /**
  * Crawl `routes` on `baseUrl`, collect the image URLs they render, and GET each
  * to populate the optimizer cache. Best-effort: never throws on a single failed
  * request; the caller decides what to do with the counts.
- *
- * @param {object} opts
- * @param {string} opts.baseUrl
- * @param {string[]} opts.routes               page paths to crawl
- * @param {typeof fetch} [opts.fetchImpl]
- * @param {(msg: string) => void} [opts.log]
- * @param {number} [opts.concurrency]
- * @returns {Promise<{urls: string[], warmed: number, failed: number, pagesOk: number}>}
  */
 export async function prewarm({
   baseUrl,
@@ -74,9 +81,16 @@ export async function prewarm({
   log = () => {},
   concurrency = 6,
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
-}) {
+}: {
+  baseUrl: string;
+  routes: string[];
+  fetchImpl?: typeof fetch;
+  log?: (msg: string) => void;
+  concurrency?: number;
+  requestTimeoutMs?: number;
+}): Promise<PrewarmResult> {
   const origin = new URL(baseUrl).origin;
-  const imageUrls = new Set();
+  const imageUrls = new Set<string>();
   let pagesOk = 0;
 
   for (const route of routes) {
@@ -95,7 +109,7 @@ export async function prewarm({
       found.forEach((u) => imageUrls.add(u));
       log(`  page ${route}: ${found.length} image url(s)`);
     } catch (err) {
-      log(`  page ${route}: ${err.message} (skipped)`);
+      log(`  page ${route}: ${errMessage(err)} (skipped)`);
     }
   }
 
@@ -117,7 +131,7 @@ export async function prewarm({
       }
     } catch (err) {
       failed++;
-      log(`  warm ${url}: ${err.message}`);
+      log(`  warm ${url}: ${errMessage(err)}`);
     }
   });
 

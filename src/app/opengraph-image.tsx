@@ -22,7 +22,7 @@ const WARM = "#cf9343"; // accent (gold) - the brand's warm note
 
 // Fonts: Figtree woff colocated in _og/ (satori cannot read the woff2 that
 // @fontsource-variable ships; the static @fontsource/figtree woff works).
-// scripts/build-og-fonts.mjs derives them from the pinned package.
+// scripts/build-og-fonts.ts derives them from the pinned package.
 // `new URL(..., import.meta.url)` makes them traced assets so they survive the
 // standalone build. The headshot reads from public/, which the Dockerfile/
 // standalone copy step deploys alongside server.js.

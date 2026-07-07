@@ -5,7 +5,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { escapeXml, toRfc822, buildBlogFeed } from "../src/lib/rss.js";
+import { escapeXml, toRfc822, buildBlogFeed } from "../src/lib/rss.ts";
 
 test("escapeXml escapes the five XML metacharacters, ampersand first", () => {
   // A single call must escape all five without double-escaping the entities'

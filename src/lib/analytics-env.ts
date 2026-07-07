@@ -1,7 +1,7 @@
 // Pure decision seam for whether PostHog analytics should capture (spec 0016).
-// Kept as plain JS (like theme.js / blog.js) so `node --test` can unit-test the
-// rule without a browser. Imported by the client wiring (posthog-browser.ts) and
-// the server error hook (instrumentation.ts).
+// Kept in this fs-free module (like theme.ts / blog-view.ts) so `node --test` can
+// unit-test the rule without a browser. Imported by the client wiring
+// (posthog-browser.ts) and the server error hook (instrumentation.ts).
 //
 // The goal: local runs must never pollute the live dashboard. Only the deployed
 // production host captures.
@@ -12,7 +12,7 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
  * True when `hostname` is a local address (any port stripped). Covers the plain
  * loopback names plus the `.local` / `.localhost` suffixes.
  */
-export function isLocalHost(hostname) {
+export function isLocalHost(hostname: string | null | undefined): boolean {
   if (!hostname) return false;
   let h = String(hostname).trim().toLowerCase();
   // Strip the port without eating an IPv6 address's own colons: bracketed forms
@@ -34,7 +34,13 @@ export function isLocalHost(hostname) {
  * localhost. The deployed client is built with NODE_ENV=production and served
  * from matthewmaynes.com, so it stays enabled.
  */
-export function isClientAnalyticsEnabled({ nodeEnv, hostname }) {
+export function isClientAnalyticsEnabled({
+  nodeEnv,
+  hostname,
+}: {
+  nodeEnv: string | undefined;
+  hostname: string | null | undefined;
+}): boolean {
   if (nodeEnv !== "production") return false;
   if (!hostname) return false;
   return !isLocalHost(hostname);
@@ -50,6 +56,12 @@ export function isClientAnalyticsEnabled({ nodeEnv, hostname }) {
  * `npm start`, the smoke test, and even a local `docker compose up`. NODE_ENV is
  * kept as a belt-and-suspenders second condition.
  */
-export function isServerAnalyticsEnabled({ nodeEnv, captureFlag }) {
+export function isServerAnalyticsEnabled({
+  nodeEnv,
+  captureFlag,
+}: {
+  nodeEnv: string | undefined;
+  captureFlag: string | undefined;
+}): boolean {
   return nodeEnv === "production" && captureFlag === "1";
 }

@@ -14,8 +14,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { assembleStandalone } from "../scripts/lib/standalone.mjs";
-import { getAllPosts, getAdjacentPosts } from "../src/lib/blog.js";
+import { assembleStandalone } from "../scripts/lib/standalone.ts";
+import { getAllPosts, getAdjacentPosts } from "../src/lib/blog.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";

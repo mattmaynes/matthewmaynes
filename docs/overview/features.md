@@ -40,7 +40,7 @@ pending) · 📋 planned.
   setting. Applied before first paint, so no flash on load.
 - **SEO & sharing** (spec 0004): the metal-M favicon set (`favicon.ico` + PNG `icon`/`apple-icon`
   + 192/512 manifest icons, all generated from `public/brand/logo-m.png` by
-  `scripts/build-icons.mjs`); Open Graph + Twitter `summary_large_image` cards backed by a
+  `scripts/build-icons.ts`); Open Graph + Twitter `summary_large_image` cards backed by a
   generated 1200x630 branded share image (`app/opengraph-image.tsx`, reused for `twitter-image`);
   `robots.txt`, `sitemap.xml` (from the `nav` source), a web manifest, `theme-color`, and a JSON-LD
   `Person` block. One link, a rich preview everywhere it is pasted.
@@ -71,7 +71,7 @@ pop-in flicker) and is optimized to WebP (`images.formats` in `next.config.ts`, 
 encode fast for the first visitor after each deploy (feedback 0006). Optimized images are
 content-hashed and returned `immutable` with a ~10-year `max-age`, so browsers cache them
 indefinitely and a changed image busts its own URL. To spare even the first post-deploy visitor the
-on-demand encode, a CD `prewarm` job (`npm run prewarm`, `scripts/prewarm-images.mjs`) crawls the
+on-demand encode, a CD `prewarm` job (`npm run prewarm`, `scripts/prewarm-images.ts`) crawls the
 image-bearing pages and pre-requests every `/_next/image` variant so the optimizer cache is hot
 before any real visit (spec 0006).
 

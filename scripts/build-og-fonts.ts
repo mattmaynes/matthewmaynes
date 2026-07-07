@@ -10,7 +10,7 @@
 // reproducible and versioned, and carries the OFL license alongside the binaries
 // it covers. Re-run after bumping @fontsource/figtree:
 //
-//   node scripts/build-og-fonts.mjs
+//   node scripts/build-og-fonts.ts
 
 import { copyFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
