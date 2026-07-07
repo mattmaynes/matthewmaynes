@@ -162,6 +162,9 @@ const routes = [
       "min read",
       "By Matthew Maynes",
       "views expressed here are my own",
+      // The no-comments note at the bottom of the post (an apostrophe-free phrase,
+      // since the copy uses &apos; which resolves in the rendered HTML).
+      "love to hear your opinion",
       "text-body-lg",
       // Breadcrumb trail (spec 0022): the Canopy Breadcrumb renders a
       // `nav aria-label="breadcrumb"` landmark - unique to this component (the
