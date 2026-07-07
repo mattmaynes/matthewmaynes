@@ -79,7 +79,7 @@ function NavTile({
           {item.tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-border bg-muted px-2.5 py-1 text-caption text-secondary"
+              className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
             >
               {tag}
             </span>

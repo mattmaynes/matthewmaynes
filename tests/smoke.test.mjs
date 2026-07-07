@@ -750,6 +750,14 @@ test("a post renders previous/next navigation to its chronological neighbours", 
       `expected the Next tile to show the neighbour tag "${tag}"`,
     );
   }
+  // The Next tile's badge row right-aligns (matching its right-aligned title): the
+  // contiguous `gap-1.5 justify-end` is unique to the Next badge row (the Previous
+  // badge row omits justify-end; the container's `sm:justify-end` is a different
+  // substring), so reverting the badge-row alignment reddens here (tester nit).
+  assert.ok(
+    oldestNav.includes("gap-1.5 justify-end"),
+    "expected the Next tile's badge row to right-align (gap-1.5 justify-end)",
+  );
 
   const newest = posts[0];
   const newestAdj = getAdjacentPosts(posts, newest.slug);
@@ -773,6 +781,14 @@ test("a post renders previous/next navigation to its chronological neighbours", 
   assert.ok(
     newestHtml.includes("sm:justify-start"),
     "expected a lone Previous tile to align to the left edge (sm:justify-start)",
+  );
+  // And its badge row stays LEFT-aligned (no justify-end), the mirror of the Next
+  // tile's right-aligned badges above.
+  const newestNav =
+    newestHtml.match(/<nav aria-label="More posts"[\s\S]*?<\/nav>/)?.[0] ?? "";
+  assert.ok(
+    !newestNav.includes("gap-1.5 justify-end"),
+    "expected the Previous tile's badge row to stay left-aligned",
   );
 });
 
