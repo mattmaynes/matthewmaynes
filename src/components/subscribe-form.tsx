@@ -146,10 +146,21 @@ export function SubscribeForm({
           </FormField>
 
           {/* Optional Name (spec 0018 amendment). Always in the DOM (so its label
-              ships in the SSR HTML) but display:none until revealed, so it is not
-              focusable or announced until the reader shows intent. When shown it
-              takes `sm:flex-1` - a marker unique to the revealed state (spec 0020). */}
-          <FormField className={expanded ? "w-full sm:flex-1" : "hidden"}>
+              ships in the SSR HTML). Instead of display:none (which cannot animate),
+              it collapses via size + opacity and ANIMATES open on reveal (spec 0024):
+              on sm+ it grows horizontally (max-w 0 -> md, the button slides over); below
+              sm it grows vertically (max-h 0 -> 24, the button is pushed down). Fast +
+              eased; `motion-reduce:transition-none` makes it instant for reduced-motion
+              users. `sm:max-w-md` is only an animation cap - wider than the field's real
+              flex width in every container, so it never clips. While collapsed the input
+              is out of the tab order + a11y tree, restored on reveal. */}
+          <FormField
+            className={`w-full overflow-hidden transition-all duration-200 ease-out motion-reduce:transition-none sm:flex-1 ${
+              expanded
+                ? "max-h-24 opacity-100 sm:max-h-none sm:max-w-md"
+                : "pointer-events-none max-h-0 opacity-0 sm:max-h-none sm:max-w-0"
+            }`}
+          >
             <FormFieldLabel className="sr-only">Name (optional)</FormFieldLabel>
             <FormFieldControl>
               <Input
@@ -158,6 +169,8 @@ export function SubscribeForm({
                 placeholder="Name (optional)"
                 autoComplete="name"
                 maxLength={100}
+                aria-hidden={expanded ? undefined : true}
+                tabIndex={expanded ? undefined : -1}
               />
             </FormFieldControl>
           </FormField>

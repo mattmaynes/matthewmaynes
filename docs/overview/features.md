@@ -147,15 +147,20 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 - **Optional name capture (spec 0018 amendment).** The box stays as above by default; focusing the
   email reveals a single optional "Name" field between the email and the button. On `sm+` the row
   stays inline as it reveals (spec 0020): the email shortens (`sm:flex-[2]`) and the Name field
-  slides in between it and the button (`sm:flex-1`), so the button does not jump - below `sm` the
-  fields stack. Providing a name is optional; when given it is split on the first space (first token
-  -> first name, remainder -> last name) and stored on the Constant Contact contact for later
-  personalization. A PII-free `has_name` boolean rides the submit event (never the name itself).
+  slides in between it and the button, so the button does not jump - below `sm` the fields stack.
+  The reveal is **animated** (spec 0024): the field grows horizontally on `sm+` (the button slides
+  over) and vertically below `sm` (the button is pushed down), fast (~200ms) and eased, via
+  `max-width`/`max-height` + opacity rather than a `display` toggle (which cannot transition);
+  `prefers-reduced-motion` gets an instant reveal, and the collapsed field is out of the tab order /
+  a11y tree until shown. Providing a name is optional; when given it is split on the first space
+  (first token -> first name, remainder -> last name) and stored on the Constant Contact contact for
+  later personalization. A PII-free `has_name` boolean rides the submit event (never the name itself).
 - **Dedicated `/subscribe` page (spec 0020).** The same form island, with all three fields shown
   from first paint (`alwaysShowName`) and its built-in heading suppressed (`heading={false}`) so the
-  page supplies its own H1 + invitation copy. Below the form it shows the latest post and a link to
-  the full listing. Submits carry a `source: "subscribe_page"` analytics dimension (PII-free), so
-  the three surfaces (listing, post, landing page) are attributable.
+  page supplies its own H1 + invitation copy. Below the form it shows the latest post (cover, title,
+  date, reading-time pill, excerpt, and tags - spec 0024) and a link to the full listing. Submits
+  carry a `source: "subscribe_page"` analytics dimension (PII-free), so the three surfaces (listing,
+  post, landing page) are attributable.
 - The Constant Contact OAuth credentials live only in server env (`CTCT_CLIENT_ID`,
   `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID`) and never reach the browser or the repo. The route mints a
   24h access token from the non-rotating refresh token (cached in-memory across requests) and calls
