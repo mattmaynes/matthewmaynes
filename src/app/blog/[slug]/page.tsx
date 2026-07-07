@@ -269,6 +269,16 @@ export default async function BlogPostPage({
         className="mt-12 border-t border-border pt-10"
       />
 
+      {/* No comments section here; point readers at a real conversation instead. */}
+      <p className="mt-8 text-caption text-text-subtle italic">
+        If you are looking for comments, you won&apos;t find them here, but I&apos;d
+        still love to hear your opinion.{" "}
+        <Link href="/contact" className="text-primary hover:underline">
+          Send me an email
+        </Link>{" "}
+        or message me on social media.
+      </p>
+
       <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">
           <Link href="/blog">Back to blog</Link>
