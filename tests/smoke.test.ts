@@ -102,9 +102,14 @@ const routes = [
       // covered by the deterministic isRecent/newPostSlug unit tests instead so the
       // smoke test does not become a time-bomb (the seed post is dated 2026-06-28).
       "Search posts",
-      ">All<",
-      // A tag chip/filter renders (one of the seed posts' tags). Uses the niche,
-      // SEO-oriented tag set (the tags are content, editable in frontmatter).
+      // The tag filter is a Canopy Combobox (spec 0030); its default selection is
+      // the "All posts" clear-entry, whose label renders in the closed trigger
+      // (the tag options live in the popover, revealed on open - client-only).
+      "All posts",
+      // A seed post's tag renders in its listing row's tag pills (the Combobox
+      // options are portalled/closed, so this marker rides on the post row, not
+      // the filter). Uses the niche, SEO-oriented tag set (content, editable in
+      // frontmatter).
       "Career Reflection",
       // RSS subscribe link (spec 0013) must render, pointing at the feed.
       'href="/blog/feed.xml"',

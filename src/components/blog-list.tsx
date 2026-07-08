@@ -3,8 +3,13 @@
 import { useState, useSyncExternalStore } from "react";
 import { SearchIcon } from "@/components/blog-icons";
 import { PostRow, type PostRowData } from "@/components/post-row";
+import { Combobox, type ComboboxOption } from "@/components/ui";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
 import { deriveTags, resolveActiveTag, filterPosts } from "@/lib/blog-view";
+
+// The tag filter's clear/"show all" entry. An empty value maps back to the
+// "All" state (activeTag === null); every other option is a content tag.
+const ALL_TAGS_VALUE = "";
 
 /** A serializable post summary. The server page resolves the cover and computes
  * `isNew` (newest AND recent) so the client renders straight from the props.
@@ -72,44 +77,32 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
   // title + excerpt + tags (both case-insensitive, composed) - in the pure core.
   const filtered = filterPosts(posts, activeTag, query);
 
-  const chipBase = `rounded-full border px-3 py-1 text-caption transition-colors ${RING}`;
-  const chipOn = "border-primary bg-primary text-primary-foreground";
-  // Inactive chips read apart from the static, non-interactive post tag pills:
-  // hovering darkens the border and text so the affordance is clear.
-  const chipOff =
-    "border-border bg-muted text-text-muted hover:border-border-strong hover:text-text";
+  // The tag filter is a single-select Canopy Combobox: a leading "All posts"
+  // entry clears the filter, then one option per derived tag. Selection drives
+  // the same URL-backed `selectTag` the chips used, so the filter stays
+  // shareable and the pure `filterPosts` core is unchanged.
+  const tagOptions: ComboboxOption[] = [
+    { label: "All posts", value: ALL_TAGS_VALUE },
+    ...allTags.map((tag) => ({ label: tag, value: tag })),
+  ];
 
   return (
     <div className="mt-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         {allTags.length > 0 ? (
-          <ul className="flex flex-wrap gap-2" aria-label="Filter posts by tag">
-            <li>
-              <button
-                type="button"
-                aria-pressed={activeTag === null}
-                onClick={() => selectTag(null)}
-                className={`${chipBase} ${activeTag === null ? chipOn : chipOff}`}
-              >
-                All
-              </button>
-            </li>
-            {allTags.map((tag) => {
-              const on = activeTag?.toLowerCase() === tag.toLowerCase();
-              return (
-                <li key={tag}>
-                  <button
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => selectTag(tag)}
-                    className={`${chipBase} ${on ? chipOn : chipOff}`}
-                  >
-                    {tag}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="sm:w-56">
+            <Combobox
+              aria-label="Filter posts by tag"
+              options={tagOptions}
+              value={activeTag ?? ALL_TAGS_VALUE}
+              onValueChange={(value) =>
+                selectTag(value === ALL_TAGS_VALUE ? null : value)
+              }
+              placeholder="Filter by tag"
+              searchPlaceholder="Search tags"
+              emptyMessage="No matching tags"
+            />
+          </div>
         ) : null}
 
         <div className="relative sm:w-64">
