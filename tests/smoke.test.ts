@@ -668,6 +668,32 @@ test("home page exposes the sharing + SEO metadata", async () => {
   );
 });
 
+// Home page "Latest post" highlight (spec 0029): the home page surfaces the
+// single newest post via the shared PostRow, so a visitor gets a taste of the
+// blog and a direct path in. Asserting the "Latest post" heading alone is shared
+// section chrome and would pass even if PostRow rendered nothing; instead prove a
+// real post-slug link is present on `/` (only PostRow's cover/title links emit a
+// `/blog/<slug>` href on the home page - the cards + CTA link to `/blog` with no
+// slug) AND that it matches the newest post that `/blog` lists first. Reverting
+// the section drops the heading and the slug link, reddening this test.
+test("home page highlights the latest post, linking to it", async () => {
+  const home = await (await fetch(BASE + "/")).text();
+  assert.ok(
+    home.includes("Latest post"),
+    "expected a 'Latest post' section heading on the home page",
+  );
+
+  // The newest post is whatever `/blog` renders first; derive its slug from the
+  // listing so this stays correct as new posts are added (no hardcoded title).
+  const blog = await (await fetch(BASE + "/blog")).text();
+  const firstSlug = blog.match(/href="\/blog\/([a-z0-9-]+)"/)?.[1];
+  assert.ok(firstSlug, "expected the /blog listing to link at least one post");
+  assert.ok(
+    home.includes(`href="/blog/${firstSlug}"`),
+    `expected the home page to link the newest post (/blog/${firstSlug})`,
+  );
+});
+
 // The blog post's per-post OG card must actually render (a wrong font/cover path
 // yields a blank card even on a green build - learnings 0004). Pull og:image from
 // the post's <head> and assert it resolves to a 200 image/png.
