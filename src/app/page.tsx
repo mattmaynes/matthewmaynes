@@ -80,9 +80,18 @@ export default function HomePage() {
             <Button asChild variant="primary" size="lg">
               <Link href="/about">About me</Link>
             </Button>
-            {/* Secondary CTA that pushes the visitor toward the blog (spec 0029);
-                subordinate to the primary "About me" via the secondary variant. */}
-            <Button asChild variant="secondary" size="lg">
+            {/* Secondary CTA that pushes the visitor toward the blog (spec 0029).
+                A light-bordered, translucent treatment (not a filled variant) so
+                it stays clearly subordinate to the filled primary "About me" - two
+                saturated solids read as co-equal (design review, spec 0029). White
+                border/text to read against the dark hero photo overlay, matching
+                the hero's white headshot border and tagline text. */}
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="border-base-white/70 bg-transparent text-base-white hover:bg-base-white/10 hover:text-base-white"
+            >
               <Link href="/blog">Blog</Link>
             </Button>
           </div>

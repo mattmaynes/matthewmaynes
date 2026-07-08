@@ -695,16 +695,17 @@ test("home page highlights the latest post, linking to it", async () => {
 
   // Acceptance #1: the hero carries the secondary "Blog" CTA beside the primary
   // "About me". The word "Blog" alone is shared chrome (nav link, the Blog card,
-  // the "See all posts" button all say/point to /blog), so key on the secondary
-  // button token on an anchor to /blog - only the hero CTA emits `bg-secondary`
-  // on a /blog link (the card link is `class="group"`, See-all-posts is outline,
-  // the nav link is a text link). Reverting the button drops this.
+  // the "See all posts" button all say/point to /blog), so key on the hero CTA's
+  // unit-unique treatment: a white-on-dark button (`text-base-white`) linking
+  // /blog. Only the hero's photo-overlay CTA carries `text-base-white` on a /blog
+  // anchor (the card link is `class="group"`, See-all-posts is a light-surface
+  // outline, the nav link is `text-text-muted`). Reverting the button drops this.
   const anchors = [...home.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
   assert.ok(
     anchors.some(
-      (a) => a.includes('href="/blog"') && a.includes("bg-secondary"),
+      (a) => a.includes('href="/blog"') && a.includes("text-base-white"),
     ),
-    "expected a secondary-variant Blog CTA linking /blog in the hero",
+    "expected a light-on-dark Blog CTA linking /blog in the hero",
   );
 });
 

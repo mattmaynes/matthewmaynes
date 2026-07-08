@@ -45,11 +45,14 @@ Observable when done:
 ## Approach
 
 **Hero button.** Add a second `<Button asChild size="lg">` beside "About me" in the
-existing `flex flex-wrap gap-3` wrapper, linking to `/blog`. Use `variant="secondary"` for
-the subordinate visual weight the request calls for. The hero sits over a dark
-`bg-overlay/60` layer, so the exact variant is a *verify-in-browser* decision: if
-`secondary`'s token fill does not read on the photo, fall back to `variant="outline"` (or
-an `outline` + light-border override). Confirmed against a screenshot before commit.
+existing `flex flex-wrap gap-3` wrapper, linking to `/blog`. The hero sits over a dark
+`bg-overlay/60` layer, so the exact treatment is a *verify-in-browser* decision. A filled
+`variant="secondary"` was tried first but two same-size saturated solids (blue primary +
+brown secondary) read as co-equal rather than subordinate (design review). Final: a
+`variant="outline"` with a light-border override (`border-base-white/70 bg-transparent
+text-base-white`, matching the hero's white headshot border / tagline text) - translucent
+and clearly lower-weight than the filled primary, and legible white-on-photo. Confirmed
+against a screenshot.
 
 **Latest post section.** The home page is already a Server Component, so it can call the
 fs-backed blog core directly (like `/subscribe` does). Compute the rows server-side so the
