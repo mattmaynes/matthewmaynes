@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { assembleStandalone } from "../scripts/lib/standalone.ts";
 import { getAllPosts, getAdjacentPosts } from "../src/lib/blog.ts";
+import { deriveTags, tagSlug } from "../src/lib/blog-view.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
@@ -807,6 +808,39 @@ test("a post renders previous/next navigation to its chronological neighbours", 
   );
 });
 
+// Tag archive pages (spec 0027): a real, indexable page per tag. Derive the tag
+// and its slug from the SAME source the route renders from (getAllPosts +
+// deriveTags + tagSlug), so this never time-bombs as posts/tags change.
+test("a tag archive lists its posts with a route-unique title; unknown tag 404s", async () => {
+  const posts = getAllPosts();
+  const tags = deriveTags(posts);
+  assert.ok(tags.length > 0, "fixture sanity: at least one tag exists");
+  const tag = tags[0];
+  const slug = tagSlug(tag);
+
+  const res = await fetch(BASE + `/blog/tags/${slug}`);
+  assert.equal(res.status, 200, `expected 200 for /blog/tags/${slug}`);
+  const html = await res.text();
+
+  // Route-unique title marker ("Posts tagged" appears on no other route) plus the
+  // site title suffix - a real <title>, not just the H1, proves generateMetadata ran.
+  assert.ok(
+    html.includes("Posts tagged") && html.includes("- Blog - Matthew Maynes"),
+    "expected the tag page's route-unique <title>",
+  );
+  // The list actually rendered: a post carrying this tag appears by title.
+  const withTag = posts.find((p) => p.tags.includes(tag));
+  assert.ok(withTag, "fixture sanity: some post carries the first tag");
+  assert.ok(
+    html.includes(withTag.title),
+    `expected the "${tag}" archive to list "${withTag.title}"`,
+  );
+
+  // An unknown tag slug is a clean 404 (dynamicParams=false), never a blank render.
+  const missing = await fetch(BASE + "/blog/tags/definitely-not-a-real-tag");
+  assert.equal(missing.status, 404, "expected 404 for an unknown tag slug");
+});
+
 test("robots, sitemap, and manifest are served", async () => {
   const robots = await fetch(BASE + "/robots.txt");
   assert.equal(robots.status, 200, "expected /robots.txt to 200");
@@ -833,6 +867,21 @@ test("robots, sitemap, and manifest are served", async () => {
     "expected /projects to be excluded from the sitemap while it is unlisted",
   );
   assert.match(sitemapXml, /matthewmaynes\.com/, "expected canonical host URLs");
+
+  // spec 0027: individual posts and per-tag archives are now crawlable. Assert a
+  // real post URL (posts were previously absent from the sitemap entirely) and a
+  // tag archive URL are both listed.
+  const somePost = getAllPosts()[0];
+  assert.match(
+    sitemapXml,
+    new RegExp(`/blog/${somePost.slug}</loc>`),
+    "expected each post URL in the sitemap",
+  );
+  assert.match(
+    sitemapXml,
+    /\/blog\/tags\/[a-z0-9-]+<\/loc>/,
+    "expected per-tag archive URLs in the sitemap",
+  );
 
   // Manifest is valid JSON and its declared install icons actually resolve.
   const manifest = await fetch(BASE + "/manifest.webmanifest");

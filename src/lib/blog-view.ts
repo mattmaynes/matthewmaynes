@@ -78,3 +78,34 @@ export function filterPosts<T extends FilterablePost>(
     return true;
   });
 }
+
+/**
+ * Slugify a string: lowercase, non-alphanumerics collapse to a single dash,
+ * trim leading/trailing dashes. e.g. "I Picked the Wrong Elective" ->
+ * "i-picked-the-wrong-elective". The one slugifier for the whole blog - post
+ * filenames (via `blog.ts`, which re-exports this) and tag URLs share it, so a
+ * tag page's slug always matches how a post's slug is derived.
+ */
+export function slugify(s: string): string {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** The URL slug for a tag (same rules as a post slug). */
+export function tagSlug(tag: string): string {
+  return slugify(tag);
+}
+
+/**
+ * Resolve a tag slug back to its original-cased tag, or null if no known tag
+ * slugifies to it. `slug` is re-slugified first so an odd-cased inbound value
+ * still matches (idempotent). First match wins - two distinct tags that
+ * slugify identically (e.g. "A.I." vs "AI") is not expected at this scale, and
+ * `deriveTags` already dedupes tags case-insensitively.
+ */
+export function tagFromSlug(slug: string, tags: string[]): string | null {
+  const s = slugify(slug);
+  return tags.find((t) => tagSlug(t) === s) ?? null;
+}

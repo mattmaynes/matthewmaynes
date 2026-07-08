@@ -23,8 +23,10 @@ import {
   formatPostDate,
   readingMinutes,
 } from "@/lib/blog";
+import { tagSlug } from "@/lib/blog-view";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site, blogFeedTitle } from "@/lib/site";
+import { FOCUS_RING as RING } from "@/lib/focus-ring";
 
 type Params = { slug: string };
 
@@ -86,15 +88,17 @@ function HeroMeta({
       {post.tags.length > 0 ? (
         <ul className="flex flex-wrap gap-2">
           {post.tags.map((tag) => (
-            <li
-              key={tag}
-              className={
-                overlay
-                  ? "rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground"
-                  : "rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
-              }
-            >
-              {tag}
+            <li key={tag}>
+              <Link
+                href={`/blog/tags/${tagSlug(tag)}`}
+                className={
+                  overlay
+                    ? `inline-block rounded-full bg-accent px-3 py-1 text-caption font-medium text-accent-foreground hover:bg-accent/90 ${RING}`
+                    : `inline-block rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary hover:border-border-strong hover:text-text ${RING}`
+                }
+              >
+                {tag}
+              </Link>
             </li>
           ))}
         </ul>
@@ -241,11 +245,13 @@ export default async function BlogPostPage({
           {post.tags.length > 0 ? (
             <ul className="mt-4 flex flex-wrap gap-2">
               {post.tags.map((tag) => (
-                <li
-                  key={tag}
-                  className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
-                >
-                  {tag}
+                <li key={tag}>
+                  <Link
+                    href={`/blog/tags/${tagSlug(tag)}`}
+                    className={`inline-block rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary hover:border-border-strong hover:text-text ${RING}`}
+                  >
+                    {tag}
+                  </Link>
                 </li>
               ))}
             </ul>
