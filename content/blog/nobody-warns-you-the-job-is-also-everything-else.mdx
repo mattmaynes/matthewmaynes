@@ -1,0 +1,44 @@
+---
+title: Nobody Warns You the Job Is Also Everything Else
+date: 2026-07-07
+tags: [First Software Job, Learning on the Job, Objective-C]
+excerpt: At eighteen I was handed a zero-to-one iPad app in a language I'd never touched, wired to a SOAP service that did not forgive typos. The real lesson wasn't Objective-C. It was how much you can figure out when there's no one left to hand the problem to.
+cover: snowy-runway.png
+coverCaption: Snow, ice, and a plane on final - the exact thing the app existed to warn about
+---
+
+I'd worked at Team Eagle the summer before, doing whatever a first year intern does. Coming back in May 2013, I figured it would be more of the same. Instead I got handed something bigger: build an iPad app, called Eagle SNAP, that would let airfield operators submit SNOWTAM reports straight to NavCanada.
+
+A SNOWTAM, if you've never heard the term, is the report that tells pilots a runway is covered in snow, ice, or standing water. Every airport needs a way to file one, fast. The client airports Team Eagle worked with still didn't have an easy way to do it. That gap was mine to fill, at eighteen years old, using a technology I'd never touched, in a language I didn't know.
+
+**I had no idea what I was doing.**
+
+## Learning as I went
+
+I'd been writing code since 2009 and working professionally since 2012, but none of that was iOS. Objective-C in 2013 meant manual memory management, method calls wrapped in square brackets that looked like nothing else I'd written, and a pile of Apple documentation that assumed you already understood what a delegate pattern was. **I learned it the way you learn anything when there's no one around to ask: read the docs, write some code, watch it crash, read the crash log, do it again.**
+
+## The SOAP problem
+
+Strip it down and Eagle SNAP itself is a simple idea. An operator checks the runway and needs to get that information to the world before a plane lands somewhere it shouldn't. The app just needed to turn that check into a form, and the form into a report NavCanada's systems could actually read. Underneath, that meant wiring the whole thing to a SOAP service, which even in 2013 felt a bit like archaeology. NavCanada's system expected a very particular flavour of XML, and it did not forgive typos. I lost more evenings than I'd like to admit staring at a raw SOAP envelope trying to figure out why my request kept bouncing, only to find a namespace tag one character off. **There is a special kind of humility in losing an entire evening to a missing colon.**
+
+## Everything else nobody mentions
+
+Here's the part nobody tells you about your first real project. **Building software professionally doesn't mean building the feature you were asked to build. It means building everything underneath it too.** I had to set up my own development environment from nothing, which back then meant getting a temperamental Xcode to cooperate with a temperamental Mac. I had to figure out how a build pipeline worked, since I'd never built one before and didn't even know that was the word for it. I had to invent a testing process I trusted, because there was no one else around to catch my mistakes, so I leaned on the actual airfield operators who'd be using the thing, handing them early builds and asking what broke. And at the end of it, I had to work out how App Store submission functioned, filling out forms I only half understood and hoping I'd guessed right, because somebody had to.
+
+At a bigger company, I would have touched one piece of that chain. **At Team Eagle that summer, I was the whole assembly line.**
+
+## Launch
+
+It took most of the summer to get Eagle SNAP into a shape I'd call finished. By August it was on the App Store.
+
+<PostImage name="eagle-snap">
+The finished thing - a real app with a real icon, exactly as disproportionately huge as it felt
+</PostImage>
+
+**Seeing it there, a real app with a real icon that anyone could download, felt disproportionately huge for something built on a folding table with one intern and a lot of coffee.** A few rounds of small fixes later, it properly went live in September, right as I was heading back for another year of school. I kept tinkering with it part time through the semester, the way you keep checking on something you built with your own hands even after it's technically done.
+
+## What actually stuck
+
+I think about that summer often, mostly because of what it didn't teach me. I didn't come out of it an Objective-C expert, and I doubt I could write a SOAP client from memory today even under duress. Objective-C wasn't really the point, and neither was SOAP. **What I actually learned was how much I could figure out when there was no one left to hand the problem to.** That's a different kind of knowledge, and it's the one that stuck. Every project since has had some version of that same feeling in the first week, the quiet dread of not knowing where to start, and every time I've been able to point back at one summer and a folding table and remind myself that **not knowing is just the starting condition, not a verdict.**
+
+Eighteen years old, one summer, one app that told pilots whether it was safe to land. The language changes every few years. **The process doesn't.**
