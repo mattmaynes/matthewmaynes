@@ -295,7 +295,12 @@ per-component code. Already implemented in `src/styles/`.
   a sidecar `resume.pdf.hash` of the resume source files. The PDF is committed, so Docker/runtime
   serve a static file and never run a browser. Regeneration is gated on the source hash (no-op when
   unchanged); CI runs `resume:pdf:check` (a pure hash compare, no browser) and fails if the resume
-  changed without the PDF being regenerated. The page is the single source of truth for both.
+  changed without the PDF being regenerated. The page is the single source of truth for both. The
+  print root font-size that scales the whole PDF (`@media print { html { font-size } }`, sized so the
+  resume fills two Letter pages) lives in `theme-harbor.css` - a hashed `INPUT_FILE` - precisely
+  because it only affects the PDF; a PDF-affecting rule must be a hashed input or `--check` goes stale
+  (learnings 0007). Font size is bounded above by the last experience block: it is `break-inside-avoid`,
+  so pushing the type past ~13px tips it onto a near-empty third page.
 - **`outputFileTracingRoot` pinned to the project** (`next.config.ts`) so `output: standalone`
   emits `server.js` at the standalone root even inside the nested `.worktrees/` checkout; a no-op
   in CI/Docker. Both the smoke test and the PDF generator boot that server. (learnings 0002)
