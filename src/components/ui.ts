@@ -33,6 +33,7 @@ export {
   FormFieldMessage,
 } from "@rogueoak/canopy/twigs";
 export {
+  Combobox,
   TopNav,
   TopNavActions,
   TopNavBrand,
@@ -40,3 +41,4 @@ export {
   TopNavLinks,
   TopNavMenuButton,
 } from "@rogueoak/canopy/branches";
+export type { ComboboxOption } from "@rogueoak/canopy/branches";
