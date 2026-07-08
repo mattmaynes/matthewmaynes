@@ -360,6 +360,20 @@ test("GET /resume.pdf serves a real, non-trivial PDF", async () => {
     bytes.byteLength > 10_000,
     `expected /resume.pdf to be non-trivial, got ${bytes.byteLength} bytes`,
   );
+  // Page count is the headline outcome of the resume print type size: the font
+  // is tuned to fill exactly two Letter pages, and the last experience block is
+  // break-inside-avoid, so a future type bump can silently tip it onto a third
+  // page. resume:pdf:check only compares a SOURCE hash (a 3-page PDF regenerated
+  // + committed passes it), so guard the rendered result here: count the page
+  // objects (/Type /Page, not the /Pages tree node) and require exactly two.
+  const pageCount = (
+    bytes.toString("latin1").match(/\/Type\s*\/Page(?![s])/g) ?? []
+  ).length;
+  assert.equal(
+    pageCount,
+    2,
+    `expected the committed resume.pdf to be exactly 2 pages, got ${pageCount}`,
+  );
 });
 
 // The /resume page must show the real resume, not the old PagePlaceholder (which
