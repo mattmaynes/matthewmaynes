@@ -30,6 +30,13 @@ export function Footer() {
           >
             Privacy
           </Link>
+          {" "}&middot;{" "}
+          <Link
+            href="/subscribe"
+            className="underline-offset-4 hover:text-text hover:underline"
+          >
+            Subscribe
+          </Link>
         </p>
         <div className="flex items-center gap-1">
           {socials.map(({ label, href, Icon }) => (
