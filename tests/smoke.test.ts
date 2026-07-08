@@ -692,6 +692,20 @@ test("home page highlights the latest post, linking to it", async () => {
     home.includes(`href="/blog/${firstSlug}"`),
     `expected the home page to link the newest post (/blog/${firstSlug})`,
   );
+
+  // Acceptance #1: the hero carries the secondary "Blog" CTA beside the primary
+  // "About me". The word "Blog" alone is shared chrome (nav link, the Blog card,
+  // the "See all posts" button all say/point to /blog), so key on the secondary
+  // button token on an anchor to /blog - only the hero CTA emits `bg-secondary`
+  // on a /blog link (the card link is `class="group"`, See-all-posts is outline,
+  // the nav link is a text link). Reverting the button drops this.
+  const anchors = [...home.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+  assert.ok(
+    anchors.some(
+      (a) => a.includes('href="/blog"') && a.includes("bg-secondary"),
+    ),
+    "expected a secondary-variant Blog CTA linking /blog in the hero",
+  );
 });
 
 // The blog post's per-post OG card must actually render (a wrong font/cover path

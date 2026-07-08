@@ -26,7 +26,11 @@ export default function HomePage() {
   // it stays pixel-identical to a `/blog` row. `newPostSlug` runs over the FULL
   // post set so the "New" badge is a whole-corpus fact (learnings 0027).
   const posts = getAllPosts();
-  const latest = toPostRows(posts, newPostSlug(posts, NOW_MS, 30))[0] ?? null;
+  // Only the newest post is highlighted, so resolve just its cover - but derive
+  // the "New" slug from the FULL set so the badge stays a whole-corpus fact
+  // (learnings 0027), not "newest of the one row we kept".
+  const newSlug = newPostSlug(posts, NOW_MS, 30);
+  const latest = toPostRows(posts.slice(0, 1), newSlug)[0] ?? null;
 
   return (
     <>
