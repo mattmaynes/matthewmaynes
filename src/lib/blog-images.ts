@@ -13,6 +13,7 @@ import turingSunrise from "../../public/images/blog/turing-sunrise.png";
 import zombieHordeTitle from "../../public/images/blog/zombie-horde-title.png";
 import eagleSnap from "../../public/images/blog/eagle-snap.png";
 import houseQuicksand from "../../public/images/blog/house-quicksand.png";
+import snowyRunway from "../../public/images/blog/snowy-runway.png";
 
 import type { SiteImage } from "./site";
 
@@ -36,6 +37,10 @@ export const blogImages = {
   "house-quicksand.png": {
     ...houseQuicksand,
     alt: "A two-storey house sinking and buckling into a swirling pool of black quicksand, surrounded by scattered debris and swampland.",
+  },
+  "snowy-runway.png": {
+    ...snowyRunway,
+    alt: "An airliner on final approach to a snow-covered runway under a heavy grey sky, an airport terminal behind it.",
   },
 } satisfies Record<string, BlogImage>;
 
