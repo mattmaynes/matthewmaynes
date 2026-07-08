@@ -673,6 +673,47 @@ test("home page exposes the sharing + SEO metadata", async () => {
   );
 });
 
+// Home page "Latest post" highlight (spec 0029): the home page surfaces the
+// single newest post via the shared PostRow, so a visitor gets a taste of the
+// blog and a direct path in. Asserting the "Latest post" heading alone is shared
+// section chrome and would pass even if PostRow rendered nothing; instead prove a
+// real post-slug link is present on `/` (only PostRow's cover/title links emit a
+// `/blog/<slug>` href on the home page - the cards + CTA link to `/blog` with no
+// slug) AND that it matches the newest post that `/blog` lists first. Reverting
+// the section drops the heading and the slug link, reddening this test.
+test("home page highlights the latest post, linking to it", async () => {
+  const home = await (await fetch(BASE + "/")).text();
+  assert.ok(
+    home.includes("Latest post"),
+    "expected a 'Latest post' section heading on the home page",
+  );
+
+  // The newest post is whatever `/blog` renders first; derive its slug from the
+  // listing so this stays correct as new posts are added (no hardcoded title).
+  const blog = await (await fetch(BASE + "/blog")).text();
+  const firstSlug = blog.match(/href="\/blog\/([a-z0-9-]+)"/)?.[1];
+  assert.ok(firstSlug, "expected the /blog listing to link at least one post");
+  assert.ok(
+    home.includes(`href="/blog/${firstSlug}"`),
+    `expected the home page to link the newest post (/blog/${firstSlug})`,
+  );
+
+  // Acceptance #1: the hero carries the secondary "Blog" CTA beside the primary
+  // "About me". The word "Blog" alone is shared chrome (nav link, the Blog card,
+  // the "See all posts" button all say/point to /blog), so key on the hero CTA's
+  // unit-unique treatment: a white-on-dark button (`text-base-white`) linking
+  // /blog. Only the hero's photo-overlay CTA carries `text-base-white` on a /blog
+  // anchor (the card link is `class="group"`, See-all-posts is a light-surface
+  // outline, the nav link is `text-text-muted`). Reverting the button drops this.
+  const anchors = [...home.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+  assert.ok(
+    anchors.some(
+      (a) => a.includes('href="/blog"') && a.includes("text-base-white"),
+    ),
+    "expected a light-on-dark Blog CTA linking /blog in the hero",
+  );
+});
+
 // The blog post's per-post OG card must actually render (a wrong font/cover path
 // yields a blank card even on a green build - learnings 0004). Pull og:image from
 // the post's <head> and assert it resolves to a 200 image/png.

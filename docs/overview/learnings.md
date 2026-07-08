@@ -566,3 +566,23 @@ Capture lessons as you go.
   tags) renders in both the tag archive (server) and the listing island (client) with one markup,
   because it pulls `next/image`/`next/link`/`formatPostDate` (fs-free) and never `blog-images.ts` or
   `node:fs` - covers are resolved server-side and passed as data (learnings 0005 still holds).
+
+## Home blog emphasis (spec 0029)
+
+- **A "subordinate" secondary CTA is not achieved by swapping to a filled secondary variant - two
+  same-size saturated solids read as co-equal.** The hero's secondary "Blog" button first used
+  `variant="secondary"` (a filled bark/taupe solid) beside the filled blue primary "About me"; both
+  passed AA contrast, but design review flagged that two equally-sized saturated fills compete rather
+  than establishing a lead. Visual hierarchy between two adjacent CTAs comes from a *weight* contrast
+  (filled vs. outline/ghost), not just a hue/token swap. Fix: a light-bordered translucent outline
+  (`border-base-white/70 bg-transparent text-base-white`) - lower weight and clearly secondary. When a
+  spec asks for a subordinate button, reach for a lower-weight treatment, and verify the pairing on a
+  screenshot (the "does it read" question and the "does it lead" question are separate design checks).
+- **A hero button over a fixed photo overlay is a white-on-dark treatment, not a theme-token one.**
+  The hero background (photo + `bg-overlay/60`) does not flip with the light/dark theme, so its CTAs
+  and text are always white regardless of theme - `text-base-white`/`border-base-white`, matching the
+  headshot border and tagline, not `text-text`/`border-border`. A `variant="outline"` default (dark
+  token border/text) would be low-contrast on the photo; override to the white-on-dark tokens. This
+  makes `text-base-white` on the `/blog` anchor a unit-unique smoke marker for the hero CTA (the nav
+  link is `text-text-muted`, the card link is `class="group"`, "See all posts" is a light-surface
+  outline) - assert what the unit uniquely produces (recurring learning 0001/0003/0006/0009/0018).

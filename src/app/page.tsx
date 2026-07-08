@@ -7,9 +7,31 @@ import {
   ContactIcon,
   ResumeIcon,
 } from "@/components/nav-icons";
+import { PostRow } from "@/components/post-row";
+import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { toPostRows } from "@/lib/post-summaries";
 import { images, site } from "@/lib/site";
 
+// Evaluated once when the route module loads - i.e. at build time for this
+// statically-generated page, which is exactly the "new as of this build/deploy"
+// semantics the "New" badge wants. Computing it inline in render would trip
+// react-hooks/purity (learnings 0012).
+const NOW_MS = Date.now();
+
 export default function HomePage() {
+  // The single most recent post, highlighted below the cards to give a visitor
+  // a fresh reason to head into the blog (spec 0029). Resolved server-side (the
+  // page is a Server Component) so the row is fully in the SSG HTML, and mapped
+  // through the same `toPostRows` + `PostRow` the listing/tag archives use, so
+  // it stays pixel-identical to a `/blog` row. `newPostSlug` runs over the FULL
+  // post set so the "New" badge is a whole-corpus fact (learnings 0027).
+  const posts = getAllPosts();
+  // Only the newest post is highlighted, so resolve just its cover - but derive
+  // the "New" slug from the FULL set so the badge stays a whole-corpus fact
+  // (learnings 0027), not "newest of the one row we kept".
+  const newSlug = newPostSlug(posts, NOW_MS, 30);
+  const latest = toPostRows(posts.slice(0, 1), newSlug)[0] ?? null;
+
   return (
     <>
       {/* Hero: nature photo background with the headshot and intro on top. */}
@@ -58,6 +80,20 @@ export default function HomePage() {
             <Button asChild variant="primary" size="lg">
               <Link href="/about">About me</Link>
             </Button>
+            {/* Secondary CTA that pushes the visitor toward the blog (spec 0029).
+                A light-bordered, translucent treatment (not a filled variant) so
+                it stays clearly subordinate to the filled primary "About me" - two
+                saturated solids read as co-equal (design review, spec 0029). White
+                border/text to read against the dark hero photo overlay, matching
+                the hero's white headshot border and tagline text. */}
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="border-base-white/70 bg-transparent text-base-white hover:bg-base-white/10 hover:text-base-white"
+            >
+              <Link href="/blog">Blog</Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -102,6 +138,23 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Latest post: highlight the single newest post so the home page gives a
+          taste of the blog and a direct path in (spec 0029). Omitted cleanly
+          when there are no posts. */}
+      {latest ? (
+        <section className="mx-auto max-w-[1200px] border-t border-border px-6 py-16">
+          <h2 className="text-h2 font-semibold text-text">Latest post</h2>
+          <ul className="mt-8 flex flex-col">
+            <PostRow post={latest} />
+          </ul>
+          <div className="mt-8">
+            <Button asChild variant="outline">
+              <Link href="/blog">See all posts</Link>
+            </Button>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }
