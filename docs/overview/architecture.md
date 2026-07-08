@@ -27,6 +27,15 @@
   The route `app/blog/feed.xml/route.ts` is a thin `force-static` `GET` that feeds `getAllPosts` and
   `site` into the builder and returns `application/rss+xml`. Absolute links are joined against
   `site.url` (the sitemap pattern); output is deterministic (`lastBuildDate` = newest post's date).
+- **Blog tag pages (spec 0027):** a statically generated `app/blog/tags/[tag]/page.tsx`, mirroring
+  the post route - `generateStaticParams` over `deriveTags(getAllPosts())`, `dynamicParams = false`
+  so an unknown slug 404s, a route-unique `generateMetadata`. The pure `tagSlug`/`tagFromSlug` live
+  in the fs-free `blog-view.js` core (which now also owns the one `slugify`, re-exported by
+  `blog.js`, and the shared `PostRowData`/`Cover` row types). The listing row markup is a hook-free
+  presentational `src/components/post-row.tsx` shared by both the `"use client"` listing island and
+  this Server Component; a server-only `src/lib/post-summaries.ts` maps posts to row data (resolving
+  covers via `blog-images.js` and the **global** "New" badge slug, computed once over all posts and
+  passed in - never recomputed from a per-tag subset, feedback 0016). Post-page tag pills link here.
 - **Content as data:** blog posts in `content/blog/*.mdx`, project data in `content/projects/`.
   No database, no runtime fetching.
 
@@ -36,8 +45,11 @@
   for icons; `app/opengraph-image.tsx` (+ a re-exporting `twitter-image.tsx`) for the share card;
   `app/{robots,sitemap,manifest}.ts` for the crawler/install surface. `layout.tsx` carries the
   default Open Graph / Twitter / robots metadata, a `viewport` `themeColor`, and a JSON-LD `Person`.
-- **One source of truth:** identity/description/social come from `src/lib/site.ts`; sitemap routes
-  come from its `nav`. Nothing is duplicated across the meta tags, sitemap, JSON-LD, and manifest.
+- **One source of truth:** identity/description/social come from `src/lib/site.ts`; sitemap static
+  routes come from its `nav` (+ a small `EXTRA_ROUTES`), and the sitemap also enumerates every blog
+  post and every tag archive from the content (`getAllPosts` + `deriveTags` + `tagSlug`, spec 0027 -
+  posts were previously absent). Nothing is duplicated across the meta tags, sitemap, JSON-LD, and
+  manifest.
 - **Icons are generated, not hand-placed:** `scripts/build-icons.ts` resizes the
   `public/brand/logo-m.png` master with macOS `sips` and packs the multi-res `favicon.ico` with a
   stdlib ICO writer - no ImageMagick, no npm dependency. Re-run it to refresh every size at once.

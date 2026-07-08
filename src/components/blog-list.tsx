@@ -1,38 +1,15 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import type { StaticImageData } from "next/image";
 import { SearchIcon } from "@/components/blog-icons";
-import { ReadingTimePill } from "@/components/reading-time-pill";
+import { PostRow, type PostRowData } from "@/components/post-row";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
-import {
-  formatPostDate,
-  deriveTags,
-  resolveActiveTag,
-  filterPosts,
-} from "@/lib/blog-view";
-
-/** A cover image passed down from the server: a static import (carrying its
- * blurDataURL) plus alt text. Resolved on the server via `getBlogImage` so the
- * client island never imports `blog-images.ts` (learnings 0005). */
-type Cover = StaticImageData & { alt: string };
+import { deriveTags, resolveActiveTag, filterPosts } from "@/lib/blog-view";
 
 /** A serializable post summary. The server page resolves the cover and computes
- * `isNew` (newest AND recent) so the client renders straight from the props. */
-export type BlogListPost = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  tags: string[];
-  cover?: Cover;
-  pixelated: boolean;
-  isNew: boolean;
-  /** Estimated reading time in whole minutes (server-computed, spec 0015). */
-  minutes: number;
-};
+ * `isNew` (newest AND recent) so the client renders straight from the props.
+ * The row shape lives in `post-row.tsx`, shared with the tag archive page. */
+export type BlogListPost = PostRowData;
 
 // A tiny store over the URL's `?tag=` value, so the chips read the active filter
 // WITHOUT `useSearchParams` - that hook forces this statically-generated page to
@@ -163,64 +140,7 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
       ) : (
         <ul className="mt-10 flex flex-col gap-10">
           {filtered.map((post) => (
-            <li
-              key={post.slug}
-              className="grid gap-5 border-b border-border pb-10 last:border-b-0 sm:grid-cols-[200px_1fr]"
-            >
-              {post.cover ? (
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className={`block self-center overflow-hidden rounded-lg border-[0.5px] border-border ${RING}`}
-                >
-                  <Image
-                    src={post.cover}
-                    alt={post.cover.alt}
-                    sizes="(max-width: 640px) 100vw, 200px"
-                    placeholder={post.pixelated ? "empty" : "blur"}
-                    className="aspect-[16/10] w-full object-cover"
-                    style={
-                      post.pixelated ? { imageRendering: "pixelated" } : undefined
-                    }
-                  />
-                </Link>
-              ) : null}
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-h3 font-semibold">
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className={`rounded-sm text-text hover:text-primary ${RING}`}
-                    >
-                      {post.title}
-                    </Link>
-                  </h2>
-                  {post.isNew ? (
-                    <span className="rounded-full bg-accent px-2 py-0.5 text-caption font-medium text-accent-foreground">
-                      New
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-3">
-                  <p className="text-caption text-text-subtle">
-                    <time dateTime={post.date}>{formatPostDate(post.date)}</time>
-                  </p>
-                  <ReadingTimePill minutes={post.minutes} />
-                </div>
-                <p className="mt-3 text-body text-text-muted">{post.excerpt}</p>
-                {post.tags.length > 0 ? (
-                  <ul className="mt-4 flex flex-wrap gap-2">
-                    {post.tags.map((tag) => (
-                      <li
-                        key={tag}
-                        className="rounded-full border border-border bg-muted px-3 py-1 text-caption text-secondary"
-                      >
-                        {tag}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            </li>
+            <PostRow key={post.slug} post={post} />
           ))}
         </ul>
       )}

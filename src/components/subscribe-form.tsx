@@ -34,7 +34,7 @@ export function SubscribeForm({
   className?: string;
   /** Which surface this instance renders on - a PII-free analytics dimension so
    *  listing vs. post vs. the dedicated page are attributable. Never the email. */
-  source: "blog_index" | "blog_post" | "subscribe_page";
+  source: "blog_index" | "blog_post" | "blog_tag" | "subscribe_page";
   /** Show the optional Name field from first paint instead of on email focus -
    *  used by the dedicated `/subscribe` page, which leads with the full ask. */
   alwaysShowName?: boolean;

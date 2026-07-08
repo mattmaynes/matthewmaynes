@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { getAllPosts, newPostSlug, readingMinutes } from "@/lib/blog";
-import { getBlogImage } from "@/lib/blog-images";
-import { BlogList, type BlogListPost } from "@/components/blog-list";
+import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { toPostRows } from "@/lib/post-summaries";
+import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { Button } from "@/components/ui";
 import { RssIcon } from "@/components/blog-icons";
@@ -29,29 +29,12 @@ const NOW_MS = Date.now();
 export default function BlogPage() {
   const posts = getAllPosts();
 
-  // Which post carries the "New" badge, computed once on the server: the newest
-  // post while it is still within the 30-day recency window. Baked into the SSG
-  // HTML (no Date.now() on the client), so there is no hydration mismatch.
+  // Resolve covers on the SERVER and compute the "New" badge once (the newest
+  // post within the 30-day window), baked into the SSG HTML - shared with the
+  // tag archive via `toPostRows` so both surfaces render identical rows. The
+  // badge slug is derived over ALL posts, so it is global (same on the tag page).
   const newSlug = newPostSlug(posts, NOW_MS, 30);
-
-  // Resolve each cover on the SERVER and pass the static import (which carries
-  // its blurDataURL) plus the pixelated flag down, so next/image in the client
-  // island keeps placeholder="blur" / pixelated behaviour without importing
-  // blog-images.ts across the boundary (learnings 0005).
-  const listPosts: BlogListPost[] = posts.map((post) => {
-    const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
-    return {
-      slug: post.slug,
-      title: post.title,
-      excerpt: post.excerpt,
-      date: post.date,
-      tags: post.tags,
-      cover: cover ? { ...cover, alt: cover.alt } : undefined,
-      pixelated: cover?.pixelated === true,
-      isNew: post.slug === newSlug,
-      minutes: readingMinutes(post),
-    };
-  });
+  const listPosts = toPostRows(posts, newSlug);
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
