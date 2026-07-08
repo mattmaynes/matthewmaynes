@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui";
-import { GitHubIcon, LinkedInIcon } from "@/components/social-icons";
+import { GitHubIcon, LinkedInIcon, WebsiteIcon } from "@/components/social-icons";
 import { site, socialPath } from "@/lib/site";
 import { resume } from "@/lib/resume";
 
@@ -40,6 +40,17 @@ export default function ResumePage() {
 
           <Section variant="side" title="Links">
             <ul className="flex flex-col gap-1.5">
+              <li>
+                <a
+                  href={site.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-caption text-primary underline underline-offset-2"
+                >
+                  <WebsiteIcon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                  {socialPath(site.url)}
+                </a>
+              </li>
               <li>
                 <a
                   href={site.social.linkedin}

@@ -586,3 +586,24 @@ Capture lessons as you go.
   makes `text-base-white` on the `/blog` anchor a unit-unique smoke marker for the hero CTA (the nav
   link is `text-text-muted`, the card link is `class="group"`, "See all posts" is a light-surface
   outline) - assert what the unit uniquely produces (recurring learning 0001/0003/0006/0009/0018).
+
+## Resume PDF: font-size lever and the freshness-hash gap
+
+- **The resume PDF's print root font-size lived in `globals.css`, which is NOT one of
+  `generate-resume-pdf.ts`'s hashed `INPUT_FILES` - so it silently affected the PDF while
+  `resume:pdf:check` stayed green.** Bumping it there would let the committed PDF drift without CI
+  noticing (the exact freshness-gate-over-a-subset trap as learnings 0007). Fix: relocate the
+  `@media print { html { font-size } }` rule into `theme-harbor.css`, which IS a hashed input and
+  already holds the resume's `@page`/print rules. Rule of thumb, restated: any rule that changes the
+  rendered PDF must live in a hashed `INPUT_FILE`; the hash must cover EVERY input that affects the
+  output. (This is the mirror of learnings 0011: a rule that does NOT affect the PDF should stay OUT
+  of the hashed files to avoid churn - the test is "does it change the PDF", and this one does.)
+- **Scaling a rem-based document to "fill" a page is quantized by `break-inside-avoid` blocks, not
+  smooth.** The whole resume scales off one `html { font-size }` (all type is rem), but the last
+  experience `<article>` is `break-inside-avoid`, so it cannot be split. At 12px the content was
+  ~1.7 pages (page 2 ~66% full); 13px filled page 2 to ~75% and stayed two pages, but 13.25px and
+  13.5px each tipped that indivisible last block wholly onto a near-empty third page - a worse
+  result than the gap it was trying to close. So "bigger font to fill page 2" has a hard ceiling at
+  the point the last unsplittable block stops fitting; past it you must tighten spacing or trim
+  content, not enlarge type. Always verify PDF page COUNT (not just "it rendered") when changing
+  resume type size - render and read the actual PDF.

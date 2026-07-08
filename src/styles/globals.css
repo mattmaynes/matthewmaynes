@@ -56,16 +56,6 @@
   }
 }
 
-/* Print: the resume (the only print-intended page) is built entirely from
-   rem-based type tokens, so shrinking the root font-size scales the whole
-   document proportionally. This dials the rendered PDF down to two Letter
-   pages. Screen rendering is unaffected. */
-@media print {
-  html {
-    font-size: 12px;
-  }
-}
-
 /* iOS Safari auto-zooms the page when a form control with a font-size below 16px
    receives focus. On touch devices, hold every control at >=16px so focusing the
    subscribe email/name (and any other input) never triggers that zoom. Scoped to

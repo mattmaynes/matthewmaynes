@@ -90,7 +90,7 @@ export const resume: Resume = {
     { label: "Frontend", items: "Next.js, React, Tailwind CSS, Angular" },
     {
       label: "Backend & APIs",
-      items: "Quarkus, API gateway design, domain-driven versioning",
+      items: "Quarkus, API gateway design",
     },
     {
       label: "Infrastructure",
@@ -105,7 +105,7 @@ export const resume: Resume = {
       items: "Kafka, MQTT, Kinesis, Google Pub/Sub",
     },
     { label: "Analytics", items: "Google Analytics, Tealium, Pendo" },
-    { label: "Tooling", items: "Git, Shell, JIRA, Aha!" },
+    { label: "Tooling", items: "Git, Shell, JIRA" },
   ],
 
   work: [

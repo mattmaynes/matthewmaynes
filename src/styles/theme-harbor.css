@@ -52,6 +52,16 @@
     margin: 0.5in;
   }
 
+  /* The resume (the only print-intended page) is built entirely from rem-based
+     type tokens, so the root font-size scales the whole document proportionally.
+     This sizes the rendered PDF to two comfortably-filled Letter pages. Screen
+     rendering is unaffected. Lives here (not globals.css) because it only affects
+     the resume PDF, so it must be one of generate-resume-pdf.ts's hashed
+     INPUT_FILES - theme-harbor.css is, globals.css is not. */
+  html {
+    font-size: 13px;
+  }
+
   html,
   body {
     background: var(--color-base-white);
