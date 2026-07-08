@@ -21,6 +21,8 @@ import {
   deriveTags,
   resolveActiveTag,
   filterPosts,
+  tagFromFilterValue,
+  ALL_TAGS_FILTER_VALUE,
   tagSlug,
   tagFromSlug,
 } from "../src/lib/blog-view.ts";
@@ -298,6 +300,17 @@ test("resolveActiveTag maps ?tag= to a known tag case-insensitively, else null",
   assert.equal(resolveActiveTag("Life", tags), "Life");
   assert.equal(resolveActiveTag("", tags), null); // absent -> All
   assert.equal(resolveActiveTag("nope", tags), null); // unknown -> All
+});
+
+test("tagFromFilterValue maps the Combobox 'all' sentinel to null, a tag to itself", () => {
+  // The single-select tag Combobox's value is always a string; the "All posts"
+  // entry carries the empty-string sentinel that must clear the filter (null).
+  assert.equal(tagFromFilterValue(ALL_TAGS_FILTER_VALUE), null);
+  assert.equal(tagFromFilterValue(""), null);
+  assert.equal(tagFromFilterValue("Career Reflection"), "Career Reflection");
+  // Symmetric with resolveActiveTag/filterPosts: a real tag passes through
+  // untouched (original casing preserved), only "" means "all".
+  assert.equal(tagFromFilterValue("life"), "life");
 });
 
 test("tagSlug slugifies a tag with the same rules as a post slug", () => {

@@ -5,11 +5,13 @@ import { SearchIcon } from "@/components/blog-icons";
 import { PostRow, type PostRowData } from "@/components/post-row";
 import { Combobox, type ComboboxOption } from "@/components/ui";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
-import { deriveTags, resolveActiveTag, filterPosts } from "@/lib/blog-view";
-
-// The tag filter's clear/"show all" entry. An empty value maps back to the
-// "All" state (activeTag === null); every other option is a content tag.
-const ALL_TAGS_VALUE = "";
+import {
+  deriveTags,
+  resolveActiveTag,
+  filterPosts,
+  tagFromFilterValue,
+  ALL_TAGS_FILTER_VALUE,
+} from "@/lib/blog-view";
 
 /** A serializable post summary. The server page resolves the cover and computes
  * `isNew` (newest AND recent) so the client renders straight from the props.
@@ -82,7 +84,7 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
   // the same URL-backed `selectTag` the chips used, so the filter stays
   // shareable and the pure `filterPosts` core is unchanged.
   const tagOptions: ComboboxOption[] = [
-    { label: "All posts", value: ALL_TAGS_VALUE },
+    { label: "All posts", value: ALL_TAGS_FILTER_VALUE },
     ...allTags.map((tag) => ({ label: tag, value: tag })),
   ];
 
@@ -94,11 +96,8 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
             <Combobox
               aria-label="Filter posts by tag"
               options={tagOptions}
-              value={activeTag ?? ALL_TAGS_VALUE}
-              onValueChange={(value) =>
-                selectTag(value === ALL_TAGS_VALUE ? null : value)
-              }
-              placeholder="Filter by tag"
+              value={activeTag ?? ALL_TAGS_FILTER_VALUE}
+              onValueChange={(value) => selectTag(tagFromFilterValue(value))}
               searchPlaceholder="Search tags"
               emptyMessage="No matching tags"
             />
@@ -118,7 +117,7 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search posts"
-            className={`w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-body text-text placeholder:text-text-subtle ${RING}`}
+            className={`h-10 w-full rounded-md border border-border bg-surface pl-9 pr-3 text-sm text-text placeholder:text-text-subtle ${RING}`}
           />
         </div>
       </div>

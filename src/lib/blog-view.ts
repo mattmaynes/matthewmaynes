@@ -79,6 +79,24 @@ export function resolveActiveTag(
 }
 
 /**
+ * The tag-filter Combobox value that means "no filter" (the "All posts" entry).
+ * An empty string mirrors the URL/server-snapshot convention (`readUrlTag`
+ * returns "" for an absent `?tag=`), so the widget and the URL agree on "all".
+ */
+export const ALL_TAGS_FILTER_VALUE = "";
+
+/**
+ * Map a tag-filter Combobox value back to an active tag: the "all" sentinel
+ * (empty string) becomes null (no filter); any other value is the tag itself.
+ * The single seam between the single-select widget's always-string value and the
+ * nullable tag the rest of the blog core speaks - kept pure so it is unit-tested
+ * rather than trapped in the client island.
+ */
+export function tagFromFilterValue(value: string): string | null {
+  return value === ALL_TAGS_FILTER_VALUE ? null : value;
+}
+
+/**
  * Filter posts by an active tag (or null for all) and then narrow by a search
  * query over title + excerpt + tags. Both matches are case-insensitive; the two
  * conditions compose (a post must pass both). Returns a new array - the input is
