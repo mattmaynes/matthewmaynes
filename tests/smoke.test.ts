@@ -375,6 +375,15 @@ test("GET /resume renders the real resume with no contact PII", async () => {
     !html.includes("Placeholder"),
     "expected /resume to have dropped the PagePlaceholder badge",
   );
+  // The Links section lists the personal website alongside LinkedIn/GitHub. Key
+  // on an <a> to the bare site URL: canonical/og render the URL too but as
+  // <link>/<meta>, and the nav/brand link "/" (relative), so an absolute-bare-URL
+  // anchor is unique to the resume Links entry - reverting the link reddens this.
+  assert.match(
+    html,
+    /<a[^>]+href="https:\/\/matthewmaynes\.com"/,
+    "expected /resume to link the personal website in the Links section",
+  );
   // Privacy: the public page must not leak an email, a phone number, or the
   // postal code from the private resume source (spec 0005).
   assert.doesNotMatch(

@@ -3,6 +3,7 @@
 import {
   Facebook,
   Github,
+  Globe,
   Instagram,
   Linkedin,
   X,
@@ -40,4 +41,11 @@ export function FacebookIcon(props: IconBaseProps) {
 
 export function InstagramIcon(props: IconBaseProps) {
   return <Instagram aria-hidden {...props} />;
+}
+
+// Not a brand mark - a generic globe for the personal website link (the resume
+// sidebar lists it alongside the social profiles). Uses the design system's
+// curated `Globe` glyph rather than a hand-kept SVG.
+export function WebsiteIcon(props: IconBaseProps) {
+  return <Globe aria-hidden {...props} />;
 }
