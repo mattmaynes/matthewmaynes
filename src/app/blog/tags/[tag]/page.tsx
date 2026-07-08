@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllPosts } from "@/lib/blog";
+import { getAllPosts, newPostSlug } from "@/lib/blog";
 import { deriveTags, tagSlug, tagFromSlug, filterPosts } from "@/lib/blog-view";
 import { toPostRows } from "@/lib/post-summaries";
 import { PostRow } from "@/components/post-row";
 import { SubscribeForm } from "@/components/subscribe-form";
+import { FOCUS_RING as RING } from "@/lib/focus-ring";
 
 type Params = { tag: string };
 
@@ -31,9 +32,10 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { tag: slug } = await params;
-  const tag = tagFromSlug(slug, deriveTags(getAllPosts()));
+  const posts = getAllPosts();
+  const tag = tagFromSlug(slug, deriveTags(posts));
   if (!tag) return { title: "Blog" };
-  const count = filterPosts(getAllPosts(), tag, "").length;
+  const count = filterPosts(posts, tag, "").length;
   const plural = count === 1 ? "post" : "posts";
   return {
     // Layout appends " - Matthew Maynes"; this is the route-unique title.
@@ -52,14 +54,16 @@ export default async function TagPage({
   const tag = tagFromSlug(slug, deriveTags(posts));
   if (!tag) notFound();
 
-  // Posts carrying this tag, already newest-first from getAllPosts.
-  const rows = toPostRows(filterPosts(posts, tag, ""), NOW_MS);
+  // Posts carrying this tag, already newest-first from getAllPosts. The "New"
+  // badge slug is derived over ALL posts (not this tag's subset), so it is the
+  // same global badge shown on /blog - a post is never "New" only tag-locally.
+  const rows = toPostRows(filterPosts(posts, tag, ""), newPostSlug(posts, NOW_MS, 30));
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
       <Link
         href="/blog"
-        className="text-caption text-text-subtle hover:text-primary"
+        className={`inline-block rounded-sm text-caption text-text-subtle hover:text-primary ${RING}`}
       >
         &larr; All posts
       </Link>

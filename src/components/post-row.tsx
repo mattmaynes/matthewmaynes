@@ -1,29 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { StaticImageData } from "next/image";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
-import { formatPostDate } from "@/lib/blog-view";
+import { formatPostDate, type PostRowData } from "@/lib/blog-view";
 
-/** A cover image passed down from the server: a static import (carrying its
- * blurDataURL) plus alt text. Resolved on the server via `getBlogImage` so a
- * client caller never imports `blog-images.ts` (learnings 0005). */
-export type Cover = StaticImageData & { alt: string };
-
-/** A serializable post summary. Callers resolve the cover and compute `isNew`
- * (newest AND recent) on the server so this renders straight from the props. */
-export type PostRowData = {
-  slug: string;
-  title: string;
-  excerpt: string;
-  date: string;
-  tags: string[];
-  cover?: Cover;
-  pixelated: boolean;
-  isNew: boolean;
-  /** Estimated reading time in whole minutes (server-computed, spec 0015). */
-  minutes: number;
-};
+// The row's data contract lives in the fs-free `blog-view` core; re-exported
+// here so component-side callers can keep importing it from the component.
+export type { Cover, PostRowData } from "@/lib/blog-view";
 
 /**
  * One post row in a listing: cover thumbnail, title link, date + reading time,

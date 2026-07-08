@@ -538,3 +538,31 @@ Capture lessons as you go.
   neighbour.** The OOM took the whole VM (and would have taken rogueoak with it), because nothing
   bounded either stack. A generous limit well above real usage never trips in normal operation but
   contains a leak/spike to the offending stack.
+
+## Blog tag pages (spec 0027, feedback 0016)
+
+- **A whole-corpus "global" fact must be computed once over the full set and passed down, never
+  recomputed inside a mapper from whatever subset it is handed.** `toPostRows` derived the "New"
+  badge (`newPostSlug`) from its `posts` argument. The listing passed all posts, so the badge was
+  global; the tag page passed the *filtered* subset, so a post that was newest **within a tag** and
+  recent rendered "New" on that tag page while carrying no badge on `/blog` - contradicting the
+  code's own documented invariant. The bug was invisible on the one caller (the listing) that
+  happened to pass the full set. Fix: `toPostRows(posts, newSlug)` takes the badge slug as an
+  argument; both callers compute it over `getAllPosts()` and pass it. When one helper serves both a
+  full-list and a filtered-list caller, hoist any whole-corpus fact to the callers.
+- **A behaviour change needs a guard that can fail - again (cf. learnings 0005/0009).** Linkifying
+  the post-page tag pills (acceptance #4) had no test; the tag-page smoke tests hit `/blog/tags/*`
+  directly, so reverting the pills to inert `<li>` shipped green. The smoke test now fetches a post
+  carrying the archive's tag and asserts `href="/blog/tags/<slug>"`. The recurring lesson: a new
+  link/behaviour is only covered by a test that fetches the surface that carries it and asserts the
+  behaviour, not by exercising the destination.
+- **A `src/lib` module must not import a type up from `src/components`.** The row's data contract
+  (`PostRowData`) first lived in `src/components/post-row.tsx` and `src/lib/post-summaries.ts`
+  imported it - inverting the documented components -> lib layering (type-only, so no runtime
+  coupling, but the wrong direction). The data contract belongs in the fs-free `blog-view.ts` core
+  beside `deriveTags`/`filterPosts`; `post-row.tsx` re-exports it so component callers are unchanged.
+- **A hook-free presentational component can be shared by a Server Component and a `"use client"`
+  island** as long as it imports only client-safe modules. `PostRow` (cover thumbnail + title link +
+  tags) renders in both the tag archive (server) and the listing island (client) with one markup,
+  because it pulls `next/image`/`next/link`/`formatPostDate` (fs-free) and never `blog-images.ts` or
+  `node:fs` - covers are resolved server-side and passed as data (learnings 0005 still holds).

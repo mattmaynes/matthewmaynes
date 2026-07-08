@@ -836,6 +836,44 @@ test("a tag archive lists its posts with a route-unique title; unknown tag 404s"
     `expected the "${tag}" archive to list "${withTag.title}"`,
   );
 
+  // The archive renders a subscribe form (spec 0027 wires source="blog_tag"); its
+  // unique subtext proves the form is on this surface, so dropping it reddens.
+  assert.ok(
+    html.includes("New posts in your inbox"),
+    "expected the tag page to render the subscribe form",
+  );
+
+  // Acceptance #4: the post-page tag pills LINK to their archive. Guarded here
+  // because reverting the three pills to inert <li> would otherwise ship green
+  // (the recurring "a behaviour change needs a guard that can fail" lesson,
+  // learnings 0005/0009). Fetch a post carrying this tag and assert the link.
+  const postHtml = await (await fetch(BASE + `/blog/${withTag.slug}`)).text();
+  assert.ok(
+    postHtml.includes(`href="/blog/tags/${slug}"`),
+    `expected "${withTag.slug}" to link its "${tag}" pill to /blog/tags/${slug}`,
+  );
+
+  // If any tag carries 2+ posts, its archive lists them newest-first (the page
+  // renders filterPosts over the newest-first getAllPosts, which preserves
+  // order). A no-op while every tag has one post, but it activates as the blog
+  // grows; the pure ordering itself is covered by the blog-view unit tests.
+  const multiTag = tags.find(
+    (t) => posts.filter((p) => p.tags.includes(t)).length >= 2,
+  );
+  if (multiTag) {
+    const multiHtml = await (
+      await fetch(BASE + `/blog/tags/${tagSlug(multiTag)}`)
+    ).text();
+    const inTag = posts.filter((p) => p.tags.includes(multiTag)); // newest-first
+    const positions = inTag.map((p) => multiHtml.indexOf(p.title));
+    for (let i = 1; i < positions.length; i++) {
+      assert.ok(
+        positions[i - 1] >= 0 && positions[i - 1] < positions[i],
+        `expected "${multiTag}" archive newest-first: "${inTag[i - 1].title}" before "${inTag[i].title}"`,
+      );
+    }
+  }
+
   // An unknown tag slug is a clean 404 (dynamicParams=false), never a blank render.
   const missing = await fetch(BASE + "/blog/tags/definitely-not-a-real-tag");
   assert.equal(missing.status, 404, "expected 404 for an unknown tag slug");

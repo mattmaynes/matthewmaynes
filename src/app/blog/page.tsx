@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAllPosts } from "@/lib/blog";
+import { getAllPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
@@ -29,10 +29,12 @@ const NOW_MS = Date.now();
 export default function BlogPage() {
   const posts = getAllPosts();
 
-  // Resolve covers on the SERVER and compute the "New" badge once (newest post
-  // within the 30-day window), baked into the SSG HTML - shared with the tag
-  // archive via `toPostRows` so both surfaces render identical rows.
-  const listPosts = toPostRows(posts, NOW_MS);
+  // Resolve covers on the SERVER and compute the "New" badge once (the newest
+  // post within the 30-day window), baked into the SSG HTML - shared with the
+  // tag archive via `toPostRows` so both surfaces render identical rows. The
+  // badge slug is derived over ALL posts, so it is global (same on the tag page).
+  const newSlug = newPostSlug(posts, NOW_MS, 30);
+  const listPosts = toPostRows(posts, newSlug);
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">

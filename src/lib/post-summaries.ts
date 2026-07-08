@@ -1,25 +1,25 @@
 /**
  * Server-only mapping from parsed posts to the serializable `PostRowData` the
  * listing island and the tag archive both render. Resolves each cover on the
- * SERVER (via `getBlogImage`, a static import carrying its blurDataURL) and
- * computes the "New" badge once, so neither surface imports `blog-images.ts`
- * across a client boundary (learnings 0005) and no `Date.now()` runs during
- * render - the caller injects `nowMs` from a module-scope const (learnings 0012).
+ * SERVER (via `getBlogImage`, a static import carrying its blurDataURL) so
+ * neither surface imports `blog-images.ts` across a client boundary
+ * (learnings 0005).
  */
-import { newPostSlug, readingMinutes, type Post } from "@/lib/blog";
+import { readingMinutes, type Post } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
-import type { PostRowData } from "@/components/post-row";
+import type { PostRowData } from "@/lib/blog-view";
 
 /**
- * Map posts (already newest-first) to row summaries. The globally-newest post
- * within the recency window carries the "New" badge - the same badge on the
- * listing and on a tag page, so a fresh post reads as new wherever it appears.
+ * Map posts to row summaries, tagging the one post whose slug is `newSlug` as
+ * "New". `newSlug` is computed by the caller over the FULL post set (not a
+ * per-tag subset), so the badge is global: a post reads "New" on the listing
+ * and on its tag page identically, or on neither - never tag-locally (review of
+ * PR #91). Pass `newSlug = null` to badge nothing.
  *
- * @param posts - posts to render, newest-first
- * @param nowMs - reference time for the "New" badge (injected; module-scope const)
+ * @param posts - the posts to render (any subset), already newest-first
+ * @param newSlug - the globally-newest recent post's slug, or null
  */
-export function toPostRows(posts: Post[], nowMs: number): PostRowData[] {
-  const newSlug = newPostSlug(posts, nowMs, 30);
+export function toPostRows(posts: Post[], newSlug: string | null): PostRowData[] {
   return posts.map((post) => {
     const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
     return {

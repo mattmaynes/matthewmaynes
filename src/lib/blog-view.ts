@@ -5,9 +5,34 @@
  * island cannot import `blog.ts` because its import graph pulls in `node:fs`.
  * Kept fs-free so `node --test` covers the filter/tag logic without a server.
  */
+import type { StaticImageData } from "next/image";
 
 /** The post shape `filterPosts` narrows over: only the searchable fields. */
 export type FilterablePost = { title: string; excerpt: string; tags: string[] };
+
+/** A cover image passed down from the server: a static import (carrying its
+ * blurDataURL) plus alt text. Resolved server-side via `getBlogImage` so a
+ * client caller never imports `blog-images.ts` (learnings 0005). */
+export type Cover = StaticImageData & { alt: string };
+
+/** A serializable post summary rendered by `PostRow` on both the listing island
+ * and the tag archive. The server resolves the cover and computes `isNew` (the
+ * globally-newest post within the recency window) so the row renders straight
+ * from props. The row's data contract lives here in the fs-free view core (not
+ * in the component) so `src/lib` consumers like `post-summaries` do not import
+ * up into `src/components`. */
+export type PostRowData = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  tags: string[];
+  cover?: Cover;
+  pixelated: boolean;
+  isNew: boolean;
+  /** Estimated reading time in whole minutes (server-computed, spec 0015). */
+  minutes: number;
+};
 
 /**
  * Format a YYYY-MM-DD date as "Month D, YYYY" (e.g. "June 28, 2026"). Parsed as
