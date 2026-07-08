@@ -21,6 +21,8 @@ import {
   deriveTags,
   resolveActiveTag,
   filterPosts,
+  tagSlug,
+  tagFromSlug,
 } from "../src/lib/blog-view.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -296,6 +298,31 @@ test("resolveActiveTag maps ?tag= to a known tag case-insensitively, else null",
   assert.equal(resolveActiveTag("Life", tags), "Life");
   assert.equal(resolveActiveTag("", tags), null); // absent -> All
   assert.equal(resolveActiveTag("nope", tags), null); // unknown -> All
+});
+
+test("tagSlug slugifies a tag with the same rules as a post slug", () => {
+  assert.equal(tagSlug("Imposter Syndrome"), "imposter-syndrome");
+  assert.equal(tagSlug("Objective-C"), "objective-c");
+  assert.equal(tagSlug("AI-Assisted Development"), "ai-assisted-development");
+  // Same slugifier as post filenames (blog.ts re-exports it): so a tag URL is
+  // built exactly like a post URL.
+  assert.equal(tagSlug("Shipping Your First App"), slugify("Shipping Your First App"));
+});
+
+test("tagFromSlug round-trips a known tag, else null (spec 0027)", () => {
+  const tags = ["Imposter Syndrome", "First Software Job", "Objective-C"];
+  // slug -> original-cased tag.
+  assert.equal(tagFromSlug("imposter-syndrome", tags), "Imposter Syndrome");
+  assert.equal(tagFromSlug("objective-c", tags), "Objective-C");
+  // An odd-cased inbound value is re-slugified, so it still resolves.
+  assert.equal(tagFromSlug("Imposter-Syndrome", tags), "Imposter Syndrome");
+  // Unknown / empty -> null (drives the tag page's 404).
+  assert.equal(tagFromSlug("nope", tags), null);
+  assert.equal(tagFromSlug("", tags), null);
+  // Every tag round-trips through its own slug.
+  for (const t of tags) {
+    assert.equal(tagFromSlug(tagSlug(t), tags), t, `expected "${t}" to round-trip`);
+  }
 });
 
 test("filterPosts filters by tag and search, composed, non-mutating", () => {

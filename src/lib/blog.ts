@@ -12,7 +12,12 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { formatPostDate } from "./blog-view.ts";
+import { formatPostDate, slugify } from "./blog-view.ts";
+
+// Re-export the shared slugifier so existing `@/lib/blog` importers (and the
+// unit tests) keep resolving `slugify` here, while there is a single
+// implementation, in the fs-free `blog-view` core.
+export { slugify };
 
 /** A blog post: frontmatter fields plus the raw MDX body (compiled on the page). */
 export type Post = {
@@ -193,18 +198,6 @@ export function newPostSlug<T extends { slug: string; date: string }>(
   if (published.length === 0) return null;
   const newest = sortPostsNewestFirst(published)[0];
   return isRecent(newest.date, nowMs, days) ? newest.slug : null;
-}
-
-/**
- * Slugify a string: lowercase, non-alphanumerics collapse to a single dash,
- * trim leading/trailing dashes. e.g. "I Picked the Wrong Elective" ->
- * "i-picked-the-wrong-elective".
- */
-export function slugify(s: string): string {
-  return String(s)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 /** Read + parse one .mdx file into a post record (frontmatter only, plus body). */

@@ -5,9 +5,34 @@
  * island cannot import `blog.ts` because its import graph pulls in `node:fs`.
  * Kept fs-free so `node --test` covers the filter/tag logic without a server.
  */
+import type { StaticImageData } from "next/image";
 
 /** The post shape `filterPosts` narrows over: only the searchable fields. */
 export type FilterablePost = { title: string; excerpt: string; tags: string[] };
+
+/** A cover image passed down from the server: a static import (carrying its
+ * blurDataURL) plus alt text. Resolved server-side via `getBlogImage` so a
+ * client caller never imports `blog-images.ts` (learnings 0005). */
+export type Cover = StaticImageData & { alt: string };
+
+/** A serializable post summary rendered by `PostRow` on both the listing island
+ * and the tag archive. The server resolves the cover and computes `isNew` (the
+ * globally-newest post within the recency window) so the row renders straight
+ * from props. The row's data contract lives here in the fs-free view core (not
+ * in the component) so `src/lib` consumers like `post-summaries` do not import
+ * up into `src/components`. */
+export type PostRowData = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  tags: string[];
+  cover?: Cover;
+  pixelated: boolean;
+  isNew: boolean;
+  /** Estimated reading time in whole minutes (server-computed, spec 0015). */
+  minutes: number;
+};
 
 /**
  * Format a YYYY-MM-DD date as "Month D, YYYY" (e.g. "June 28, 2026"). Parsed as
@@ -77,4 +102,35 @@ export function filterPosts<T extends FilterablePost>(
     }
     return true;
   });
+}
+
+/**
+ * Slugify a string: lowercase, non-alphanumerics collapse to a single dash,
+ * trim leading/trailing dashes. e.g. "I Picked the Wrong Elective" ->
+ * "i-picked-the-wrong-elective". The one slugifier for the whole blog - post
+ * filenames (via `blog.ts`, which re-exports this) and tag URLs share it, so a
+ * tag page's slug always matches how a post's slug is derived.
+ */
+export function slugify(s: string): string {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** The URL slug for a tag (same rules as a post slug). */
+export function tagSlug(tag: string): string {
+  return slugify(tag);
+}
+
+/**
+ * Resolve a tag slug back to its original-cased tag, or null if no known tag
+ * slugifies to it. `slug` is re-slugified first so an odd-cased inbound value
+ * still matches (idempotent). First match wins - two distinct tags that
+ * slugify identically (e.g. "A.I." vs "AI") is not expected at this scale, and
+ * `deriveTags` already dedupes tags case-insensitively.
+ */
+export function tagFromSlug(slug: string, tags: string[]): string | null {
+  const s = slugify(slug);
+  return tags.find((t) => tagSlug(t) === s) ?? null;
 }
