@@ -32,6 +32,13 @@ export function Footer() {
           </Link>
           {" "}&middot;{" "}
           <Link
+            href="/ai-policy"
+            className="underline-offset-4 hover:text-text hover:underline"
+          >
+            AI Policy
+          </Link>
+          {" "}&middot;{" "}
+          <Link
             href="/subscribe"
             className="underline-offset-4 hover:text-text hover:underline"
           >

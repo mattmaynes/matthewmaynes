@@ -224,6 +224,20 @@ const routes = [
     absent: ["Placeholder"],
   },
   {
+    // The AI transparency page (spec 0030): footer utility like /privacy, text-only.
+    path: "/ai-policy",
+    // Footer link + <title> read "AI Policy"; the on-page <h1> is warmer.
+    title: "AI Policy - Matthew Maynes",
+    // Body-unique markers prove the real copy rendered (not a blank shell): the
+    // warmer heading and a distinctive phrase from each of the two core sections.
+    contains: [
+      "How I Use AI",
+      "an editor and a sounding board, not an author",
+      "AI does not invent them",
+    ],
+    absent: ["Placeholder"],
+  },
+  {
     path: "/contact",
     title: "Contact - Matthew Maynes",
     // Assert form-unique copy (the textarea placeholder) AND the social-row

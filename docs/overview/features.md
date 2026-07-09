@@ -17,6 +17,7 @@ pending) · 📋 planned.
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 | `/subscribe` | ✅ | A focused, shareable mailing-list landing page (spec 0020): a heading + short invitation, the subscribe form with all three fields (email, name, button) shown up front, then a "Latest post" card (newest post) and a "See all posts" button to `/blog`. **Not** in the top nav (the shared nav/footer still render), but it **is** in the sitemap so the URL is crawlable when shared. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017) documenting what the site actually does: PostHog analytics with masked-input session replay, the Resend-relayed contact form, transient IP use, self-hosted assets, no tracking cookies/ads/database. Cookieless legitimate-interest basis (no consent banner). Linked from the footer, not the top nav or sitemap. Lists a dedicated public `privacy@` address for data requests - the only email on the site. |
+| `/ai-policy` | ✅ | Plain-language AI transparency page (spec 0030): first-person prose stating that AI is used only as an editor and sounding board (structure, wording, catching mistakes) while the ideas, opinions, and experiences stay the author's. Warmer `<h1>` ("How I Use AI") with an "AI Policy" `<title>`/footer label. Principle-based, names no tools. Footer utility like `/privacy` - not in the top nav or sitemap. |
 
 ## Navigation
 
@@ -27,7 +28,8 @@ pending) · 📋 planned.
   `/subscribe` (spec 0020) is likewise kept out of the nav, but - unlike `/projects` - it *is* in
   the sitemap, since it is a landing page meant to be shared and discovered.
 - Footer: all five social links (LinkedIn, GitHub, X, Facebook, Instagram) as icon-only Canopy
-  ghost-icon Buttons, plus the copyright and a `Privacy` link to `/privacy` (spec 0017). Icons come
+  ghost-icon Buttons, plus the copyright and `Privacy` (`/privacy`, spec 0017) and `AI Policy` (`/ai-policy`, spec 0030)
+  links. Icons come
   from `@rogueoak/icons` (the curated Canopy set), as does the header theme toggle's sun/moon - the
   site keeps no hand-rolled icon SVGs (spec 0007). (The contact page shows the same profiles instead
   as a labelled column - see below.)
