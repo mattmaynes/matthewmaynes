@@ -44,6 +44,9 @@ export type Project = {
   tagline: string;
   /** Cover image filename (a key into project-images.ts), if any. */
   coverKey?: string;
+  /** "Before" image filename for a before/after detail stub, if any (the
+   *  unlinked /projects/[slug] page reads it). */
+  beforeCoverKey?: string;
   /** Free-form display badges (may be empty). */
   tags: string[];
   /** Manual sort key within a section; unset sorts to the bottom. */

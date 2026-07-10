@@ -31,6 +31,7 @@ export type ProjectFrontmatter = {
   category: ProjectCategory;
   tagline: string;
   cover?: string;
+  beforeCover?: string;
   tags: string[];
   order?: number;
   href?: string;
@@ -80,7 +81,9 @@ export function parseProjectFrontmatter(raw: string): {
       if (Number.isFinite(n)) data.order = n;
     } else if (key === "featured") {
       data.featured = /^true$/i.test(stripQuotes(value));
-    } else if (["title", "category", "tagline", "cover", "href"].includes(key)) {
+    } else if (
+      ["title", "category", "tagline", "cover", "beforeCover", "href"].includes(key)
+    ) {
       data[key] = stripQuotes(value);
     }
   }
@@ -119,6 +122,7 @@ function readProject(filename: string): Project {
     category: data.category,
     tagline: data.tagline,
     coverKey: data.cover,
+    beforeCoverKey: data.beforeCover,
     tags: data.tags,
     order: data.order,
     href: data.href,

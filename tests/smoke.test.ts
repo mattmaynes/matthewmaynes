@@ -700,6 +700,21 @@ test("a project with an external URL links out in a new tab", async () => {
   );
 });
 
+test("a before/after project has an unlinked detail stub with both images", async () => {
+  // Back Deck carries a beforeCover, so it gets a stub page showing before + after.
+  const html = await (await fetch(BASE + "/projects/back-deck")).text();
+  assert.ok(html.includes("Back Deck"), "expected the project title on the detail stub");
+  assert.match(html, />Before</, "expected a Before label");
+  assert.match(html, />After</, "expected an After label");
+  assert.ok(html.includes("back-deck-before"), "expected the before image asset");
+  // The stub is intentionally NOT linked from the grid (direct-URL only).
+  const grid = await (await fetch(BASE + "/projects")).text();
+  assert.ok(
+    !grid.includes('href="/projects/back-deck"'),
+    "the grid must not link to the detail stub",
+  );
+});
+
 test("home page exposes the sharing + SEO metadata", async () => {
   const html = await (await fetch(BASE + "/")).text();
 
