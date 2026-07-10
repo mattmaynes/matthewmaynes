@@ -16,7 +16,7 @@
  */
 import type { StaticImageData } from "next/image";
 import eagleSnap from "../../public/images/eagle-snap.png";
-import headshot from "../../public/images/headshot.jpg";
+import homePreview from "../../public/images/projects/matthewmaynes-home.jpg";
 import transformer from "../../public/images/projects/analyst-table-transformer.png";
 import streamProcessor from "../../public/images/projects/kx-insights-stream-processor.png";
 import rise from "../../public/images/projects/rise.webp";
@@ -112,7 +112,10 @@ export const projectImages = {
     riseBefore,
     "The Constant Contact marketing dashboard before the Rise redesign.",
   ),
-  "headshot.jpg": raster(headshot, "Matthew Maynes."),
+  "matthewmaynes-home.jpg": raster(
+    homePreview,
+    "The matthewmaynes.com home page: a hero with a headshot over a rural Ontario landscape.",
+  ),
   "spectra-logo.svg": logo("/images/projects/spectra-logo.svg", "Spectra logo."),
   "trellis-logo.svg": logo("/images/projects/trellis-logo.svg", "Trellis logo."),
   "canopy-logo.svg": logo("/images/projects/canopy-logo.svg", "Canopy logo."),
