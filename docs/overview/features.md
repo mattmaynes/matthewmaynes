@@ -188,3 +188,28 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 - Spam guards are shared with the contact form: the honeypot, same-origin, and per-IP rate-limit
   helpers were extracted into `src/lib/http-guards.js`, which both `/v1/contact` and `/v1/subscribe`
   import. A CAPTCHA/Turnstile remains the follow-up if bots get through.
+
+## Projects (spec 0031)
+
+- **`/projects` is a curated showcase** of three fixed sections in a set order - **Work ->
+  Tinkering -> Making** (professional-to-personal). Each section is a heading over a responsive grid
+  (`sm:grid-cols-2 lg:grid-cols-3`) of uniform cards; an empty category renders nothing. The page is
+  a Server Component, fully static in the SSG HTML (no client island, no filter - the three sections
+  are the structure).
+- **A card** shows a cover, title, one-line tagline, and tag badges (Canopy `Card` + `Badge`). Cards
+  are uniform: photo/screenshot covers render `object-cover`; the first-party rogueoak logo SVGs
+  render `object-contain` on a neutral panel (served `unoptimized`, so no `dangerouslyAllowSVG`).
+  With an `href` the whole card is an external link (new tab, arrow affordance, sr-only new-tab hint);
+  without one it is a plain card (a Phase 2 detail page will make it link internally instead).
+- **Order is manual** (`order` frontmatter, ascending, unset last) so a section is curated rather
+  than a date feed. `/projects` is in `nav` (header + sitemap) and has a **Projects card** in the
+  home "Around the site" grid (Star icon).
+- **Content is a lightweight carve-out** (like blog posts, `AGENTS.md`): a new
+  `content/projects/<slug>.mdx` adds a card on the next build (a brand-new raster cover also needs a
+  one-line static import in `src/lib/project-images.ts`, the single pipeline touch, mirroring
+  `blog-images.ts`) - spell-checked Canadian English, no PII (covers are EXIF-scrubbed;
+  **location no finer than region**, so builds are named by feature like "Back Deck", never by town),
+  shipped via an approved PR. The pipeline/tooling under `src/` stays a full-Spectra feature.
+- **Phase 2 (not yet built):** per-project detail pages (`/projects/[slug]`) with a story, an image
+  gallery (the "before/after" pairs are staged for this), tag badges, and related-post/project
+  cross-links. The frontmatter and card already reserve for it, so it is additive.

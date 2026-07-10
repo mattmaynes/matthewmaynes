@@ -5,6 +5,7 @@ import {
   AboutIcon,
   BlogIcon,
   ContactIcon,
+  ProjectsIcon,
   ResumeIcon,
 } from "@/components/nav-icons";
 import { PostRow } from "@/components/post-row";
@@ -115,10 +116,11 @@ export default function HomePage() {
 
         <h2 className="mt-16 text-h2 font-semibold text-text">Around the site</h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Order mirrors the nav (About, Resume, Blog, Contact); Home is omitted. */}
+          {/* Order mirrors the nav (About, Resume, Projects, Blog, Contact); Home is omitted. */}
           {[
             { href: "/about", title: "About", note: "The whole person, not just the resume.", Icon: AboutIcon },
             { href: "/resume", title: "Resume", note: "Career history and what I do.", Icon: ResumeIcon },
+            { href: "/projects", title: "Projects", note: "The things I have built and shipped.", Icon: ProjectsIcon },
             { href: "/blog", title: "Blog", note: "Engineering, leadership, nature, life.", Icon: BlogIcon },
             { href: "/contact", title: "Contact", note: "Say hello - a note lands in my inbox.", Icon: ContactIcon },
           ].map(({ href, title, note, Icon }) => (
