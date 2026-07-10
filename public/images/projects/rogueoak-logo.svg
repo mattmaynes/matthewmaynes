@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 200" width="560" height="200" role="img" aria-label="rogueoak — quietly rogue, seriously solid">
+  <defs>
+    <linearGradient id="ro-spark" gradientUnits="userSpaceOnUse" x1="44" y1="144" x2="116" y2="66">
+      <stop offset="0"    stop-color="#d2a463"/>
+      <stop offset="0.55" stop-color="#9bbf72"/>
+      <stop offset="1"    stop-color="#5fb98a"/>
+    </linearGradient>
+    <linearGradient id="ro-sparkH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0"   stop-color="#d2a463"/>
+      <stop offset="1"   stop-color="#5fb98a"/>
+    </linearGradient>
+    <radialGradient id="ro-bg" gradientUnits="userSpaceOnUse" cx="80" cy="98" r="430">
+      <stop offset="0"   stop-color="#1a2533"/>
+      <stop offset="1"   stop-color="#0a0d13"/>
+    </radialGradient>
+    <radialGradient id="ro-glow" gradientUnits="userSpaceOnUse" cx="80" cy="100" r="92">
+      <stop offset="0"   stop-color="#5fb98a" stop-opacity="0.22"/>
+      <stop offset="1"   stop-color="#5fb98a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- panel -->
+  <rect x="0.5" y="0.5" width="559" height="199" rx="22" fill="url(#ro-bg)" stroke="#1b2129"/>
+
+  <!-- glow behind the mark -->
+  <circle cx="80" cy="100" r="80" fill="url(#ro-glow)"/>
+
+  <!-- oak as a branching node-graph -->
+  <g stroke-linecap="round" fill="none" stroke="url(#ro-spark)">
+    <!-- glow pass -->
+    <g stroke-width="7" opacity="0.16">
+      <path d="M80 144 L80 116"/>
+      <path d="M80 116 L56 96"/>  <path d="M80 116 L104 96"/>  <path d="M80 116 L80 82"/>
+      <path d="M56 96 L44 74"/>   <path d="M56 96 L66 80"/>
+      <path d="M104 96 L116 74"/> <path d="M104 96 L94 80"/>
+      <path d="M80 82 L70 66"/>   <path d="M80 82 L90 66"/>
+    </g>
+    <!-- crisp pass -->
+    <g stroke-width="2.4">
+      <path d="M80 144 L80 116"/>
+      <path d="M80 116 L56 96"/>  <path d="M80 116 L104 96"/>  <path d="M80 116 L80 82"/>
+      <path d="M56 96 L44 74"/>   <path d="M56 96 L66 80"/>
+      <path d="M104 96 L116 74"/> <path d="M104 96 L94 80"/>
+      <path d="M80 82 L70 66"/>   <path d="M80 82 L90 66"/>
+    </g>
+  </g>
+
+  <!-- nodes -->
+  <g>
+    <g fill="#5fb98a" opacity="0.18">
+      <circle cx="44" cy="74" r="6"/>  <circle cx="66" cy="80" r="6"/>
+      <circle cx="116" cy="74" r="6"/> <circle cx="94" cy="80" r="6"/>
+      <circle cx="70" cy="66" r="6"/>  <circle cx="90" cy="66" r="6"/>
+      <circle cx="80" cy="144" r="7"/>
+    </g>
+    <g fill="#eaf1f4">
+      <circle cx="44" cy="74" r="3"/>  <circle cx="66" cy="80" r="3"/>
+      <circle cx="116" cy="74" r="3"/> <circle cx="94" cy="80" r="3"/>
+      <circle cx="70" cy="66" r="3"/>  <circle cx="90" cy="66" r="3"/>
+    </g>
+    <g fill="#c9d2da">
+      <circle cx="80" cy="116" r="2.6"/> <circle cx="56" cy="96" r="2.6"/>
+      <circle cx="104" cy="96" r="2.6"/> <circle cx="80" cy="82" r="2.6"/>
+    </g>
+    <circle cx="80" cy="144" r="3.4" fill="#d2a463"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="168" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="58" font-weight="700" letter-spacing="-1.5" fill="#eaf1f4">rogue<tspan fill="url(#ro-sparkH)">oak</tspan></text>
+
+  <!-- rule + tagline -->
+  <rect x="170" y="118" width="250" height="2.2" rx="1.1" fill="url(#ro-sparkH)" opacity="0.8"/>
+  <text x="171" y="144" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="600" letter-spacing="2.4" fill="#7d8896">QUIETLY ROGUE.&#160;&#160;SERIOUSLY SOLID.</text>
+</svg>

@@ -1,6 +1,14 @@
 "use client";
 
-import { FileText, Mail, Newspaper, User, type IconBaseProps } from "@rogueoak/icons";
+import {
+  ExternalLink,
+  FileText,
+  Mail,
+  Newspaper,
+  Star,
+  User,
+  type IconBaseProps,
+} from "@rogueoak/icons";
 
 /**
  * Decorative glyphs for the home "Around the site" cards - one per nav
@@ -24,4 +32,18 @@ export function BlogIcon(props: IconBaseProps) {
 
 export function ContactIcon(props: IconBaseProps) {
   return <Mail aria-hidden {...props} />;
+}
+
+export function ProjectsIcon(props: IconBaseProps) {
+  return <Star aria-hidden {...props} />;
+}
+
+/**
+ * The "opens in a new tab" affordance on an external-linking project card. Lives
+ * here (not inline in the card) because the icons barrel needs the `"use client"`
+ * boundary before a Server Component can render it. Decorative (`aria-hidden`):
+ * the card's own sr-only "(opens in a new tab)" carries the meaning to a reader.
+ */
+export function ExternalLinkIcon(props: IconBaseProps) {
+  return <ExternalLink aria-hidden {...props} />;
 }
