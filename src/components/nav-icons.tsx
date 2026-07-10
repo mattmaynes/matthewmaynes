@@ -41,9 +41,9 @@ export function ProjectsIcon(props: IconBaseProps) {
 /**
  * The "opens in a new tab" affordance on an external-linking project card. Lives
  * here (not inline in the card) because the icons barrel needs the `"use client"`
- * boundary before a Server Component can render it. Not `aria-hidden`: it carries
- * a title so the external-link meaning is announced.
+ * boundary before a Server Component can render it. Decorative (`aria-hidden`):
+ * the card's own sr-only "(opens in a new tab)" carries the meaning to a reader.
  */
 export function ExternalLinkIcon(props: IconBaseProps) {
-  return <ExternalLink {...props} />;
+  return <ExternalLink aria-hidden {...props} />;
 }

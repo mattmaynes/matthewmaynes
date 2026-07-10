@@ -26,7 +26,7 @@ function CardBody({ project }: { project: ProjectCardData }) {
       {cover ? (
         <div
           className={`relative aspect-[16/10] w-full border-b border-border ${
-            cover.fit === "contain" ? "bg-muted" : ""
+            cover.fit === "contain" ? "bg-muted-raised" : ""
           }`}
         >
           <Image

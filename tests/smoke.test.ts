@@ -89,7 +89,7 @@ const routes = [
     hasBlur: true,
     // The three curated sections must render, with route-unique card titles that
     // prove real projects replaced the old stub (Work -> Tinkering -> Making).
-    contains: ["Work", "Tinkering", "Making", "Eagle SNAP", "Multi-Level Deck"],
+    contains: [">Work</h2>", ">Tinkering</h2>", ">Making</h2>", "Eagle SNAP", "Multi-Level Deck"],
     absent: ["Coming soon"],
   },
   {
@@ -681,6 +681,25 @@ async function assertIsImage(res, where) {
 // SEO + sharing surface (spec 0004). One fetch of the home page <head>, then
 // assertions on the social/discovery tags and the routes/assets they reference -
 // each asset is actually fetched, so a missing or broken file fails the suite.
+test("a project with an external URL links out in a new tab", async () => {
+  const html = await (await fetch(BASE + "/projects")).text();
+  // Rise links out to Constant Contact, so the whole card is an external anchor.
+  // This guards the entire `href` branch of ProjectCard (spec 0031, Outcome 3),
+  // which could otherwise silently regress to a plain card and stay green.
+  const anchor = html.match(/<a\b[^>]*href="https:\/\/constantcontact\.com"[^>]*>/);
+  assert.ok(anchor, "expected an external anchor to https://constantcontact.com on /projects");
+  assert.match(anchor[0], /target="_blank"/, "external card should open in a new tab");
+  assert.match(
+    anchor[0],
+    /rel="[^"]*noopener[^"]*noreferrer[^"]*"/,
+    "external card must set rel=noopener noreferrer",
+  );
+  assert.ok(
+    html.includes("(opens in a new tab)"),
+    "expected the sr-only new-tab hint on the external card",
+  );
+});
+
 test("home page exposes the sharing + SEO metadata", async () => {
   const html = await (await fetch(BASE + "/")).text();
 

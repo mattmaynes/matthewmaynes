@@ -28,8 +28,10 @@ This carve-out covers the post content only. The blog **pipeline and tooling** (
 
 Authoring or editing a **project** (content under `content/projects/`) is content, not a feature,
 so it does **not** follow the full Spectra protocol - no spec, no plan, no persona review. Adding a
-project is a new `content/projects/<slug>.mdx` file (plus its cover under
-`public/images/projects/`); a card appears on the next build with no code change. It still must:
+project is a new `content/projects/<slug>.mdx` file; a card appears on the next build. A brand-new
+raster cover also needs its one-line static import registered in `src/lib/project-images.ts` (the
+single pipeline touch, mirroring blog covers in `blog-images.ts`); reusing an existing cover key
+needs no code. It still must:
 
 - be spell-checked in **Canadian English** (colour, honour, but -ize: realize, organize, recognize);
 - follow the repo writing and formatting rules (`docs/rules/guidelines.md`: no long dashes);

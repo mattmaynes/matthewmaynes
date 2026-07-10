@@ -205,8 +205,9 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
   than a date feed. `/projects` is in `nav` (header + sitemap) and has a **Projects card** in the
   home "Around the site" grid (Star icon).
 - **Content is a lightweight carve-out** (like blog posts, `AGENTS.md`): a new
-  `content/projects/<slug>.mdx` (+ cover under `public/images/projects/`) adds a card on the next
-  build, no code change - spell-checked Canadian English, no PII (covers are EXIF-scrubbed;
+  `content/projects/<slug>.mdx` adds a card on the next build (a brand-new raster cover also needs a
+  one-line static import in `src/lib/project-images.ts`, the single pipeline touch, mirroring
+  `blog-images.ts`) - spell-checked Canadian English, no PII (covers are EXIF-scrubbed;
   **location no finer than region**, so builds are named by feature like "Back Deck", never by town),
   shipped via an approved PR. The pipeline/tooling under `src/` stays a full-Spectra feature.
 - **Phase 2 (not yet built):** per-project detail pages (`/projects/[slug]`) with a story, an image
