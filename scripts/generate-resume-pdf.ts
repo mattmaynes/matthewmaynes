@@ -32,11 +32,13 @@ const HASH_PATH = join(root, "public", "resume.pdf.hash");
 // Everything that determines what the PDF looks like. A change to any of these
 // means the committed PDF must be regenerated, so all are folded into the
 // freshness hash. This must stay complete: the page renders identity, region,
-// and social links from site.ts, so it is an input - omitting it lets the PDF
-// drift while --check stays green (review 0007).
+// and social links from src/lib/identity.ts, so it is an input - omitting it lets
+// the PDF drift while --check stays green (review 0007). Keyed on identity.ts, NOT
+// site.ts: the nav list and image map (also in site.ts) never reach the resume, so
+// hashing identity.ts alone avoids a spurious "stale PDF" on every nav/link edit.
 const INPUT_FILES = [
   "src/lib/resume.ts",
-  "src/lib/site.ts",
+  "src/lib/identity.ts",
   "src/app/resume/page.tsx",
   // Palette: the DTCG brand sources + the generated brand css they compile to, plus the print-only
   // companion. The generated file is the actual rendered palette; the sources are hashed too so a
