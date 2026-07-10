@@ -14,6 +14,7 @@ import zombieHordeTitle from "../../public/images/blog/zombie-horde-title.png";
 import eagleSnap from "../../public/images/blog/eagle-snap.png";
 import houseQuicksand from "../../public/images/blog/house-quicksand.png";
 import snowyRunway from "../../public/images/blog/snowy-runway.png";
+import analystTableTransformer from "../../public/images/blog/analyst-table-transformer.png";
 
 import type { SiteImage } from "./site";
 
@@ -41,6 +42,10 @@ export const blogImages = {
   "snowy-runway.png": {
     ...snowyRunway,
     alt: "An airliner on final approach to a snow-covered runway under a heavy grey sky, an airport terminal behind it.",
+  },
+  "analyst-table-transformer.png": {
+    ...analystTableTransformer,
+    alt: "The KX Analyst table transformer: a visual node graph of a data pipeline above a time-series table, with a menu of column transform operations open.",
   },
 } satisfies Record<string, BlogImage>;
 

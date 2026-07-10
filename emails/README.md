@@ -2,15 +2,21 @@
 
 Static, on-brand HTML emails. No build step - each file is standalone and ready to paste into the
 ESP. They share the same look (Harbor palette, harbor-dark header with the headshot avatar, social
-icon footer) by construction; if you restyle one, mirror the change in the other.
+icon footer) by construction; if you restyle one, mirror the change in the others.
 
-- **`welcome-email.html`** - the "thanks for subscribing" welcome. Personalize with
-  `[[FIRSTNAME OR "there"]]`; the ESP injects the compliance/unsubscribe footer.
-- **`blog-post-email.html`** - announce a new post. Fill in the placeholders below.
+The folder is organized in two parts:
+
+- **`templates/`** - the reusable starting points:
+  - **`welcome-email.html`** - the "thanks for subscribing" welcome. Personalize with
+    `[[FIRSTNAME OR "there"]]`; the ESP injects the compliance/unsubscribe footer.
+  - **`blog-post-email.html`** - announce a new post. Fill in the placeholders below.
+- **`blog/`** - the finished, filled-in announcement email for each published post (one file per
+  post, named to match the post slug).
 
 ## Announcing a post
 
-Open `blog-post-email.html` and replace every occurrence of each placeholder:
+Copy `templates/blog-post-email.html` to `blog/<post-slug>.html` and replace every occurrence of
+each placeholder:
 
 | Placeholder          | What to put                                                                 |
 | -------------------- | --------------------------------------------------------------------------- |

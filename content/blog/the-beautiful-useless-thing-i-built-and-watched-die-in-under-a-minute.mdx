@@ -1,0 +1,48 @@
+---
+title: The Beautiful, Useless Thing I Built and Watched Die in Under a Minute
+date: 2026-07-10
+tags: [Customer Empathy, Feedback Loops, Learning from Failure]
+excerpt: I spent two months building something in a silo, sure I understood the vision. The demo died in under a minute. What I actually got wrong was not the code. It was the customer.
+cover: analyst-table-transformer.png
+coverCaption: The visual ETL builder that eventually came out the other side of that very bad demo
+---
+
+Some demos die slowly. A long, polite silence while everyone in the room tries to find a kind way to say it isn't working. Mine wasn't one of those. **Mine died in under a minute, out loud, while I was still mid-sentence explaining a feature I was genuinely proud of.**
+
+I was in a small office in 2015, demoing something I'd spent two months building to the man who owned the company. About sixty seconds in, he'd already seen enough to know exactly what was wrong, and he wasted no time telling me. No careful wording, no softening it for my benefit. Just immediate, direct, this isn't it.
+
+Let me back up.
+
+## How I got there
+
+I'd joined Bedarra Research Labs as a co-op student while studying at Carleton University. I did two eight month terms there, the first in 2014 and the second in 2015, and by the end of that second term I'd signed on full time, officially starting in 2016. Partway through, the company was acquired by KX and became KX Labs.
+
+The product was Analyst, an integrated development environment for the programming language q and the database kdb+. If you haven't worked with kdb+, the short version is that it's built for one thing above all else: speed. It is used heavily in finance for applications where a query taking an extra hundred milliseconds gets treated as a small emergency.
+
+Our team was small, six developers total, and each of us owned a meaningful chunk of the application. My part was the importer, exporter, and table transformer, a visual, low code tool for building ETL pipelines without hand writing raw q. It's still documented [here](https://code.kx.com/analyst/transformer/) if you're curious what it eventually grew into.
+
+## Two months in a silo
+
+Here's where I made my first real professional mistake, and it was a good one.
+
+**I built the first version of the transformer entirely on my own, with only some direction from our resident designer, no customer feedback along the way.** I was confident I understood what the tool needed to be. The vision was clear in my head, so I spent two months quietly building toward it. When it was finished, I set up a demo for the owner, fully expecting a good reaction.
+
+I did not get a good reaction, and I did not get it slowly.
+
+It was the fastest, most direct negative feedback I had received up to that point in my life, and it wasn't because the tool looked bad. It looked pretty good. The problem was that it didn't do the one thing it needed to do. I had built for functionality, for a clean and capable interface, and treated speed as something I'd circle back to eventually. In a product whose entire reason for existing was speed, that's not a small oversight. **That's building a very polished car with no engine.**
+
+## The second miss
+
+The second miss stung a bit more, because it meant I hadn't just gotten the execution wrong, I'd misread the users themselves. I'd designed the streaming query logic to hand control over to the processor, letting it make the harder decisions automatically. My thinking was that people would want less to manage and more handled for them. It turned out the opposite was true. The people using this tool live and breathe performance tuning. They didn't want the system making decisions on their behalf. **They wanted every lever and every dial available, because they were the ones who actually knew how to squeeze the last drop of performance out of the system.**
+
+So two months of quiet, confident work had produced, functionally, **a beautiful mess**.
+
+## Back to the drawing board
+
+I won't pretend that was a fun week. But I picked myself back up, went back to the drawing board, and changed how I worked, not just what I was building. **This time, the tool was demoable at almost any point along the way, and I made a habit of actively going out and getting feedback instead of saving it all for a big reveal.** It felt slower in the moment and turned out to be faster in every way that mattered.
+
+The result was a genuinely better piece of software, one that actually solved the problem it was meant to solve, instead of the problem I had quietly imagined on its behalf.
+
+## What it actually taught me
+
+Looking back, I don't think the lesson here is simply "get feedback," although sure, get feedback. **The real lesson is that understanding the vision isn't the same as understanding the customer.** I was so sure I had the first one locked down that I skipped the second one entirely, and no amount of confidence in my own read of the product was ever going to make up for that gap. It took two very good, very wasted months to teach me that, and I'd argue it was worth every awkward minute of that demo.
