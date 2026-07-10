@@ -24,6 +24,24 @@ must:
 This carve-out covers the post content only. The blog **pipeline and tooling** (anything under
 `src/`, dependencies, config) is a feature and follows the full Spectra protocol.
 
+## Project content - lightweight process
+
+Authoring or editing a **project** (content under `content/projects/`) is content, not a feature,
+so it does **not** follow the full Spectra protocol - no spec, no plan, no persona review. Adding a
+project is a new `content/projects/<slug>.mdx` file (plus its cover under
+`public/images/projects/`); a card appears on the next build with no code change. It still must:
+
+- be spell-checked in **Canadian English** (colour, honour, but -ize: realize, organize, recognize);
+- follow the repo writing and formatting rules (`docs/rules/guidelines.md`: no long dashes);
+- keep the public-repo rule above (no PII; **location no finer than region** - e.g. name builds
+  by feature like "Back Deck", never by town);
+- stay **prose plus the known components only** (the body is compiled MDX, a code-injection
+  surface, so no arbitrary JSX, `<script>`, raw HTML, `import`s, or JS expressions);
+- ship via a **pull request that is approved before it merges** - never committed straight to `main`.
+
+This carve-out covers the project content only. The projects **pipeline and tooling** (anything
+under `src/`, dependencies, config) is a feature and follows the full Spectra protocol.
+
 <!-- trellis:start -->
 ## Trellis conventions
 

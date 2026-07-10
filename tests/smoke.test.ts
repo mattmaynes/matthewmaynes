@@ -65,8 +65,10 @@ const routes = [
     path: "/",
     title: "Matthew Maynes - Engineering Director",
     hasBlur: true,
-    // Real intro copy shipped; the old walking-skeleton note must stay gone.
-    contains: ["never stopped building"],
+    // Real intro copy shipped; the old walking-skeleton note must stay gone. The
+    // "Around the site" grid includes the Projects card (spec 0031) - its note is
+    // route-unique, so it proves the card rendered and reddens if it is removed.
+    contains: ["never stopped building", "The things I have built and shipped."],
     absent: ["walking skeleton"],
   },
   {
@@ -80,8 +82,16 @@ const routes = [
   // 2-column print layout). Its real content is asserted in the dedicated
   // "renders the real resume with no contact PII" test above.
   { path: "/resume", title: "Resume - Matthew Maynes" },
-  // No hasBlur: the projects page is a text-only "coming soon" stub now.
-  { path: "/projects", title: "Projects - Matthew Maynes" },
+  {
+    path: "/projects",
+    title: "Projects - Matthew Maynes",
+    // Cover art ships with blur placeholders now (spec 0031).
+    hasBlur: true,
+    // The three curated sections must render, with route-unique card titles that
+    // prove real projects replaced the old stub (Work -> Tinkering -> Making).
+    contains: ["Work", "Tinkering", "Making", "Eagle SNAP", "Multi-Level Deck"],
+    absent: ["Coming soon"],
+  },
   {
     path: "/blog",
     title: "Blog - Matthew Maynes",
@@ -971,21 +981,21 @@ test("robots, sitemap, and manifest are served", async () => {
     "expected robots.txt to reference the sitemap",
   );
 
-  // Every nav route should be listed (5 of them), not just one <loc>. Projects is
-  // intentionally kept out of the nav while it is an in-progress stub, so it must
-  // not appear in the sitemap either (both derive from `nav`).
+  // Every nav route should be listed (6 of them), not just one <loc>. Projects is
+  // now a shipped nav route (spec 0031), so it must appear in the sitemap too
+  // (both derive from `nav`).
   const sitemap = await fetch(BASE + "/sitemap.xml");
   assert.equal(sitemap.status, 200, "expected /sitemap.xml to 200");
   const sitemapXml = await sitemap.text();
   const locs = sitemapXml.match(/<loc>/g) ?? [];
   assert.ok(
-    locs.length >= 5,
+    locs.length >= 6,
     `expected sitemap.xml to list all nav routes, saw ${locs.length}`,
   );
-  assert.doesNotMatch(
+  assert.match(
     sitemapXml,
     /\/projects/,
-    "expected /projects to be excluded from the sitemap while it is unlisted",
+    "expected /projects to be listed in the sitemap now that it ships",
   );
   assert.match(sitemapXml, /matthewmaynes\.com/, "expected canonical host URLs");
 
