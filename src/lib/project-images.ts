@@ -24,6 +24,11 @@ import backDeck from "../../public/images/projects/back-deck.jpg";
 import frontDeck from "../../public/images/projects/front-deck.jpg";
 import multiLevelDeck from "../../public/images/projects/multi-level-deck.jpg";
 import kitchen from "../../public/images/projects/kitchen-renovation.jpg";
+import backDeckBefore from "../../public/images/projects/back-deck-before.jpg";
+import frontDeckBefore from "../../public/images/projects/front-deck-before.jpg";
+import multiLevelDeckBefore from "../../public/images/projects/multi-level-deck-before.jpg";
+import kitchenBefore from "../../public/images/projects/kitchen-renovation-before.jpg";
+import riseBefore from "../../public/images/projects/rise-before.png";
 
 /**
  * A resolved cover: the next/image `src` (a static import for raster art, or a
@@ -86,6 +91,26 @@ export const projectImages = {
   "kitchen-renovation.jpg": raster(
     kitchen,
     "A renovated open kitchen with white and sage-green cabinetry, quartz counters, and pendant lighting.",
+  ),
+  "back-deck-before.jpg": raster(
+    backDeckBefore,
+    "The back of the house before the deck build: an aging railing over rough ground.",
+  ),
+  "front-deck-before.jpg": raster(
+    frontDeckBefore,
+    "The front of the house before the porch rebuild: a tired veranda over a bare yard.",
+  ),
+  "multi-level-deck-before.jpg": raster(
+    multiLevelDeckBefore,
+    "The backyard before the multi-level deck was built.",
+  ),
+  "kitchen-renovation-before.jpg": raster(
+    kitchenBefore,
+    "The kitchen before its renovation.",
+  ),
+  "rise-before.png": raster(
+    riseBefore,
+    "The Constant Contact marketing dashboard before the Rise redesign.",
   ),
   "headshot.jpg": raster(headshot, "Matthew Maynes."),
   "spectra-logo.svg": logo("/images/projects/spectra-logo.svg", "Spectra logo."),
