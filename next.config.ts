@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
   // the resume PDF generator (both boot the standalone server). No-op in CI and
   // Docker, where the app is the only root. (learnings 0002)
   outputFileTracingRoot: import.meta.dirname,
+  // The contact route reads its notification body from `emails/templates/` at
+  // runtime (spec 0032). That folder is not statically imported, so the tracer
+  // cannot detect it - include it explicitly here so `output: standalone` copies
+  // it into `.next/standalone/emails/templates/`, which the Dockerfile ships. The
+  // route resolves it via `process.cwd()`.
+  outputFileTracingIncludes: {
+    "/v1/contact": ["./emails/templates/contact-notification.html"],
+  },
   // WebP-only (NOT AVIF) on purpose. next/image optimizes on demand, so the first
   // visitor after each deploy pays the encode cost while the blur placeholder
   // shows. AVIF files are ~35% smaller but encode modestly slower per image

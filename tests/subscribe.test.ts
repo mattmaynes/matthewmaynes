@@ -12,10 +12,13 @@ import {
   validateSubscribe,
   splitName,
   buildSignUpPayload,
+  buildCreateContactPayload,
   refreshAccessToken,
   addContactToList,
+  addUnsubscribedContact,
   createTokenCache,
   submitSubscription,
+  recordWebsiteContact,
 } from "../src/lib/subscribe.ts";
 
 test("validateSubscribe accepts and trims a good email (name defaults empty)", () => {
@@ -115,7 +118,7 @@ test("validateSubscribe enforces the length cap (guards > vs >=)", () => {
 });
 
 test("buildSignUpPayload shapes the create-or-update body with the list membership", () => {
-  const p = buildSignUpPayload("reader@example.com", "list-123");
+  const p = buildSignUpPayload("reader@example.com", ["list-123"]);
   assert.deepEqual(p, {
     email_address: "reader@example.com",
     create_source: "Contact",
@@ -125,8 +128,8 @@ test("buildSignUpPayload shapes the create-or-update body with the list membersh
 
 test("buildSignUpPayload omits first/last name when absent (identical to before)", () => {
   // A nameless signup must produce the exact same payload as the no-name feature.
-  const noArg = buildSignUpPayload("a@b.co", "l");
-  const emptyParts = buildSignUpPayload("a@b.co", "l", {});
+  const noArg = buildSignUpPayload("a@b.co", ["l"]);
+  const emptyParts = buildSignUpPayload("a@b.co", ["l"], {});
   const expected = {
     email_address: "a@b.co",
     create_source: "Contact",
@@ -138,13 +141,13 @@ test("buildSignUpPayload omits first/last name when absent (identical to before)
 });
 
 test("buildSignUpPayload adds first/last name only when present", () => {
-  assert.deepEqual(buildSignUpPayload("a@b.co", "l", { firstName: "Matthew" }), {
+  assert.deepEqual(buildSignUpPayload("a@b.co", ["l"], { firstName: "Matthew" }), {
     email_address: "a@b.co",
     create_source: "Contact",
     list_memberships: ["l"],
     first_name: "Matthew",
   });
-  const both = buildSignUpPayload("a@b.co", "l", {
+  const both = buildSignUpPayload("a@b.co", ["l"], {
     firstName: "Matthew",
     lastName: "Maynes",
   });
@@ -210,7 +213,7 @@ test("addContactToList posts sign_up_form with bearer auth and the payload", asy
     return { ok: true, status: 201, text: async () => "" };
   };
   await addContactToList(
-    { accessToken: "tok-xyz", email: "reader@example.com", listId: "list-7" },
+    { accessToken: "tok-xyz", email: "reader@example.com", listIds: ["list-7"] },
     fakeFetch,
   );
   assert.equal(captured.url, "https://api.cc.email/v3/contacts/sign_up_form");
@@ -232,7 +235,7 @@ test("addContactToList throws status-only on a non-2xx (never the response body 
     text: async () => "invalid: reader@example.com is on a suppression list",
   });
   const err = await addContactToList(
-    { accessToken: "t", email: "reader@example.com", listId: "l" },
+    { accessToken: "t", email: "reader@example.com", listIds: ["l"] },
     fakeFetch,
   ).then(
     () => {
@@ -299,7 +302,7 @@ test("submitSubscription gets a token then adds the contact to the list", async 
       email: "reader@example.com",
       clientId: "c",
       refreshToken: "r",
-      listId: "list-42",
+      listIds: ["list-42"],
     },
     { fetchImpl: fakeFetch, cache },
   );
@@ -327,7 +330,7 @@ test("submitSubscription threads a split name into the sign_up_form body", async
       name: "Matthew James Maynes",
       clientId: "c",
       refreshToken: "r",
-      listId: "l",
+      listIds: ["l"],
     },
     { fetchImpl: fakeFetch, cache },
   );
@@ -350,7 +353,7 @@ test("submitSubscription with no name sends no first/last name", async () => {
   };
   const cache = createTokenCache();
   await submitSubscription(
-    { email: "a@b.co", clientId: "c", refreshToken: "r", listId: "l" },
+    { email: "a@b.co", clientId: "c", refreshToken: "r", listIds: ["l"] },
     { fetchImpl: fakeFetch, cache },
   );
   assert.ok(!("first_name" in signupBody) && !("last_name" in signupBody));
@@ -370,7 +373,7 @@ test("submitSubscription reuses the cached token across two submits", async () =
     return { ok: true, status: 200, text: async () => "" };
   };
   const cache = createTokenCache();
-  const args = { clientId: "c", refreshToken: "r", listId: "l" };
+  const args = { clientId: "c", refreshToken: "r", listIds: ["l"] };
   await submitSubscription({ email: "a@b.co", ...args }, { fetchImpl: fakeFetch, cache });
   await submitSubscription({ email: "c@d.co", ...args }, { fetchImpl: fakeFetch, cache });
   assert.equal(tokenCalls, 1, "the second submit must reuse the cached token");
@@ -390,7 +393,7 @@ test("submitSubscription rejects when sign_up_form fails, without leaking the em
   };
   const cache = createTokenCache();
   const err = await submitSubscription(
-    { email: "reader@example.com", clientId: "c", refreshToken: "r", listId: "l" },
+    { email: "reader@example.com", clientId: "c", refreshToken: "r", listIds: ["l"] },
     { fetchImpl: fakeFetch, cache },
   ).then(
     () => {
@@ -426,7 +429,7 @@ test("submitSubscription self-heals once on a stale-token 401 (clear + re-mint +
   };
   const cache = createTokenCache();
   await submitSubscription(
-    { email: "a@b.co", clientId: "c", refreshToken: "r", listId: "l" },
+    { email: "a@b.co", clientId: "c", refreshToken: "r", listIds: ["l"] },
     { fetchImpl: fakeFetch, cache },
   );
   assert.equal(addCalls, 2, "the add is retried exactly once after the 401");
@@ -445,7 +448,7 @@ test("submitSubscription does not retry past one 401 (a second 401 rejects)", as
   };
   const cache = createTokenCache();
   const err = await submitSubscription(
-    { email: "a@b.co", clientId: "c", refreshToken: "r", listId: "l" },
+    { email: "a@b.co", clientId: "c", refreshToken: "r", listIds: ["l"] },
     { fetchImpl: fakeFetch, cache },
   ).then(
     () => {
@@ -476,4 +479,130 @@ test("createTokenCache dedupes a concurrent cold-cache burst into one mint", asy
   );
   assert.deepEqual(results, Array(5).fill("tok"), "all callers get the same token");
   assert.equal(tokenCalls, 1, "concurrent cold-cache callers share ONE mint");
+});
+
+// ---------------------------------------------------------------------------
+// Contact-form CRM record (spec 0032): multi-list subscribe + unsubscribed create.
+// ---------------------------------------------------------------------------
+
+test("buildSignUpPayload accepts multiple list memberships (blog + website contact)", () => {
+  const p = buildSignUpPayload("reader@example.com", ["blog", "website"]);
+  assert.deepEqual(p.list_memberships, ["blog", "website"]);
+});
+
+test("buildCreateContactPayload builds an unsubscribed contact on the given list(s)", () => {
+  const p = buildCreateContactPayload("lead@example.com", ["website"], {
+    firstName: "Ada",
+    lastName: "Lovelace",
+  });
+  assert.deepEqual(p, {
+    email_address: { address: "lead@example.com", permission_to_send: "unsubscribed" },
+    create_source: "Contact",
+    list_memberships: ["website"],
+    first_name: "Ada",
+    last_name: "Lovelace",
+  });
+});
+
+test("buildCreateContactPayload omits first/last name when absent", () => {
+  const p = buildCreateContactPayload("lead@example.com", ["website"]);
+  assert.ok(!("first_name" in p) && !("last_name" in p));
+  assert.equal(p.email_address.permission_to_send, "unsubscribed");
+});
+
+test("addUnsubscribedContact posts /contacts (create) with the unsubscribed body", async () => {
+  let captured;
+  const fakeFetch = async (url, opts) => {
+    captured = { url, opts };
+    return { ok: true, status: 201, text: async () => "" };
+  };
+  await addUnsubscribedContact(
+    { accessToken: "tok-xyz", email: "lead@example.com", listIds: ["website"] },
+    fakeFetch,
+  );
+  assert.equal(captured.url, "https://api.cc.email/v3/contacts");
+  assert.equal(captured.opts.method, "POST");
+  assert.equal(captured.opts.headers.Authorization, "Bearer tok-xyz");
+  const body = JSON.parse(captured.opts.body);
+  assert.equal(body.email_address.address, "lead@example.com");
+  assert.equal(body.email_address.permission_to_send, "unsubscribed");
+  assert.deepEqual(body.list_memberships, ["website"]);
+});
+
+test("addUnsubscribedContact treats a 409 (already a contact) as a no-op success", async () => {
+  const fakeFetch = async () => ({
+    ok: false,
+    status: 409,
+    // A real 409 body echoes the contact id / email; prove we never throw it.
+    text: async () => "Email already exists for contact abc: lead@example.com",
+  });
+  // Must NOT reject: an existing contact is left untouched, not an error.
+  const res = await addUnsubscribedContact(
+    { accessToken: "t", email: "lead@example.com", listIds: ["website"] },
+    fakeFetch,
+  );
+  assert.equal(res.status, 409);
+});
+
+test("addUnsubscribedContact throws status-only on a non-2xx/non-409 (no PII)", async () => {
+  const fakeFetch = async () => ({
+    ok: false,
+    status: 400,
+    text: async () => "invalid: lead@example.com",
+  });
+  const err = await addUnsubscribedContact(
+    { accessToken: "t", email: "lead@example.com", listIds: ["website"] },
+    fakeFetch,
+  ).then(
+    () => {
+      throw new Error("expected a rejection");
+    },
+    (e) => e,
+  );
+  assert.match(err.message, /create-contact responded 400/);
+  assert.equal(err.status, 400);
+  assert.ok(
+    !/lead@example\.com/.test(err.message),
+    "the error must not carry the response body / email (PII in logs)",
+  );
+});
+
+test("recordWebsiteContact gets a token then creates the unsubscribed contact", async () => {
+  const calls = [];
+  const fakeFetch = async (url) => {
+    calls.push(url);
+    if (url.includes("/oauth2/")) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: "tok", expires_in: 86400 }),
+      };
+    }
+    return { ok: true, status: 201, text: async () => "" };
+  };
+  const cache = createTokenCache();
+  await recordWebsiteContact(
+    { email: "lead@example.com", name: "Ada Lovelace", clientId: "c", refreshToken: "r", listIds: ["website"] },
+    { fetchImpl: fakeFetch, cache },
+  );
+  assert.equal(calls.length, 2, "a token call then a create-contact call");
+  assert.match(calls[1], /\/v3\/contacts$/);
+});
+
+test("recordWebsiteContact resolves on a 409 (repeat sender is never an error)", async () => {
+  const fakeFetch = async (url) => {
+    if (url.includes("/oauth2/"))
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ access_token: "tok", expires_in: 86400 }),
+      };
+    return { ok: false, status: 409, text: async () => "already exists" };
+  };
+  const cache = createTokenCache();
+  await recordWebsiteContact(
+    { email: "lead@example.com", clientId: "c", refreshToken: "r", listIds: ["website"] },
+    { fetchImpl: fakeFetch, cache },
+  );
+  // Reaching here (no throw) is the assertion.
 });

@@ -86,6 +86,13 @@ export default function PrivacyPage() {
           message. I use a service called Resend to deliver that message to my inbox, the same as
           if you had emailed me directly. Your email address is used only so I can reply.
         </p>
+        <p className="mt-3 text-body text-text-muted">
+          I also keep your name and email as a contact in Constant Contact so I have a record of
+          who has reached out. By default you are added as unsubscribed, which means you will not
+          receive any mailing-list email. Only if you tick &ldquo;Subscribe for updates from
+          me&rdquo; do I add you to my mailing list, and you can unsubscribe at any time from any
+          message I send.
+        </p>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-body text-text-muted">
           <li>The message is delivered by email. The site does not save it to any database.</li>
           <li>
@@ -93,6 +100,14 @@ export default function PrivacyPage() {
             how Resend handles data in their{" "}
             <ExternalLink href="https://resend.com/legal/privacy-policy">
               privacy policy
+            </ExternalLink>
+            .
+          </li>
+          <li>
+            Constant Contact stores the contact on my behalf on servers in the United States. You
+            can read how they handle data in their{" "}
+            <ExternalLink href="https://www.constantcontact.com/legal/privacy-notice">
+              privacy notice
             </ExternalLink>
             .
           </li>

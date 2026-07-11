@@ -347,13 +347,15 @@ before(async () => {
       RESEND_API_KEY: "",
       CONTACT_TO_EMAIL: "",
       CONTACT_FROM_EMAIL: "",
-      // Same for the subscribe creds: the /v1/subscribe guard tests below all
-      // return BEFORE the send, so with these empty the suite never calls
-      // Constant Contact (spec 0018), even on a developer machine with real
-      // values in .env.local.
+      // Same for the Constant Contact creds: the /v1/subscribe guard tests below
+      // all return BEFORE the send, and /v1/contact's CTCT record/subscribe step
+      // (spec 0032) is guarded on client id + refresh token, so with these empty
+      // the suite never calls Constant Contact, even on a developer machine with
+      // real values in .env.local.
       CTCT_CLIENT_ID: "",
       CTCT_REFRESH_TOKEN: "",
       CTCT_LIST_ID: "",
+      CTCT_WEBSITE_LIST_ID: "",
     },
   });
   await waitForReady();

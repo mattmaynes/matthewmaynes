@@ -138,10 +138,18 @@ per-component code. Already implemented in `src/styles/`.
 - The repo is **public**. No secrets, PII, or real contact details in tracked files or history.
 - Env vars: `NODE_ENV`, `SITE_URL` (`https://matthewmaynes.com`); for the contact form
   (spec 0008) `RESEND_API_KEY`, `CONTACT_TO_EMAIL` (the private destination), and
-  `CONTACT_FROM_EMAIL` (verified-domain sender); and for the blog subscribe (spec 0018)
-  `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`, and `CTCT_LIST_ID` (the Constant Contact OAuth credentials
-  + target list). All server-only (never `NEXT_PUBLIC_`), provided at runtime, never committed.
-  `.env*` stays git-ignored; locally they live in `.env.local`.
+  `CONTACT_FROM_EMAIL` (verified-domain sender); and for Constant Contact `CTCT_CLIENT_ID`,
+  `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID` (blog list, spec 0018), and `CTCT_WEBSITE_LIST_ID`
+  (the "Website Contact" list, spec 0032). The CTCT creds now power **both** the blog subscribe
+  and the contact form's record/opt-in-subscribe; only contact scope is required (no campaign
+  scope, since the notification is a Resend transactional email, not a CTCT campaign). All
+  server-only (never `NEXT_PUBLIC_`), provided at runtime, never committed. `.env*` stays
+  git-ignored; locally they live in `.env.local`.
+- **Contact notification template bundling (spec 0032).** `/v1/contact` reads its HTML body from
+  `emails/templates/contact-notification.html` at runtime. That folder is not statically imported,
+  so `next.config.ts` `outputFileTracingIncludes` (`"/v1/contact"`) tells the tracer to copy it into
+  `.next/standalone/emails/templates/`, which the Dockerfile ships; the route resolves it via
+  `process.cwd()`. A read failure falls back to a minimal inline body so a submission is never lost.
 - **Contact + subscribe secrets on the host:** `deploy/docker/compose.site.yml` reads them via
   `env_file: [.env.site]` (`required: false`). The operator creates `deploy/docker/.env.site` once
   (`chmod 600`); it is git-ignored and untracked, so the deploy's `git reset --hard` (no `git clean`)
