@@ -29,5 +29,9 @@ jobs:
       # Fail if the resume page/data changed but the committed PDF was not
       # regenerated. A pure hash compare - no browser, so CI stays Chrome-free.
       - run: npm run resume:pdf:check
+      # Fail if the privacy policy CONTENT changed but its "Last updated" date was
+      # not stamped (npm run privacy:stamp). A pure content-hash compare that
+      # ignores the date value, so a stale date can never ship silently.
+      - run: npm run privacy:check
       - run: npm run build
       - run: npm test
