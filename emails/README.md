@@ -31,6 +31,61 @@ Edit the pill text, and duplicate or delete a `<span>` to add or remove tags. Th
 inline-block units, so on a narrow (mobile) screen a whole pill wraps to the next line instead of
 its text breaking mid-word.
 
+## Publishing to Constant Contact
+
+Once `blog/<post-slug>.html` is filled in, publish it to Constant Contact with the
+[`ctct`](https://github.com/mattmaynes/ctct-cli) CLI instead of pasting into the dashboard.
+
+**One-time setup** (see the [ctct README](https://github.com/mattmaynes/ctct-cli#quick-start)):
+
+```bash
+npm install -g mattmaynes/ctct-cli
+ctct init --client-id <your-client-id>   # from the Constant Contact developer portal
+ctct login                                # approve in the browser
+```
+
+**Create the campaign** from a finished email file. The campaign **name** and **subject** are the
+post title; the whole HTML file is the body. This shell snippet builds the request body from the
+file and pipes it to `ctct` (so you never hand-edit HTML into JSON):
+
+```bash
+TITLE="The Post Title Exactly As You Want It in the Subject Line"
+node -e '
+  const fs = require("fs");
+  process.stdout.write(JSON.stringify({
+    name: process.env.TITLE,
+    email_campaign_activities: [{
+      format_type: 5,                          // custom code email
+      from_name: "Matthew Maynes",
+      from_email: "contact@matthewmaynes.com", // must be a verified sender
+      reply_to_email: "contact@matthewmaynes.com",
+      subject: process.env.TITLE,
+      html_content: fs.readFileSync(process.argv[1], "utf8"),
+    }],
+  }));
+' blog/<post-slug>.html | TITLE="$TITLE" ctct email create --data @-
+```
+
+`create` returns a `campaign_id`. Then preview it in your own inbox, and schedule or send:
+
+```bash
+ctct email test-send <campaign_id> --to contact@matthewmaynes.com
+ctct email schedule  <campaign_id> --at 2026-08-01T13:00:00Z   # ISO 8601, or:
+ctct email send      <campaign_id>                              # send now
+```
+
+`schedule`, `send`, `test-send`, and `preview` take the **campaign id** - the CLI resolves the
+`primary_email` activity for you.
+
+**Gotchas** (learned the hard way):
+
+- **Names must be unique**, and Constant Contact keeps reserving a name even after you delete the
+  campaign. If `create` returns a `409 not unique`, keep the `subject` as the exact title but add a
+  suffix to `name` (e.g. `"$TITLE (2026-07-10)"`).
+- **`from_email` must be a verified sender** on the account. Check with `ctct account emails`.
+- **`format_type: 5`** (custom code) - Constant Contact auto-injects the required unsubscribe +
+  physical-address footer at send time, so the template doesn't include one.
+
 ## Notes
 
 - **Images must use absolute `https://matthewmaynes.com/...` URLs** - relative paths do not resolve
