@@ -145,35 +145,18 @@
                   </td>
                 </tr>
 
-                <!-- Meta: tag pills + reading-time badge -->
+                <!-- Meta: tag pills + reading-time badge. Each pill is an inline-block unit, so a
+                     whole pill wraps onto the next line on narrow screens while white-space:nowrap
+                     keeps any single pill's text from breaking mid-word (the mobile-wrap fix). The
+                     container's font-size:0 removes the whitespace gaps between inline-blocks;
+                     spacing is carried by each pill's right/bottom margin. -->
                 <tr>
-                  <td style="padding-top:14px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td style="padding:0 8px 8px 0;">
-                          <span class="pill" style="display:inline-block; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">First Job</span>
-                        </td>
-                        <td style="padding:0 8px 8px 0;">
-                          <span class="pill" style="display:inline-block; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">Imposter Syndrome</span>
-                        </td>
-                        <td style="padding:0 8px 8px 0;">
-                          <span class="pill" style="display:inline-block; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">First App</span>
-                        </td>
-                        <!-- Reading-time badge: Clock glyph + "N min read", matching the site's reading-time pill. -->
-                        <td style="padding:0 0 8px 0;">
-                          <table role="presentation" class="pill" cellpadding="0" cellspacing="0" border="0" style="background-color:#eceef2; border-radius:14px;">
-                            <tr>
-                              <td valign="middle" style="padding:4px 5px 4px 12px; line-height:0;">
-                                <img src="https://matthewmaynes.com/images/icons/clock.png" width="13" height="13" alt="" style="display:block; width:13px; height:13px; border:0;" />
-                              </td>
-                              <td valign="middle" style="padding:4px 12px 4px 0; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; color:#586475; white-space:nowrap;">
-                                4 min read
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="padding-top:14px; font-size:0;">
+                    <span class="pill" style="display:inline-block; white-space:nowrap; margin:0 8px 8px 0; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">First Job</span>
+                    <span class="pill" style="display:inline-block; white-space:nowrap; margin:0 8px 8px 0; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">Imposter Syndrome</span>
+                    <span class="pill" style="display:inline-block; white-space:nowrap; margin:0 8px 8px 0; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">First App</span>
+                    <!-- Reading-time badge: Clock glyph + "N min read", matching the site's reading-time pill. -->
+                    <span class="pill" style="display:inline-block; white-space:nowrap; margin:0 0 8px 0; padding:4px 12px; background-color:#eceef2; color:#586475; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; border-radius:14px;"><img src="https://matthewmaynes.com/images/icons/clock.png" width="13" height="13" alt="" style="display:inline-block; vertical-align:middle; width:13px; height:13px; border:0; margin:-2px 5px 0 0;" />4 min read</span>
                   </td>
                 </tr>
 
