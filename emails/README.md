@@ -26,8 +26,10 @@ each placeholder:
 | `[[POST_TITLE]]`     | Post title (appears in the preview line and the heading).                   |
 | `[[POST_EXCERPT]]`   | One or two sentence teaser.                                                 |
 
-**Tags:** in the "Tags" row there is one `<td>` per pill (default: Engineering, Leadership). Edit
-the pill text, and duplicate or delete a `<td>` to add or remove tags.
+**Tags:** in the "Tags" row there is one `<span>` pill per tag (default: Engineering, Leadership).
+Edit the pill text, and duplicate or delete a `<span>` to add or remove tags. The pills are
+inline-block units, so on a narrow (mobile) screen a whole pill wraps to the next line instead of
+its text breaking mid-word.
 
 ## Notes
 
