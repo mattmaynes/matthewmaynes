@@ -149,19 +149,15 @@
                   </td>
                 </tr>
 
-                <!-- Tags: one <td> per tag. Edit the text; duplicate or delete a <td> to add/remove tags. -->
+                <!-- Tags: one <span> pill per tag. Edit the text; duplicate or delete a <span> to
+                     add/remove tags. Pills are inline-block units so a whole pill wraps onto the
+                     next line on narrow screens while white-space:nowrap keeps a pill's text from
+                     breaking mid-word. The container's font-size:0 removes the whitespace gaps
+                     between inline-blocks; spacing is carried by each pill's right/bottom margin. -->
                 <tr>
-                  <td style="padding-top:14px;">
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td style="padding:0 8px 0 0;">
-                          <span class="pill" style="display:inline-block; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">Engineering</span>
-                        </td>
-                        <td style="padding:0 8px 0 0;">
-                          <span class="pill" style="display:inline-block; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">Leadership</span>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="padding-top:14px; font-size:0;">
+                    <span class="pill" style="display:inline-block; white-space:nowrap; margin:0 8px 8px 0; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">Engineering</span>
+                    <span class="pill" style="display:inline-block; white-space:nowrap; margin:0 8px 8px 0; padding:4px 12px; background-color:#eceef2; color:#47515f; font-family:'Figtree',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; font-weight:600; line-height:16px; letter-spacing:0.5px; text-transform:uppercase; border-radius:14px;">Leadership</span>
                   </td>
                 </tr>
 
