@@ -42,8 +42,12 @@ export function ContactForm() {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
+    // The opt-in checkbox: FormData omits an unchecked box, so a present value
+    // means it was ticked. Sent as a real boolean the server can trust.
+    const subscribe = data.get("subscribe") === "yes";
     setStatus({ kind: "submitting" });
-    track("contact_form_submitted");
+    // PII-free: only the boolean opt-in choice, never any field value (spec 0014).
+    track("contact_form_submitted", { subscribed: subscribe });
     try {
       const res = await fetch("/v1/contact", {
         method: "POST",
@@ -52,6 +56,7 @@ export function ContactForm() {
           name: data.get("name"),
           email: data.get("email"),
           message: data.get("message"),
+          subscribe,
           company: data.get("company"), // honeypot
         }),
       });
@@ -116,6 +121,19 @@ export function ContactForm() {
           />
         </FormFieldControl>
       </FormField>
+
+      {/* Opt-in subscribe: unchecked by default, so subscribing is a deliberate
+          choice. When ticked, the server also adds the sender to the blog list
+          (spec 0032). No Canopy checkbox exists, so a styled native input is used. */}
+      <label className="flex items-start gap-2.5 text-body text-text-muted select-none">
+        <input
+          name="subscribe"
+          type="checkbox"
+          value="yes"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2c557b]"
+        />
+        Subscribe for updates from me
+      </label>
 
       <FormField>
         <FormFieldLabel>Message</FormFieldLabel>

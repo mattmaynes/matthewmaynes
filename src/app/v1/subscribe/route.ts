@@ -113,7 +113,13 @@ export async function POST(req: Request): Promise<Response> {
   //    optional name (spec 0018 amendment) is split into first/last name in the lib.
   try {
     await submitSubscription(
-      { email: result.data.email, name: result.data.name, clientId, refreshToken, listId },
+      {
+        email: result.data.email,
+        name: result.data.name,
+        clientId,
+        refreshToken,
+        listIds: [listId],
+      },
       { cache: tokenCache },
     );
   } catch (err) {

@@ -16,11 +16,6 @@ export type SubscribeValidation =
   | { ok: true; data: SubscribeData }
   | { ok: false; error: string };
 export type NameParts = { firstName?: string; lastName?: string };
-export type CtctCreds = {
-  clientId: string;
-  refreshToken: string;
-  listId: string;
-};
 
 /** A Constant Contact `sign_up_form` request body. */
 export type SignUpPayload = {
@@ -54,6 +49,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TOKEN_URL =
   "https://authz.constantcontact.com/oauth2/default/v1/token";
 const SIGNUP_URL = "https://api.cc.email/v3/contacts/sign_up_form";
+// Plain create endpoint - used for the unsubscribed CRM record, where we must set
+// `permission_to_send` explicitly (sign_up_form always implies opt-in). A create,
+// so a repeat email 409s (handled as a no-op).
+const CONTACTS_URL = "https://api.cc.email/v3/contacts";
 
 // Refresh a bit before the token actually expires so an in-flight request never
 // races the boundary and 401s.
@@ -102,20 +101,22 @@ export function splitName(name: unknown): NameParts {
 /**
  * Shape a validated email into a Constant Contact `sign_up_form` body.
  * `create_source: "Contact"` marks it as a visitor self-signup (contrast the
- * one-off manual `"Account"` bootstrap). The list id is supplied by the caller
- * from env and never hard-coded here. Optional `first_name`/`last_name` (spec 0018
- * amendment) are added ONLY when present, so a nameless signup produces the exact
- * same payload as before.
+ * one-off manual `"Account"` bootstrap). The list ids are supplied by the caller
+ * from env and never hard-coded here - one for the blog subscribe, or several (blog
+ * + Website Contact) when the contact form's opt-in box is ticked. `sign_up_form`
+ * is additive, so listing a membership never removes the contact's other lists.
+ * Optional `first_name`/`last_name` (spec 0018 amendment) are added ONLY when
+ * present, so a nameless signup produces the exact same payload as before.
  */
 export function buildSignUpPayload(
   email: string,
-  listId: string,
+  listIds: string[],
   nameParts: NameParts = {},
 ): SignUpPayload {
   const payload: SignUpPayload = {
     email_address: email,
     create_source: "Contact",
-    list_memberships: [listId],
+    list_memberships: listIds,
   };
   if (nameParts.firstName) payload.first_name = nameParts.firstName;
   if (nameParts.lastName) payload.last_name = nameParts.lastName;
@@ -168,17 +169,22 @@ export async function refreshAccessToken(
 type StatusError = Error & { status?: number };
 
 /**
- * Add (or update) a contact on the target list via `sign_up_form`. Throws on a
- * non-2xx. Optional `nameParts` (spec 0018 amendment) become first/last name on the
- * contact. `fetchImpl` is injectable for tests.
+ * Add (or update) a contact on the target list(s) via `sign_up_form`, opting them
+ * in. Throws on a non-2xx. Optional `nameParts` (spec 0018 amendment) become
+ * first/last name on the contact. `fetchImpl` is injectable for tests.
  */
 export async function addContactToList(
   {
     accessToken,
     email,
-    listId,
+    listIds,
     nameParts,
-  }: { accessToken: string; email: string; listId: string; nameParts?: NameParts },
+  }: {
+    accessToken: string;
+    email: string;
+    listIds: string[];
+    nameParts?: NameParts;
+  },
   fetchImpl: typeof fetch = fetch,
 ): Promise<Response> {
   const res = await fetchImpl(SIGNUP_URL, {
@@ -188,7 +194,7 @@ export async function addContactToList(
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-    body: JSON.stringify(buildSignUpPayload(email, listId, nameParts)),
+    body: JSON.stringify(buildSignUpPayload(email, listIds, nameParts)),
     signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
@@ -198,6 +204,80 @@ export async function addContactToList(
     // as `err.status` so callers can branch (e.g. self-heal on a stale-token 401).
     const err: StatusError = new Error(
       `Constant Contact sign_up_form responded ${res.status}`,
+    );
+    err.status = res.status;
+    throw err;
+  }
+  return res;
+}
+
+/** A Constant Contact `POST /contacts` (create) request body. */
+export type CreateContactPayload = {
+  email_address: { address: string; permission_to_send: "unsubscribed" };
+  create_source: "Contact";
+  list_memberships: string[];
+  first_name?: string;
+  last_name?: string;
+};
+
+/**
+ * Shape a create-contact body for the CRM record: the sender is stored in the
+ * `unsubscribed` state (no marketing consent) on the Website Contact list. Unlike
+ * `sign_up_form`, `POST /contacts` lets us set `permission_to_send` explicitly, so
+ * capturing the lead never implies consent. Optional first/last name are added only
+ * when present.
+ */
+export function buildCreateContactPayload(
+  email: string,
+  listIds: string[],
+  nameParts: NameParts = {},
+): CreateContactPayload {
+  const payload: CreateContactPayload = {
+    email_address: { address: email, permission_to_send: "unsubscribed" },
+    create_source: "Contact",
+    list_memberships: listIds,
+  };
+  if (nameParts.firstName) payload.first_name = nameParts.firstName;
+  if (nameParts.lastName) payload.last_name = nameParts.lastName;
+  return payload;
+}
+
+/**
+ * Create an `unsubscribed` contact on the Website Contact list via `POST /contacts`.
+ * A 409 (the email already exists) is treated as SUCCESS/no-op: they are already a
+ * contact, and we deliberately do not touch an existing contact's consent or other
+ * list memberships (see spec 0032). Any other non-2xx throws a status-only error
+ * (never the body, which can echo the email into logs). `fetchImpl` is injectable.
+ */
+export async function addUnsubscribedContact(
+  {
+    accessToken,
+    email,
+    listIds,
+    nameParts,
+  }: {
+    accessToken: string;
+    email: string;
+    listIds: string[];
+    nameParts?: NameParts;
+  },
+  fetchImpl: typeof fetch = fetch,
+): Promise<Response> {
+  const res = await fetchImpl(CONTACTS_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(buildCreateContactPayload(email, listIds, nameParts)),
+    signal: AbortSignal.timeout(10_000),
+  });
+  // Already a contact: nothing to do, and we must not downgrade/replace them.
+  if (res.status === 409) return res;
+  if (!res.ok) {
+    const err: StatusError = new Error(
+      `Constant Contact create-contact responded ${res.status}`,
     );
     err.status = res.status;
     throw err;
@@ -259,34 +339,32 @@ export function createTokenCache(now: () => number = Date.now): TokenCache {
   };
 }
 
+/** Params shared by the CTCT write orchestrators below. */
+type ContactWriteArgs = {
+  email: string;
+  name?: string;
+  clientId: string;
+  refreshToken: string;
+  listIds: string[];
+};
+
 /**
- * Orchestrate a subscription: get (cached or fresh) access token, then add the
- * contact to the list. Throws on any non-2xx so the route maps it to a generic
- * 500. The `cache` is supplied by the route (module-scoped) so it persists across
- * requests; `fetchImpl` is injectable for tests.
- * The optional `name` (spec 0018 amendment) is split into first/last name here and
- * stored on the contact; an empty/absent name adds nothing to the payload.
+ * Run a token-authenticated CTCT write, self-healing once on a stale token. A
+ * cached access token can be invalidated upstream before its computed TTL
+ * (revocation, >60s clock skew, or an early Constant Contact expiry). Rather than
+ * 500ing every request until the process restarts, on a 401 we drop the stale
+ * token, mint a fresh one, and retry the operation a single time.
  */
-export async function submitSubscription(
-  {
-    email,
-    name,
-    clientId,
-    refreshToken,
-    listId,
-  }: { email: string; name?: string } & CtctCreds,
-  { fetchImpl = fetch, cache }: { fetchImpl?: typeof fetch; cache: TokenCache },
+async function withFreshTokenRetry(
+  creds: { clientId: string; refreshToken: string },
+  cache: TokenCache,
+  fetchImpl: typeof fetch,
+  op: (accessToken: string) => Promise<unknown>,
 ): Promise<void> {
-  const creds = { clientId, refreshToken };
-  const nameParts = splitName(name);
   const accessToken = await cache.getAccessToken(creds, fetchImpl);
   try {
-    await addContactToList({ accessToken, email, listId, nameParts }, fetchImpl);
+    await op(accessToken);
   } catch (err) {
-    // A cached access token can be invalidated upstream before its computed TTL
-    // (revocation, >60s clock skew, or an early Constant Contact expiry). Rather
-    // than 500ing every subscribe until the process restarts, self-heal once:
-    // drop the stale token, mint a fresh one, and retry the add a single time.
     if (
       err &&
       typeof err === "object" &&
@@ -295,12 +373,54 @@ export async function submitSubscription(
     ) {
       cache.clear();
       const fresh = await cache.getAccessToken(creds, fetchImpl);
-      await addContactToList(
-        { accessToken: fresh, email, listId, nameParts },
-        fetchImpl,
-      );
+      await op(fresh);
       return;
     }
     throw err;
   }
+}
+
+/**
+ * Orchestrate a subscription: get (cached or fresh) access token, then add the
+ * contact to the given list(s) via `sign_up_form` (opt-in). The blog subscribe
+ * passes `[blogListId]`; the contact form's opt-in box passes
+ * `[blogListId, websiteContactListId]`. Throws on any non-2xx so the caller maps it
+ * to a generic 500. The `cache` is supplied by the caller (module-scoped) so it
+ * persists across requests; `fetchImpl` is injectable for tests. The optional
+ * `name` (spec 0018 amendment) is split into first/last name and stored on the
+ * contact; an empty/absent name adds nothing to the payload.
+ */
+export async function submitSubscription(
+  { email, name, clientId, refreshToken, listIds }: ContactWriteArgs,
+  { fetchImpl = fetch, cache }: { fetchImpl?: typeof fetch; cache: TokenCache },
+): Promise<void> {
+  const nameParts = splitName(name);
+  await withFreshTokenRetry(
+    { clientId, refreshToken },
+    cache,
+    fetchImpl,
+    (accessToken) =>
+      addContactToList({ accessToken, email, listIds, nameParts }, fetchImpl),
+  );
+}
+
+/**
+ * Orchestrate the CRM record for a non-subscribing sender: create an
+ * `unsubscribed` contact on the Website Contact list (spec 0032). Mirrors
+ * `submitSubscription` (same token cache + 401 self-heal), but uses `POST /contacts`
+ * so no marketing consent is implied. A 409 (already a contact) is a no-op inside
+ * `addUnsubscribedContact`, so a repeat sender never errors.
+ */
+export async function recordWebsiteContact(
+  { email, name, clientId, refreshToken, listIds }: ContactWriteArgs,
+  { fetchImpl = fetch, cache }: { fetchImpl?: typeof fetch; cache: TokenCache },
+): Promise<void> {
+  const nameParts = splitName(name);
+  await withFreshTokenRetry(
+    { clientId, refreshToken },
+    cache,
+    fetchImpl,
+    (accessToken) =>
+      addUnsubscribedContact({ accessToken, email, listIds, nameParts }, fetchImpl),
+  );
 }

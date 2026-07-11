@@ -1,15 +1,18 @@
 /**
- * Pure, I/O-free core for the contact endpoint: input validation and the Resend
- * request shaping + send. Kept free of Next / request objects so it is unit-tested
- * without booting a server (the `app/v1/contact` route handler is a thin shell
- * over this - the same testable-seam pattern as `src/lib/theme.ts`). No secrets
- * or PII live here: the destination address is read from env in the route and
- * passed in. The generic honeypot / same-origin / rate-limit guards live in
- * `./http-guards.ts` (shared with `/v1/subscribe`, spec 0018); callers import them
- * from there directly - this module owns only the contact-specific logic.
+ * Pure, I/O-free core for the contact endpoint: input validation, the on-brand
+ * HTML notification rendering, and the Resend request shaping + send. Kept free of
+ * Next / request objects so it is unit-tested without booting a server (the
+ * `app/v1/contact` route handler is a thin shell over this - the same testable-seam
+ * pattern as `src/lib/theme.ts`). No secrets or PII live here: the destination
+ * address is read from env in the route and passed in. The generic honeypot /
+ * same-origin / rate-limit guards live in `./http-guards.ts` (shared with
+ * `/v1/subscribe`, spec 0018); callers import them from there directly - this module
+ * owns only the contact-specific logic.
  */
 
 export type ContactData = { name: string; email: string; message: string };
+/** ContactData plus a human-readable received date, for the HTML notification. */
+export type NotificationData = ContactData & { date: string };
 export type ValidationResult =
   | { ok: true; data: ContactData }
   | { ok: false; error: string };
@@ -19,6 +22,7 @@ export type ResendPayload = {
   reply_to: string;
   subject: string;
   text: string;
+  html: string;
 };
 
 /** Field length caps, so a payload can't be unbounded. */
@@ -54,10 +58,50 @@ export function validateContact(input: {
 }
 
 /**
+ * Escape the five HTML-significant characters so a visitor's name/email/message
+ * can never inject markup into the notification email. Applied to every value
+ * before it is substituted into the HTML template.
+ */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// The placeholder tokens the notification template exposes (repo `[[...]]`
+// convention). Substituted in a single pass, so an escaped value that happens to
+// look like a token is never re-scanned.
+const NOTIFICATION_TOKENS = /\[\[(NAME|EMAIL|MESSAGE|DATE)\]\]/g;
+
+/**
+ * Render the on-brand HTML notification: HTML-escape each field, turn the
+ * message's newlines into `<br>` (so line breaks survive in the email), and
+ * substitute the `[[NAME]]`/`[[EMAIL]]`/`[[MESSAGE]]`/`[[DATE]]` placeholders. The
+ * template string is read from `emails/templates/contact-notification.html` by the
+ * route and passed in, keeping this function pure and unit-testable.
+ */
+export function renderContactNotification(
+  template: string,
+  data: NotificationData,
+): string {
+  const values: Record<string, string> = {
+    "[[NAME]]": escapeHtml(data.name),
+    "[[EMAIL]]": escapeHtml(data.email),
+    "[[MESSAGE]]": escapeHtml(data.message).replace(/\r?\n/g, "<br>"),
+    "[[DATE]]": escapeHtml(data.date),
+  };
+  return template.replace(NOTIFICATION_TOKENS, (token) => values[token] ?? token);
+}
+
+/**
  * Shape a validated submission into a Resend `POST /emails` body. The visitor's
  * address is the `reply_to`, so replying in the inbox reaches them; the private
- * destination (`to`) and verified sender (`from`) are supplied by the caller
- * from env and never hard-coded here.
+ * destination (`to`) and verified sender (`from`) are supplied by the caller from
+ * env and never hard-coded here. `html` is the rendered notification; `text` is a
+ * plaintext fallback for clients (and deliverability) that prefer it.
  */
 export function buildResendPayload({
   name,
@@ -65,7 +109,8 @@ export function buildResendPayload({
   message,
   to,
   from,
-}: ContactData & { to: string; from: string }): ResendPayload {
+  html,
+}: ContactData & { to: string; from: string; html: string }): ResendPayload {
   return {
     from,
     to,
@@ -75,6 +120,7 @@ export function buildResendPayload({
     // JSON API already escapes values and builds the MIME headers itself.
     subject: `Contact form: ${singleLine(name)}`,
     text: `From: ${name} <${email}>\n\n${message}`,
+    html,
   };
 }
 

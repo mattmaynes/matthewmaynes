@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { NextResponse } from "next/server";
 import {
   createRateLimiter,
@@ -6,22 +8,57 @@ import {
 } from "@/lib/http-guards";
 import {
   buildResendPayload,
+  renderContactNotification,
   sendViaResend,
   validateContact,
 } from "@/lib/contact";
+import {
+  createTokenCache,
+  recordWebsiteContact,
+  submitSubscription,
+} from "@/lib/subscribe";
 
 /**
- * `POST /v1/contact` - relays a contact-form submission to the site owner by
- * email (via Resend) without ever exposing the destination address to the
- * client. The `/v1/` prefix versions the contract. All the logic lives in the
- * pure, unit-tested `@/lib/contact`; this handler only bridges the HTTP request
- * to it, reads server-only secrets, and maps outcomes to status codes. Other
- * methods 405 automatically (only POST is exported).
+ * `POST /v1/contact` - relays a contact-form submission to the site owner by email
+ * (an on-brand HTML notification via Resend) without ever exposing the destination
+ * address to the client, and records the sender in Constant Contact (spec 0032):
+ * always as an `unsubscribed` contact on the Website Contact list, and - if the
+ * opt-in box was ticked - also subscribed to the blog list. The `/v1/` prefix
+ * versions the contract. The pure logic lives in the unit-tested `@/lib/contact`
+ * and `@/lib/subscribe`; this handler bridges the HTTP request, reads server-only
+ * secrets, and maps outcomes to status codes. Other methods 405 automatically.
  */
 
 // Best-effort per-IP limiter, module-scoped so it persists across requests in
 // the one long-lived server process: 5 sends / 10 min per IP (spec 0008).
 const limiter = createRateLimiter({ max: 5, windowMs: 10 * 60 * 1000 });
+
+// Module-scoped access-token cache: mint a 24h Constant Contact token once and
+// reuse it across requests until shortly before expiry (spec 0018), shared by the
+// record + subscribe paths below. A deploy/restart just re-mints.
+const ctctTokenCache = createTokenCache();
+
+// The on-brand HTML notification body, read once at module load. It lives in
+// `emails/templates/` (single source of truth, previewable); `next.config.ts`
+// `outputFileTracingIncludes` copies it into the standalone/Docker runtime. A read
+// failure falls back to a minimal body so a submission is never lost to a missing
+// asset.
+const NOTIFICATION_TEMPLATE = loadNotificationTemplate();
+
+function loadNotificationTemplate(): string {
+  try {
+    return readFileSync(
+      join(process.cwd(), "emails/templates/contact-notification.html"),
+      "utf8",
+    );
+  } catch (err) {
+    console.error(
+      "contact: could not read contact-notification.html; using plain fallback:",
+      err,
+    );
+    return "<p>[[NAME]] &lt;[[EMAIL]]&gt; wrote on [[DATE]]:</p><p>[[MESSAGE]]</p>";
+  }
+}
 
 // Reject bodies larger than this before parsing (message cap is 5000 chars; this
 // leaves generous headroom for UTF-8 + the other fields yet bounds the parse).
@@ -107,15 +144,71 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 8. Send.
+  // 8. Send the notification (primary action). Render the on-brand HTML body with
+  //    the (escaped) form data, then hand it to Resend. A failure here 500s, since
+  //    the visitor's message would otherwise be lost.
+  const date = new Date().toLocaleString("en-CA", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "America/Toronto",
+  });
+  const html = renderContactNotification(NOTIFICATION_TEMPLATE, {
+    ...result.data,
+    date,
+  });
   try {
-    await sendViaResend(buildResendPayload({ ...result.data, to, from }), apiKey);
+    await sendViaResend(
+      buildResendPayload({ ...result.data, to, from, html }),
+      apiKey,
+    );
   } catch (err) {
     console.error("contact: Resend send failed:", err);
     return NextResponse.json(
       { ok: false, error: "Sorry, sending failed. Please try again later." },
       { status: 500 },
     );
+  }
+
+  // 9. Record the sender in Constant Contact (spec 0032). BEST-EFFORT: the message
+  //    already went out, so any CTCT failure is logged and swallowed rather than
+  //    failing the request. Skipped cleanly when the CTCT env is unset.
+  //      - opt-in ticked -> subscribe (sign_up_form) to the blog + Website Contact
+  //        lists, recording consent.
+  //      - otherwise      -> create an `unsubscribed` contact on the Website Contact
+  //        list (a CRM record without implied consent).
+  const clientId = process.env.CTCT_CLIENT_ID;
+  const refreshToken = process.env.CTCT_REFRESH_TOKEN;
+  const blogListId = process.env.CTCT_LIST_ID;
+  const websiteListId = process.env.CTCT_WEBSITE_LIST_ID;
+  const wantsSubscribe = input.subscribe === true;
+  if (clientId && refreshToken) {
+    try {
+      const creds = {
+        email: result.data.email,
+        name: result.data.name,
+        clientId,
+        refreshToken,
+      };
+      if (wantsSubscribe && blogListId) {
+        await submitSubscription(
+          {
+            ...creds,
+            listIds: websiteListId ? [blogListId, websiteListId] : [blogListId],
+          },
+          { cache: ctctTokenCache },
+        );
+      } else if (websiteListId) {
+        await recordWebsiteContact(
+          { ...creds, listIds: [websiteListId] },
+          { cache: ctctTokenCache },
+        );
+      }
+    } catch (err) {
+      console.error(
+        "contact: Constant Contact record/subscribe failed (non-fatal):",
+        err,
+      );
+    }
   }
 
   return NextResponse.json({ ok: true });

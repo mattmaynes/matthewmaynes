@@ -86,6 +86,13 @@ export default function PrivacyPage() {
           message. I use a service called Resend to deliver that message to my inbox, the same as
           if you had emailed me directly. Your email address is used only so I can reply.
         </p>
+        <p className="mt-3 text-body text-text-muted">
+          I also keep your name and email as a contact in Constant Contact so I have a record of
+          who has reached out. By default you are added as unsubscribed, which means you will not
+          receive any mailing-list email. Only if you tick &ldquo;Subscribe for updates from
+          me&rdquo; do I add you to my mailing list, and you can unsubscribe at any time from any
+          message I send.
+        </p>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-body text-text-muted">
           <li>The message is delivered by email. The site does not save it to any database.</li>
           <li>
@@ -96,7 +103,38 @@ export default function PrivacyPage() {
             </ExternalLink>
             .
           </li>
+          <li>
+            Constant Contact stores the contact on my behalf on servers in the United States. You
+            can read how they handle data in their{" "}
+            <ExternalLink href="https://www.constantcontact.com/legal/privacy-notice">
+              privacy notice
+            </ExternalLink>
+            .
+          </li>
           <li>The form is protected by basic anti-spam measures.</li>
+        </ul>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-h2 font-semibold text-text">The mailing list</h2>
+        <p className="mt-3 text-body text-text-muted">
+          If you subscribe to updates - either from the subscribe form on the blog or by ticking
+          the box on the contact form - I add your email address (and name, if you give one) to my
+          mailing list so I can send you occasional updates.
+        </p>
+        <ul className="mt-3 list-disc space-y-2 pl-6 text-body text-text-muted">
+          <li>
+            The list is managed by Constant Contact, which stores and processes it on my behalf on
+            servers in the United States. You can read how they handle data in their{" "}
+            <ExternalLink href="https://www.constantcontact.com/legal/privacy-notice">
+              privacy notice
+            </ExternalLink>
+            .
+          </li>
+          <li>
+            You can unsubscribe at any time using the link in the footer of any email I send, and
+            I use your address only to send these updates.
+          </li>
         </ul>
       </section>
 

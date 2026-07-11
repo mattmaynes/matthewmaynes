@@ -9,6 +9,8 @@ import assert from "node:assert/strict";
 import {
   LIMITS,
   validateContact,
+  escapeHtml,
+  renderContactNotification,
   buildResendPayload,
   sendViaResend,
 } from "../src/lib/contact.ts";
@@ -120,13 +122,52 @@ test("createRateLimiter allows up to max per window, then blocks, per key", () =
   assert.equal(rl.check("other", 200), true); // independent per key
 });
 
-test("buildResendPayload wires reply_to + body from the visitor, to/from from caller", () => {
+test("escapeHtml neutralizes the five HTML-significant characters", () => {
+  assert.equal(
+    escapeHtml(`<script>alert("x") & 'y'</script>`),
+    "&lt;script&gt;alert(&quot;x&quot;) &amp; &#39;y&#39;&lt;/script&gt;",
+  );
+  // Ampersand is escaped first, so an already-safe entity is not double-mangled
+  // into a broken one - it just becomes literal text, which is correct for input.
+  assert.equal(escapeHtml("a & b"), "a &amp; b");
+});
+
+test("renderContactNotification fills placeholders with escaped values", () => {
+  const tpl =
+    "<p>[[NAME]] &lt;[[EMAIL]]&gt; on [[DATE]]</p><div>[[MESSAGE]]</div>";
+  const out = renderContactNotification(tpl, {
+    name: "Ada",
+    email: "ada@x.co",
+    message: "line one\nline two",
+    date: "July 11, 2026",
+  });
+  assert.match(out, /Ada &lt;ada@x\.co&gt; on July 11, 2026/);
+  // Message newlines become <br> so line breaks survive in the HTML email.
+  assert.match(out, /line one<br>line two/);
+  assert.ok(!out.includes("[["), "no placeholder tokens should remain");
+});
+
+test("renderContactNotification escapes injected markup (no HTML injection)", () => {
+  const tpl = "<div>[[NAME]] [[MESSAGE]]</div>";
+  const out = renderContactNotification(tpl, {
+    name: `<img src=x onerror=alert(1)>`,
+    email: "a@b.co",
+    message: `</div><script>evil()</script>`,
+    date: "now",
+  });
+  assert.ok(!/<script>/.test(out), "a script tag must never survive into the email");
+  assert.ok(!/<img /.test(out), "an injected img tag must be escaped");
+  assert.match(out, /&lt;script&gt;evil\(\)&lt;\/script&gt;/);
+});
+
+test("buildResendPayload wires reply_to + body from the visitor, to/from/html from caller", () => {
   const p = buildResendPayload({
     name: "Ada",
     email: "ada@x.co",
     message: "hello world",
     to: "me@private.co",
     from: "Form <contact@site.co>",
+    html: "<p>rendered</p>",
   });
   assert.equal(p.to, "me@private.co");
   assert.equal(p.from, "Form <contact@site.co>");
@@ -134,6 +175,7 @@ test("buildResendPayload wires reply_to + body from the visitor, to/from from ca
   assert.match(p.subject, /Ada/);
   assert.match(p.text, /hello world/);
   assert.match(p.text, /ada@x\.co/);
+  assert.equal(p.html, "<p>rendered</p>");
 });
 
 test("buildResendPayload keeps the subject single-line (no header injection)", () => {
@@ -143,6 +185,7 @@ test("buildResendPayload keeps the subject single-line (no header injection)", (
     message: "hi",
     to: "t",
     from: "f",
+    html: "<p>x</p>",
   });
   assert.ok(!/[\r\n]/.test(p.subject), "subject must not contain CR/LF");
   assert.match(p.subject, /Ada/);
