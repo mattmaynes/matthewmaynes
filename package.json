@@ -11,6 +11,8 @@
     "test": "node --test --test-concurrency=1 tests/*.test.ts",
     "resume:pdf": "node scripts/generate-resume-pdf.ts",
     "resume:pdf:check": "node scripts/generate-resume-pdf.ts --check",
+    "privacy:stamp": "node scripts/check-privacy-date.ts",
+    "privacy:check": "node scripts/check-privacy-date.ts --check",
     "prewarm": "node scripts/prewarm-images.ts",
     "theme:build": "roots-brand brand/harbor/brand.config.json"
   },

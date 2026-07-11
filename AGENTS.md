@@ -7,6 +7,14 @@ than region (for example "Ontario, Canada"). The private resume master lives in 
 `context/`; only its scrubbed derivative (`src/lib/resume.ts`) is tracked and rendered. The
 generated `public/resume.pdf` is built from that scrubbed source, so it stays contact-free too.
 
+## Privacy policy - stamp the date when the content changes
+
+When you edit the privacy policy (`src/app/privacy/page.tsx`), run **`npm run privacy:stamp`** and
+commit the result: it sets the "Last updated" date to today and refreshes
+`src/app/privacy/content.hash`. CI enforces this - `npm run privacy:check` (in `verify.yml`) fails a
+build whose privacy **content** changed without the date being stamped. The hash ignores the date
+value, so a pure date bump needs no re-stamp; only content edits do.
+
 ## Blog posts - lightweight process
 
 Authoring or editing a **blog post** (content under `content/blog/`) is content, not a feature, so
