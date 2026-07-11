@@ -27,7 +27,7 @@ export default function PrivacyPage() {
   return (
     <section className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
       <h1 className="text-h1 font-bold text-text">Privacy Policy</h1>
-      <p className="mt-2 text-caption text-text-muted">Last updated: July 3, 2026</p>
+      <p className="mt-2 text-caption text-text-muted">Last updated: July 11, 2026</p>
 
       <p className="mt-6 text-body text-text-muted">
         This is my personal website. I built it to share my work, my resume, and the occasional
