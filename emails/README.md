@@ -10,6 +10,11 @@ The folder is organized in two parts:
   - **`welcome-email.html`** - the "thanks for subscribing" welcome. Personalize with
     `[[FIRSTNAME OR "there"]]`; the ESP injects the compliance/unsubscribe footer.
   - **`blog-post-email.html`** - announce a new post. Fill in the placeholders below.
+  - **`contact-notification.html`** - the contact-form notification (spec 0032). NOT pasted into
+    an ESP: the site's `/v1/contact` route reads this file, HTML-escapes and injects the sender's
+    `[[NAME]]`/`[[EMAIL]]`/`[[MESSAGE]]`/`[[DATE]]`, and sends it via Resend. Edit the markup here;
+    keep the four placeholders intact. It is bundled into the standalone runtime by
+    `next.config.ts` `outputFileTracingIncludes`.
 - **`blog/`** - the finished, filled-in announcement email for each published post (one file per
   post, named to match the post slug).
 

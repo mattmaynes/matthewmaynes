@@ -14,7 +14,7 @@ pending) · 📋 planned.
 | `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, a reading-time pill (spec 0015, the same `Clock` + "N min read" treatment as the post page), excerpt, and tag labels. Interactive discovery (spec 0012, 0028): a single-select Canopy `Combobox` tag filter (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. An email "Subscribe for updates" block (spec 0018) sits at the bottom. |
 | `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a `Blog / {title}` breadcrumb trail at the top (spec 0022, Canopy's `Breadcrumb` Twig set) so the listing is one click away, then a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags, each pill a link to its tag archive - spec 0027), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, an email "Subscribe for updates" block (spec 0018), previous/next post navigation to the chronological neighbours (spec 0021, older post left / newer post right; stacked next-first on mobile; each tile carries a reading-time pill + tags, spec 0023), and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/blog/tags/[tag]` | ✅ | A statically generated archive per tag (spec 0027): every post carrying that tag, newest-first, rendered with the same row treatment as `/blog`, under a "Posts tagged {Tag}" heading with an "All posts" link back and a subscribe block. One page per tag (including single-post tags; a future tag gets a page on the next build); an unknown tag slug is a clean 404. A route-unique `<title>`/description makes each an indexable landing page; every archive is listed in the sitemap. The post-page tag pills link here, and the `/blog` tag Combobox remains the in-place browse surface. |
-| `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew via `POST /v1/contact`, plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
+| `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew an on-brand HTML notification via `POST /v1/contact` and records the sender in Constant Contact (unsubscribed by default; an opt-in "Subscribe for updates from me" checkbox also adds them to the mailing list - spec 0032), plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 | `/subscribe` | ✅ | A focused, shareable mailing-list landing page (spec 0020): a heading + short invitation, the subscribe form with all three fields (email, name, button) shown up front, then a "Latest post" card (newest post) and a "See all posts" button to `/blog`. **Not** in the top nav (the shared nav/footer still render), but it **is** in the sitemap so the URL is crawlable when shared. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017) documenting what the site actually does: PostHog analytics with masked-input session replay, the Resend-relayed contact form, transient IP use, self-hosted assets, no tracking cookies/ads/database. Cookieless legitimate-interest basis (no consent banner). Linked from the footer, not the top nav or sitemap. Lists a dedicated public `privacy@` address for data requests - the only email on the site. |
 | `/ai-policy` | ✅ | Plain-language AI transparency page (spec 0030): first-person prose stating that AI is used only as an editor and sounding board (structure, wording, catching mistakes) while the ideas, opinions, and experiences stay the author's. Warmer `<h1>` ("How I Use AI") with an "AI Policy" `<title>`/footer label. Principle-based, names no tools. Footer utility like `/privacy` - not in the top nav or sitemap. |
@@ -135,14 +135,22 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 
 ## Contact form
 
-- ✅ Live (spec 0008). The page leads with the form at full container width, then a column of
-  social links (LinkedIn, X, Facebook, Instagram) rendered as icon + URL-path labels (the resume
-  "Links" treatment via the shared `socialPath` helper). Submitting `POST`s JSON to the
-  versioned route `/v1/contact`, which validates, applies spam guards, and relays the message by
-  email via Resend.
+- ✅ Live (spec 0008; notification + CRM, spec 0032). The page leads with the form at full container
+  width, then a column of social links (LinkedIn, X, Facebook, Instagram) rendered as icon + URL-path
+  labels (the resume "Links" treatment via the shared `socialPath` helper). Submitting `POST`s JSON to
+  the versioned route `/v1/contact`, which validates, applies spam guards, and relays the message by
+  email via Resend - now as an **on-brand HTML notification** (Harbor header, sender name, `mailto:`
+  email, the message with line breaks, a Reply button) rendered from
+  `emails/templates/contact-notification.html` with every field HTML-escaped and injected server-side.
 - The destination address lives only in server env (`CONTACT_TO_EMAIL`, with `RESEND_API_KEY` and
   `CONTACT_FROM_EMAIL`) and is never sent to the browser or committed. The visitor's address is the
   reply-to, so a reply reaches them.
+- **Constant Contact record (spec 0032).** Every submission also records the sender in CTCT
+  (best-effort, non-fatal): by default as an **`unsubscribed`** contact on the **"Website Contact"**
+  list (a CRM trail, no implied consent). An **unchecked-by-default "Subscribe for updates from me"**
+  checkbox under the Email field opts them in instead - added via `sign_up_form` to both the blog and
+  Website Contact lists, exactly like the standalone subscribe form. Reuses the spec 0018 token cache;
+  only contact scope is needed (no campaign scope). See `architecture.md`.
 - Spam protection ships with it (not deferred): a honeypot field, server-side validation + length
   caps, a best-effort per-IP rate limit, and a same-origin check. A CAPTCHA/Turnstile is the next
   follow-up if bots get through. See `architecture.md`.
