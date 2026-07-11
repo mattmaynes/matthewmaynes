@@ -116,6 +116,29 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-12">
+        <h2 className="text-h2 font-semibold text-text">The mailing list</h2>
+        <p className="mt-3 text-body text-text-muted">
+          If you subscribe to updates - either from the subscribe form on the blog or by ticking
+          the box on the contact form - I add your email address (and name, if you give one) to my
+          mailing list so I can send you occasional updates.
+        </p>
+        <ul className="mt-3 list-disc space-y-2 pl-6 text-body text-text-muted">
+          <li>
+            The list is managed by Constant Contact, which stores and processes it on my behalf on
+            servers in the United States. You can read how they handle data in their{" "}
+            <ExternalLink href="https://www.constantcontact.com/legal/privacy-notice">
+              privacy notice
+            </ExternalLink>
+            .
+          </li>
+          <li>
+            You can unsubscribe at any time using the link in the footer of any email I send, and
+            I use your address only to send these updates.
+          </li>
+        </ul>
+      </section>
+
+      <section className="mt-12">
         <h2 className="text-h2 font-semibold text-text">IP addresses and server logs</h2>
         <p className="mt-3 text-body text-text-muted">
           Like any website, my server briefly sees your IP address when you visit. I use it only
