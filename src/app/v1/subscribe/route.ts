@@ -6,6 +6,7 @@ import {
 } from "@/lib/http-guards";
 import {
   createTokenCache,
+  isTestEmail,
   submitSubscription,
   validateSubscribe,
 } from "@/lib/subscribe";
@@ -84,6 +85,17 @@ export async function POST(req: Request): Promise<Response> {
   const result = validateSubscribe(input);
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
+  }
+
+  // 5b. Internal test domain: simulate a successful subscribe WITHOUT writing to
+  //     Constant Contact, so the owner can exercise the full form UX (submit ->
+  //     success note -> analytics) without creating throwaway contacts or firing a
+  //     live welcome email. Returns the same { ok: true } as a real signup, so the
+  //     client shows the identical success state. Deliberately BEFORE the rate
+  //     limiter so the flow can be tested back to back, and before any env/network
+  //     work so it also works when the CTCT secrets are not configured locally.
+  if (isTestEmail(result.data.email)) {
+    return NextResponse.json({ ok: true });
   }
 
   // 6. Rate limit, keyed on the real client IP. Counts every valid, same-origin

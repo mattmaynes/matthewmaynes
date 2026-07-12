@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import {
   SUBSCRIBE_LIMITS,
   validateSubscribe,
+  isTestEmail,
   splitName,
   buildSignUpPayload,
   buildCreateContactPayload,
@@ -46,6 +47,19 @@ test("validateSubscribe accepts an optional name (trimmed, capped), never requir
   const long = validateSubscribe({ email: "a@b.co", name: "x".repeat(500) });
   assert.ok(long.ok);
   assert.equal(long.data.name.length, SUBSCRIBE_LIMITS.name);
+});
+
+test("isTestEmail matches the internal test domain case-insensitively, anchored on @", () => {
+  // Exact test domain, any casing, subscribes into the fake-success path.
+  assert.equal(isTestEmail("me@matthewmaynes.com"), true);
+  assert.equal(isTestEmail("ME@MatthewMaynes.COM"), true);
+  assert.equal(isTestEmail("first.last+tag@matthewmaynes.com"), true);
+  // A real subscriber is never diverted.
+  assert.equal(isTestEmail("reader@example.com"), false);
+  // The leading @ anchor guards against a look-alike domain and a subdomain -
+  // both must still reach Constant Contact, not the fake-success path.
+  assert.equal(isTestEmail("evil@notmatthewmaynes.com"), false);
+  assert.equal(isTestEmail("x@mail.matthewmaynes.com"), false);
 });
 
 test("splitName splits on the first space into first/last name", () => {
