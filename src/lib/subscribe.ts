@@ -78,6 +78,25 @@ export function validateSubscribe(input: {
   return { ok: true, data: { email, name } };
 }
 
+// Domain reserved for exercising the subscribe UX end to end without touching
+// Constant Contact. Any address AT this exact domain gets a simulated success in
+// the route (see `isTestEmail`), so the owner can walk the real form - submit,
+// success note, analytics - repeatedly without creating throwaway contacts or
+// firing a live welcome email.
+export const TEST_EMAIL_DOMAIN = "matthewmaynes.com";
+
+/**
+ * True when an (already-validated) email belongs to the internal test domain,
+ * matched case-insensitively on the exact domain. The leading `@` anchors it to
+ * the domain itself, so a look-alike like `x@notmatthewmaynes.com` or a subdomain
+ * like `x@mail.matthewmaynes.com` is NOT treated as a test address. The route uses
+ * this to short-circuit into a fake-success path that never reaches Constant
+ * Contact.
+ */
+export function isTestEmail(email: string): boolean {
+  return email.toLowerCase().endsWith(`@${TEST_EMAIL_DOMAIN}`);
+}
+
 /**
  * Split an optional free-text name into Constant Contact first/last name parts
  * (spec 0018 amendment). Low-friction single field: the FIRST whitespace-separated
