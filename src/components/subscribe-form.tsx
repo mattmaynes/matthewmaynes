@@ -4,7 +4,15 @@ import { useState } from "react";
 import { Check } from "@rogueoak/icons";
 import { usePostHog } from "posthog-js/react";
 import { clientAnalyticsEnabled } from "@/lib/posthog-browser";
-import { Button, FormField, FormFieldControl, FormFieldLabel, Input } from "@/components/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  FormField,
+  FormFieldControl,
+  FormFieldLabel,
+  Input,
+} from "@/components/ui";
 
 /**
  * The blog subscribe box (spec 0018). A `"use client"` island (Canopy inputs cross
@@ -127,25 +135,29 @@ export function SubscribeForm({
         noValidate
       >
         {/* On a successful subscribe (spec 0025), the fields + button are replaced in
-            place by a badge-shaped confirmation, now followed by a short note that
-            points the reader to the welcome email and asks them to rescue it from
-            spam - deliverability improves for everyone when readers mark it as wanted.
-            Otherwise the input row renders: it stays inline at sm+ whether or not the
-            optional Name field is revealed (email sm:flex-[2] shortens; the revealed
-            Name sits between it and the button); below sm the fields stack. */}
+            place by a card: the green confirmation badge sits at the top, and the
+            welcome/deliverability note sits beneath it inside the card so the text
+            reads as anchored, not floating. The note points the reader to the welcome
+            email and asks them to rescue it from spam - deliverability improves for
+            everyone when readers mark it as wanted. Otherwise the input row renders:
+            it stays inline at sm+ whether or not the optional Name field is revealed
+            (email sm:flex-[2] shortens; the revealed Name sits between it and the
+            button); below sm the fields stack. */}
         {status.kind === "success" ? (
-          <div role="status" className="subscribe-badge-enter flex flex-col gap-3">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-body font-medium text-success">
-              <Check aria-hidden className="h-4 w-4" />
-              You are on the list
-            </span>
-            <p className="max-w-2xl text-body text-text-muted">
-              Check your inbox for a welcome message. If you do not see it, look in your
-              junk or spam folder, move it to your inbox, and mark it as not spam. That
-              keeps my emails landing in your inbox, and it helps me reach everyone else
-              too. Thank you.
-            </p>
-          </div>
+          <Card role="status" className="subscribe-badge-enter">
+            <CardContent className="flex flex-col items-start gap-3 p-6">
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-2 text-body font-medium text-success">
+                <Check aria-hidden className="h-4 w-4" />
+                You are on the list
+              </span>
+              <p className="text-body text-text-muted">
+                Check your inbox for a welcome message. If you do not see it, look in
+                your junk or spam folder, move it to your inbox, and mark it as not
+                spam. That keeps my emails landing in your inbox, and it helps me reach
+                everyone else too. Thank you.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <FormField className="w-full sm:flex-[2]">
