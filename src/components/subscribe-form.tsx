@@ -154,7 +154,7 @@ export function SubscribeForm({
                 Check your inbox for a welcome message. If you do not see it, look in
                 your junk or spam folder, move it to your inbox, and mark it as not
                 spam. That keeps my emails landing in your inbox, and it helps me reach
-                everyone else too. Thank you.
+                everyone else too. Thank you!
               </p>
             </CardContent>
           </Card>
