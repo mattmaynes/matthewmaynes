@@ -60,6 +60,7 @@ This repo follows **Trellis** - rogueoak's shared rules for AI agents. Read the 
 
 - **`docs/rules/guidelines.md`** - how to write and ship: ASCII-only text, and code that passes
   tests, lint, and build before it merges.
+- **`docs/rules/conventions.md`** - how code itself is written (APIs versioned in the URL path).
 - **`docs/rules/language.md`** - the voice for anything public-facing (READMEs, docs, release
   notes, user-facing strings).
 
