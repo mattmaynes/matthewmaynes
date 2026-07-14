@@ -607,3 +607,29 @@ Capture lessons as you go.
   the point the last unsplittable block stops fitting; past it you must tighten spacing or trim
   content, not enlarge type. Always verify PDF page COUNT (not just "it rendered") when changing
   resume type size - render and read the actual PDF.
+
+## Constant Contact: a "long-lived" refresh token still expires from inactivity
+
+- **A long-lived CTCT refresh token is not immortal - it expires after ~180 days of NON-USE, and
+  the idle clock resets only when the token is exercised.** The subscribe outage (2026-07-14) was
+  the token silently expiring, not any code change. The old `subscribe.ts` comment calling the token
+  "non-rotating ... nothing to persist" was half right (long-lived tokens do not rotate) but hid the
+  real failure mode. CTCT keys have a Portal OAuth2 setting for *rotating* (single-use, a new
+  refresh token every call) vs *long-lived* (reusable, 180-day idle expiry); this key is long-lived.
+- **A lazy token mint on a low-traffic endpoint is a latent time bomb.** The route mints an access
+  token only on a real subscribe, then caches it ~24h. So on a quiet blog the refresh token can go
+  unused for months - deploys do not exercise it (the cache is lazy), so nothing touches it until a
+  visitor subscribes, by which point it has expired and they hit a 500. Any credential kept alive
+  only as a side effect of user traffic will eventually die during a traffic lull. Exercise it on a
+  fixed schedule (cron), independent of traffic - a daily `ctct refresh-token` (the ctct-cli
+  container) against the same `.env.site`, which alerts via Resend if a refresh ever fails.
+- **Cohosted sites on one CTCT account share the account's lists, not their app credentials.** Two
+  V3 keys (different `client_id`) authorized on the same Constant Contact account can each mint
+  tokens that read/write the same lists - which is why the cohosted rogueoak key was a valid
+  emergency stand-in for the blog list. Verify shared-account before borrowing a token: mint with it
+  and `GET /v3/contact_lists/<list_id>`; a 200 with the expected list name confirms it. A refresh
+  token is bound to its `client_id`, so swap the pair together, never just the token.
+- **This app uses the CTCT device flow (public client, no redirect URI, no secret), so re-auth is a
+  device-grant browser approval, not a code+PKCE callback.** When a refresh token is truly dead it
+  cannot be refreshed - it must be re-minted by a human approving in a browser. Runbook (private):
+  `context/deploy-runbook.md`.

@@ -143,9 +143,19 @@ export function buildSignUpPayload(
 }
 
 /**
- * Exchange the long-lived (non-rotating) refresh token for a 24h bearer access
- * token. Public client, so no client secret is sent. Throws on a non-2xx so the
- * route returns a generic 500. `fetchImpl` is injectable for tests.
+ * Exchange the refresh token for a 24h bearer access token. Public client, so no
+ * client secret is sent. Throws on a non-2xx so the route returns a generic 500.
+ * `fetchImpl` is injectable for tests.
+ *
+ * The app's Constant Contact key is configured for LONG-LIVED refresh tokens, so a
+ * refresh returns the SAME refresh token (nothing to persist here). But long-lived
+ * is not immortal: an unused refresh token expires after ~180 days, and the idle
+ * clock resets only when it is used. Because this mint is lazy (it only fires on a
+ * real subscribe, then the token is cached ~24h), a low-traffic period can let the
+ * token sit idle past 180 days and expire (the 2026-07-14 outage). A daily cron on
+ * the host runs `ctct refresh-token` (the ctct-cli container) against this
+ * `.env.site` to exercise the token out-of-band so the idle clock never runs out;
+ * see docs/specs/0033.
  */
 export async function refreshAccessToken(
   { clientId, refreshToken }: { clientId: string; refreshToken: string },
@@ -316,10 +326,12 @@ export type TokenCache = {
 /**
  * A tiny in-memory access-token cache. Mints a token on the first call, then
  * reuses it until shortly before expiry, so a burst of submits does not hammer
- * the auth server. Safe because the refresh token is non-rotating - a refresh
- * yields a new access token but the same refresh token, so there is nothing to
- * persist. Single-process by design (module-scoped in the route); a restart just
- * re-mints. `now` is injectable so expiry is unit-testable without a real clock.
+ * the auth server. No refresh token is persisted because the key is configured for
+ * LONG-LIVED refresh tokens (a refresh returns the same token) - but note that a
+ * long-lived token still expires after ~180 days of inactivity, which the host cron
+ * keepalive guards against (see `refreshAccessToken` above). Single-process by
+ * design (module-scoped in the route); a restart just re-mints. `now` is injectable
+ * so expiry is unit-testable without a real clock.
  * @param now - returns epoch ms
  */
 export function createTokenCache(now: () => number = Date.now): TokenCache {
