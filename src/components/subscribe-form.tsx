@@ -39,13 +39,20 @@ export function SubscribeForm({
 }) {
   const posthog = usePostHog();
 
-  // Map Canopy's generic phases to this app's event names, PII-free and gated so
-  // local runs stay off the live dashboard (spec 0016), same as the contact form.
+  // Map Canopy's generic phases to this app's explicit event names, PII-free and
+  // gated so local runs stay off the live dashboard (spec 0016), same as the contact
+  // form. The names are full literals (not `blog_subscribe_${phase}`) so each ships
+  // verbatim in a client chunk - the smoke test asserts the submit event is present.
+  const EVENTS: Record<SubscribeEventPhase, string> = {
+    submitted: "blog_subscribe_submitted",
+    succeeded: "blog_subscribe_succeeded",
+    failed: "blog_subscribe_failed",
+  };
   function onEvent(
     phase: SubscribeEventPhase,
     props: { source: string; has_name: boolean; reason?: string },
   ) {
-    if (clientAnalyticsEnabled()) posthog?.capture(`blog_subscribe_${phase}`, props);
+    if (clientAnalyticsEnabled()) posthog?.capture(EVENTS[phase], props);
   }
 
   // Perform the subscription. Posts the collected values (including the honeypot)
