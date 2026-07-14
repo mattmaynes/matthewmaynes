@@ -1,0 +1,56 @@
+---
+title: I Built a Stream Processor and Accidentally Became a VP
+date: 2026-07-13
+tags: [Technical Leadership, Staying Hands-On, Distributed Systems]
+excerpt: For the first year, every line that shipped had my fingerprints on it. Then the team grew and the job quietly changed underneath me: it stopped being what I could build and became what four other people could ship without me in the room. Staying close to the code is what made that possible, and it's the same instinct that carried me to VP.
+cover: stream-processor-desk.png
+coverCaption: The whiteboard behind every hard part on this project - determinism, exactly-once, checkpoints - and a lot of q
+---
+
+**For the first year of the project, everything that shipped had my fingerprints on it.** I wrote it, I tested it, and if something broke at 2am, it was mine to fix. Then the team grew, and somewhere in there the job flipped on me without telling me first. What mattered stopped being what I could personally ship. It became what four other people could ship without me in the room.
+
+Nobody sent a memo about that. I just noticed, a couple of months in, that I hadn't touched the code that actually went out that week. What I'd actually been doing was staying the person who could explain why something worked, not just that it worked. **That turned out to be the whole job.**
+
+## Same language, top to bottom
+
+The product itself was a streaming data processor: you wrote a pipeline as a declarative spec, read, transform, filter, write, and the engine took care of distributing that across a fleet of workers in parallel. Think Apache Flink, if you know it. Users could choose between at-least-once and exactly-once semantics, depending on how much they cared about a record possibly showing up twice.
+
+The whole engine, and the pipelines users wrote against it, were built in q, a terse, array-based language mostly known for crunching financial time series fast, not for running a distributed system. Most declarative pipeline tools bolt a nice syntax on top of something else doing the real work underneath. Ours didn't. **The declarative layer and the deterministic guarantees underneath it were the same language, top to bottom.**
+
+I got properly obsessed with the research side of that, and it's a big part of why I ended up leading the team rather than just staffed on it. Some of what I'd learned building the Analyst Transformer a few years earlier fed straight into which transformations users actually needed, as opposed to the ones that looked good in a design doc. Being the person who could answer that question in a room full of stakeholders is a specific kind of useful that gets noticed.
+
+## Why it was hard
+
+None of the hard parts were about the pipeline syntax. They were about making a distributed system behave deterministically, which is a far less forgiving problem than it sounds. Deterministic here means something specific: given the same input twice, you get the exact same output twice, in the exact same order, no matter how many workers touched it or what failed halfway through.
+
+We used durable queues that could be reread from any point, paired with checkpointing, so a worker that died mid-stream picked up exactly where it left off instead of guessing. Every outbound message carried a sequence id, which is what let us deduplicate on the receiving end and actually deliver "exactly once" instead of just advertising it. And the workers split the data map-reduce style, each one owning a slice, with a controller deciding who got what.
+
+**Accurate wasn't a nice-to-have here. It was the entire point of the system.**
+
+This is also where I learned the actual value of staying technical while leading. When something broke, I wasn't reading a summary of the failure from someone else. I could trace it myself, back to the checkpoint, back to the sequence id, back to the exact worker that choked. **That is a different kind of authority than the kind you get from a title.**
+
+## Backwards, on purpose
+
+Here's the detail I still bring up unprompted. q evaluates right to left. Almost every language you've ever used evaluates left to right, so that's already a small gear-shift for anyone new to it. Our pipeline syntax, the part you'd chain together to actually build a job, read left to right, which meant it ran backwards relative to every other line of q on the same screen.
+
+For a working q developer, this was maddening for about a week. They'd write the pipeline the way q normally works, watch it fail, get annoyed, and assume the tool was broken. Once it clicked, they liked it, some of them liked it a lot, but getting them past that first week was consistently the hardest part of onboarding anyone who already knew the language.
+
+**People with zero q background had an easier time than the veterans did.**
+
+Coaching people through that week is also where I first noticed the pattern that would follow me for years. I could get someone unstuck a lot faster by knowing exactly which line would trip them up than by pointing them at documentation and hoping. **Knowing the system that well is what made me useful as a lead, not just useful as the person who wrote it first.**
+
+## The pattern repeated at every scale
+
+Most of my experience up to that point had been heavily process driven. I liked plans, I liked specs, I liked knowing where the work was going before it started. So naturally, my first instinct as a lead was to hand that same structure to other people's work. It went about as well as you'd expect. Engineers doing exploratory, half-defined work do not want a Gantt chart handed to them.
+
+We moved to two week sprints, agile in the plain sense of the word, and the flexibility turned out not to be a compromise. It was the actual answer, and I only got there because I was close enough to the day to day work to see that the plan was slowing people down rather than helping them.
+
+That was the whole shape of what came next. I got handed the database ingestion team not long after, then I was VP of Streaming Data, responsible for all the engineering teams on KX Insights. Each time, the reason was the same reason: **I knew how the systems actually worked, not just how they were supposed to work, and that made me useful at whatever scale I was operating at.**
+
+I liked the VP role. I also missed being properly in the weeds more than I expected to, so I made a rule for myself: stay close to the work. Not constantly, and not as a way of dodging the actual job of managing, but periodically, on purpose, hands still on a keyboard. **It turned out to be one of the better decisions I made.** I could hold a genuinely detailed model of how the system worked while also operating at the level where a single tradeoff affects a dozen teams at once, and those two things get treated as opposites a lot more often than they need to be.
+
+It also made me better at pointing people toward problems, because I understood what solving them actually required. Coaching someone through a hard technical call is a different skill than making the call yourself. Staying close to the work is what let me do both, and it's the same reason I got put in the position to do it at all.
+
+I wrote about this same instinct later, in a different context:
+
+> Being a director is a constant negotiation with myself: do this one, or coach someone else through it? I lean toward staying close to the work, because grounded advice beats theory every time.

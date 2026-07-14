@@ -15,6 +15,7 @@ import eagleSnap from "../../public/images/blog/eagle-snap.png";
 import houseQuicksand from "../../public/images/blog/house-quicksand.png";
 import snowyRunway from "../../public/images/blog/snowy-runway.png";
 import analystTableTransformer from "../../public/images/blog/analyst-table-transformer.png";
+import streamProcessorDesk from "../../public/images/blog/stream-processor-desk.png";
 
 import type { SiteImage } from "./site";
 
@@ -46,6 +47,10 @@ export const blogImages = {
   "analyst-table-transformer.png": {
     ...analystTableTransformer,
     alt: "The KX Analyst table transformer: a visual node graph of a data pipeline above a time-series table, with a menu of column transform operations open.",
+  },
+  "stream-processor-desk.png": {
+    ...streamProcessorDesk,
+    alt: "A desk by a window with a monitor showing q stream-processor code beside a pipeline diagram, a whiteboard behind it sketching determinism, exactly-once, checkpoints and failure recovery, an open notebook, and a KX-branded mug and book.",
   },
 } satisfies Record<string, BlogImage>;
 
