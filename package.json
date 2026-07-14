@@ -19,7 +19,7 @@
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist-mono": "^5.2.8",
-    "@rogueoak/canopy": "^0.10.1",
+    "@rogueoak/canopy": "^0.11.0",
     "@rogueoak/icons": "^0.10.1",
     "@rogueoak/roots": "^0.10.1",
     "next": "16.2.9",
