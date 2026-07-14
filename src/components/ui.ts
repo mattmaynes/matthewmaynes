@@ -34,6 +34,7 @@ export {
 } from "@rogueoak/canopy/twigs";
 export {
   Combobox,
+  SubscribeForm,
   TopNav,
   TopNavActions,
   TopNavBrand,
@@ -41,4 +42,8 @@ export {
   TopNavLinks,
   TopNavMenuButton,
 } from "@rogueoak/canopy/branches";
-export type { ComboboxOption } from "@rogueoak/canopy/branches";
+export type {
+  ComboboxOption,
+  SubscribeValues,
+  SubscribeEventPhase,
+} from "@rogueoak/canopy/branches";
