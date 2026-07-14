@@ -38,15 +38,40 @@ Subscribe button stacks full width beneath it; at `sm` and up the input and butt
 inline on one row (input flexes to fill, button hugs its label). The "Subscribe for
 updates" title sits above both.
 
-**Progressive optional name capture (amendment).** By default the box stays exactly as
-above. When the reader **focuses the email field**, a single optional **"Name"** field
-appears directly below the email, between it and the Subscribe button, and the row reflows
-to a stacked layout (email -> Name -> Subscribe) at all widths; the field stays visible
-once revealed. Providing a name is optional - an empty name subscribes exactly as before.
-When a name is given it is split on the first whitespace run: the first token becomes the
-contact's **first name** and the remainder (if any) the **last name**, both stored on the
-Constant Contact contact so later emails can be personalized. This is a low-friction way to
-capture a bit more without a heavier form, and applies to every placement of the box.
+**Progressive optional name capture.** By default the box stays exactly as above. When the
+reader **focuses the email field**, a single optional **"Name"** field is revealed directly
+below the email, between it and the Subscribe button. Providing a name is optional - an
+empty name subscribes exactly as before. When a name is given it is split on the first
+whitespace run: the first token becomes the contact's **first name** and the remainder (if
+any) the **last name**, both stored on the Constant Contact contact so later emails can be
+personalized. This is a low-friction way to capture a bit more without a heavier form, and
+applies to every placement of the box.
+
+**Reveal keeps the row inline at `sm+` and animates.** Revealing the Name field does **not**
+reflow the row on a wide screen: at `sm` and up the email input shortens and the Name field
+appears **between** the email and the Subscribe button, and the button does not move; below
+`sm` the fields stack. The reveal is **animated** (~200ms, eased): the field grows
+horizontally on `sm+` (the button slides over) and vertically below `sm` (it expands
+downward, pushing the button down), so it reads as a smooth reveal rather than a jump.
+Reduced-motion users get an instant reveal. While collapsed the Name field is out of the tab
+order and the accessibility tree, restored when revealed.
+
+**Success renders as an in-place badge.** On a successful subscribe, the email/name fields
+and the Subscribe button are **replaced in place** by a compact, badge-shaped confirmation
+("You are on the list" with a check glyph), roughly button-sized, so the outcome reads at a
+glance and the form no longer invites a second submit. The badge carries `role="status"` and
+**animates in** with a subtle fade + slight scale-up (~200ms ease-out, matching the
+name-field reveal); reduced-motion users get it instantly. The error state stays an inline
+message below the row.
+
+**A dedicated, shareable `/subscribe` page.** Beyond the two blog surfaces, a focused
+`/subscribe` landing page leads with the ask: a page heading, a short invitation, and the
+subscribe form showing **all three fields** (email, name, button) up front. Below it, the
+**latest post** ("Latest post") as a card - cover, title, excerpt, date, reading-time-style
+metadata, and the post's **tags** (matching the listing row) - and a **See all posts** button
+to `/blog`. The page is **not** in the top nav but the shared nav/footer render (it uses the
+root layout), and it **is** listed in the sitemap so the URL is crawlable/shareable. If the
+content dir is empty, the Latest-post block is omitted.
 
 ## Scope
 
@@ -55,22 +80,56 @@ In:
   heading, one email `Input`, a Subscribe `Button`, a honeypot field, and an
   idle / submitting / success / error status machine - modeled on
   `src/components/contact-form.tsx`. Canopy inputs come through `@/components/ui`
-  (the client boundary, learnings 0001), never from `@rogueoak/canopy/*` directly.
+  (the client boundary, learnings 0001), never from `@rogueoak/canopy/*` directly. It
+  takes an `alwaysShowName` prop (Name visible from first paint, for the dedicated page)
+  and a `heading` prop (default true, so the dedicated page can supply its own copy).
 - **Responsive layout**: stacked and full-width below `sm` (input full width, button
   full width beneath); inline single row at `sm+` (input `flex-1`, button auto width).
-- **Progressive name field (amendment)**: an `expanded` state, set true on email focus
-  (and kept true so it stays clickable), reveals an optional "Name" `Input` between the
-  email and the button; while expanded the layout reflows to stacked (email -> Name ->
-  Subscribe) at all widths. Default (unexpanded) layout is unchanged. The Name field has
-  an accessible "Name (optional)" label, `autoComplete="name"`, `maxLength={100}`, and the
-  shared focus-ring. Submit sends `{ email, name, company }`; an empty `name` is fine.
-- **Placement** on two surfaces, both server components rendering the client island:
-  - Blog **listing** `src/app/blog/page.tsx` - after the `<BlogList>` block (after
-    line 76), before `</section>`, at the container's `max-w-[1200px]` width.
+- **Progressive name field**: an `expanded` state, set true on email focus (and kept true
+  so it stays clickable), reveals an optional "Name" `Input` between the email and the
+  button. The row stays **inline at `sm+`** when expanded (container always
+  `flex-col gap-3 sm:flex-row sm:items-end`; email `sm:flex-[2]`, Name `sm:flex-1`, button
+  `sm:w-auto`) - it never switches to `flex-col` at `sm+`, so the button does not move;
+  below `sm` the fields stack. DOM order stays email -> Name -> button so Name renders
+  between them. Default (unexpanded) layout is unchanged. The Name field has an accessible
+  "Name (optional)" label, `autoComplete="name"`, `maxLength={100}`, and the shared
+  focus-ring. Submit sends `{ email, name, company }`; an empty `name` is fine.
+- **Animated name reveal.** The Name field stays in the DOM and collapses via size +
+  opacity (not `display`, which can't transition): always `sm:flex-1` / `w-full` with
+  `overflow-hidden` and `transition-all duration-200 ease-out`; collapsed clamps it to zero
+  on the axis that matters (`max-h-0` mobile, `sm:max-w-0` desktop, `opacity-0`), revealed
+  releases it (`max-h-24` / `sm:max-w-md`, `opacity-100`). Revealing animates the button
+  sliding over (desktop) or the field growing down (mobile). `motion-reduce:transition-none`
+  gives an instant reveal. While collapsed the input is out of tab order + a11y tree
+  (`aria-hidden` + `tabIndex=-1` + `pointer-events-none`), restored when revealed.
+- **In-place success badge.** On `status === "success"` the input row (email + animated Name
+  field + Button) is swapped for a single `role="status"` badge - an `inline-flex` pill
+  (`rounded-full`, `px-4 py-2` ~ the Button's height) with a `Check` glyph + "You are on the
+  list" text in the success tokens (`text-success` on `bg-success/10` with `border-success/30`).
+  `Check` is imported directly from `@rogueoak/icons` (fine inside the `"use client"` island).
+  The badge **animates in** via a `@keyframes subscribe-badge-in` (opacity 0 -> 1,
+  `scale(0.96) -> scale(1)`) + `.subscribe-badge-enter` class in `src/styles/globals.css`
+  (the Tailwind entry, not `theme-harbor.css`, so the resume-PDF freshness hash is untouched -
+  learnings 0011), with a `prefers-reduced-motion: reduce` block setting `animation: none`. A
+  freshly-mounted node has no from-state, so this is a keyframe, not a transition. The old
+  below-form success `<p>` is removed (the badge subsumes it); the error state is unchanged.
+- **Placement** on three surfaces, all server components rendering the client island:
+  - Blog **listing** `src/app/blog/page.tsx` - after the `<BlogList>` block, before
+    `</section>`, at the container's `max-w-[1200px]` width.
   - Blog **post** `src/app/blog/[slug]/page.tsx` - immediately after the MDX content
-    (`<PostBody>`, line 207), inside the `max-w-4xl` article. Exact order relative to
-    the existing disclaimer `<p>` and the Back/RSS nav row is a designer-review point
-    (default: content -> subscribe -> disclaimer -> nav).
+    (`<PostBody>`), inside the `max-w-4xl` article (default order: content -> subscribe ->
+    disclaimer -> prev/next -> nav; see spec 0021 for prev/next).
+  - Dedicated **`/subscribe`** page (see below), which renders the form with
+    `alwaysShowName heading={false}`.
+- **Dedicated `/subscribe` page** (`src/app/subscribe/page.tsx`): a Server Component with a
+  page-level H1 + invitation copy, then `<SubscribeForm source="subscribe_page" alwaysShowName
+  heading={false} />`, then the newest post (`getAllPosts()[0]`, cover resolved server-side via
+  `getBlogImage`) as a "Latest post" card showing cover, title, excerpt, date, and the post's
+  **tags** (the same rounded chips the listing row uses), and a "See all posts" button to
+  `/blog`. Empty content dir -> the Latest-post block is omitted. `alwaysShowName` seeds
+  `expanded` true so the three-field inline layout is in the SSR HTML.
+- **Sitemap.** Add `/subscribe` to `src/app/sitemap.ts` (the top nav stays unchanged - no
+  Subscribe link). A shareable landing page benefits from being crawlable.
 - A **versioned API route** `POST /v1/subscribe` (`src/app/v1/subscribe/route.ts`):
   only `POST` exported (other methods auto-405). It applies the same guards as
   `/v1/contact` (same-origin 403, body-size 413, JSON-parse 400, honeypot silent 200,
@@ -99,7 +158,7 @@ In:
   gated by `clientAnalyticsEnabled()`, with the form wrapped in `ph-no-capture` -
   mirroring the contact form (learnings feedback 0011). The submit event also carries a
   PII-free **`has_name`** boolean (whether a name was provided) and a `source`
-  (`blog_index`/`blog_post`) - never the name or email itself (amendment).
+  (`blog_index`/`blog_post`/`subscribe_page`) - never the name or email itself.
 - Secret wiring **documentation**: add `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`,
   `CTCT_LIST_ID` as empty, commented placeholders in `.env.example` (server-only, never
   `NEXT_PUBLIC_`). The live values already exist in `deploy/docker/.env.site` on the
@@ -173,12 +232,47 @@ architect persona to confirm the call.
 `idle | submitting | success | error{message}` status machine like `contact-form.tsx`.
 `handleSubmit` `preventDefault`s, POSTs JSON to `/v1/subscribe`, and branches on
 `res.ok && json.ok`. Submitting disables the button and swaps its label to
-"Subscribing..."; success renders `role="status" text-success`, error renders
-`role="alert" text-danger` (the same tokens the contact form uses). The honeypot is the
-hidden `company` field. Layout: a flex container that is `flex-col` (stacked) by default
-and `sm:flex-row` at the breakpoint; the input is `w-full` / `sm:flex-1` and the button
-`w-full` / `sm:w-auto`, so mobile stacks full-width and desktop sits inline - the
-explicit mobile requirement. Reuse the existing focus-ring `RING` string convention.
+"Subscribing..."; error renders `role="alert" text-danger` (the same token the contact
+form uses). The honeypot is the hidden `company` field. Layout: a flex container that is
+`flex-col gap-3 sm:flex-row sm:items-end` - stacked and full-width below `sm` (input
+`w-full`, button `w-full` beneath), inline at `sm+` (input `sm:flex-[2]`, button
+`sm:w-auto`). Reuse the existing focus-ring `RING` string convention.
+
+**Progressive name reveal (inline at `sm+`, animated).** An `expanded` state goes true on
+email focus and stays true. The Name field is always in the DOM; its wrapper is `overflow-
+hidden transition-all duration-200 ease-out` and toggles between a collapsed state
+(`max-h-0` / `sm:max-w-0`, `opacity-0`, plus `aria-hidden` + `tabIndex=-1` +
+`pointer-events-none`) and a revealed state (`max-h-24` / `sm:max-w-md`, `opacity-100`,
+`sm:flex-1`). Because the field is width-clamped (`max-w`) rather than `display`-toggled, the
+row never switches to `flex-col` at `sm+`: on desktop the reveal widens the field and slides
+the button over; on mobile the `max-h` grow pushes the button down. `sm:max-w-md` is a cap
+wider than the field's real flex width, so it bounds the animation without clipping.
+`motion-reduce:transition-none` gives reduced-motion users an instant reveal. DOM order stays
+email -> Name -> button, so Name renders between them. `alwaysShowName` seeds `expanded` true
+so the dedicated page ships the three-field inline layout in its SSR HTML (which is exactly
+where the inline-fix and revealed markers are smoke-guarded).
+
+**Success badge (in-place, animated entrance).** The input row is wrapped in a
+`status.kind === "success"` ternary: on success it is swapped for a single `role="status"`
+badge so the announcement and visual land together and the fields/button leave the DOM. The
+badge is an `inline-flex` pill (`rounded-full`, `px-4 py-2` ~ the Button's height) with a
+`Check` glyph + "You are on the list" in the success tokens (`text-success` on `bg-success/10`,
+`border-success/30`); `inline-flex` keeps it button-sized rather than stretching. Its entrance
+is a **keyframe** (a freshly-mounted node has no from-state to transition from):
+`@keyframes subscribe-badge-in` (opacity 0 -> 1, `scale(0.96) -> scale(1)`) + a
+`.subscribe-badge-enter` class in `globals.css` (the Tailwind entry, not `theme-harbor.css`,
+so the resume-PDF hash is untouched - learnings 0011), with a `prefers-reduced-motion: reduce`
+block setting `animation: none`. 0.2s ease-out matches the name-field reveal so the form's
+motion reads as one language.
+
+**Dedicated `/subscribe` page.** A Server Component: page-level H1 + invitation copy, then
+`<SubscribeForm source="subscribe_page" alwaysShowName heading={false} />`, then the newest
+post (`getAllPosts()[0]`, cover resolved server-side via `getBlogImage`) as a "Latest post"
+card with the post's tags (the same chips the listing row shows) and a "See all posts" button
+to `/blog`. Empty content dir -> the Latest-post block is omitted. `/subscribe` is appended
+explicitly to the sitemap (it is intentionally not in `nav`, which drives the header + the
+rest of the sitemap); a shareable landing page benefits from being crawlable, unlike
+`/projects` (an in-progress stub).
 
 **Analytics.** On success, fire a PII-free event (e.g. `blog_subscribe`, outcome only)
 via the same `clientAnalyticsEnabled()` gate and `ph-no-capture` wrapper the contact
@@ -206,8 +300,8 @@ Contact token-refresh + sign_up_form flow and its secret wiring into architectur
 ## Acceptance
 
 - [ ] A "Subscribe for updates" block (title + email input + Subscribe button) renders
-      at the bottom of `/blog` (after the list, full container width) and immediately
-      after the content on each `/blog/[slug]` post page.
+      at the bottom of `/blog` (after the list, full container width), immediately after
+      the content on each `/blog/[slug]` post page, and on the dedicated `/subscribe` page.
 - [ ] Responsive: below `sm` the input is full width and the button stacks full width
       beneath it; at `sm+` they sit inline on one row (input flexes, button auto width).
       Asserted by a smoke marker that can actually fail if the layout classes are removed.
@@ -232,16 +326,37 @@ Contact token-refresh + sign_up_form flow and its secret wiring into architectur
       secret is committed; no `compose.site.yml` change is required.
 - [ ] A PII-free success event is tracked (no address in the payload); the form stays
       `ph-no-capture`. The submit event carries a `has_name` boolean (never the name).
-- [ ] *(amendment)* The box is unchanged by default; focusing the email reveals an optional
-      "Name" field between the email and the button, the layout reflows to stacked
-      (email -> Name -> Subscribe), and the field stays visible after blur - on both
-      placements. An empty name subscribes exactly as before (identical request + payload).
-- [ ] *(amendment)* A name splits on the first whitespace: `"Matthew Maynes"` sets
-      `first_name` "Matthew" + `last_name` "Maynes"; a single token sets only `first_name`;
-      three-plus tokens put the remainder in `last_name`. `splitName` and the payload
-      builder are unit-tested (incl. extra spaces, empty, over-length); verified end-to-end
-      against the real list once before merge.
+- [ ] The box is unchanged by default; focusing the email reveals an optional "Name" field
+      between the email and the button, and the field stays visible after blur - on all
+      placements. On a `sm+` viewport the Subscribe button does **not** move when the Name
+      field reveals (the row stays inline; email shortens); below `sm` the fields stack. An
+      empty name subscribes exactly as before (identical request + payload).
+- [ ] The Name field reveals with a fast (~200ms) animation - horizontal on `sm+` (button
+      slides over), vertical below `sm` (button pushed down) - not an instant jump;
+      reduced-motion users get an instant reveal. The collapsed Name field is not focusable
+      or announced before it is revealed.
+- [ ] A name splits on the first whitespace: `"Matthew Maynes"` sets `first_name` "Matthew"
+      + `last_name` "Maynes"; a single token sets only `first_name`; three-plus tokens put
+      the remainder in `last_name`. `splitName` and the payload builder are unit-tested
+      (incl. extra spaces, empty, over-length); verified end-to-end against the real list
+      once before merge.
+- [ ] After a successful subscribe, the fields + button are gone and a badge-shaped
+      "You are on the list" confirmation (with a check, `role="status"`) sits in their place,
+      roughly button-sized, on all three surfaces (listing, post, `/subscribe`). The badge
+      fades + scales in (~200ms); reduced-motion users see it appear with no animation. The
+      error path is unchanged (inline message below the row).
+- [ ] `/subscribe` returns 200 with its own `<title>`, the invitation copy, the three-field
+      form (name visible from first paint), a "Latest post" card (cover, title, excerpt,
+      date, and the post's **tags**) linking to the newest post, and a "See all posts" link
+      to `/blog`. `/subscribe` is present in `sitemap.xml`; the top nav is unchanged (no
+      Subscribe link).
+- [ ] Smoke guards: `/subscribe` HTML carries `sm:flex-row sm:items-end` **and** the revealed
+      Name marker (`sm:max-w-md`); `/blog` carries `sm:flex-row sm:items-end` but the
+      collapsed marker (`sm:max-w-0`, name hidden by default); the success-badge copy and the
+      `subscribe-badge-in` keyframe ship in the built client chunk / CSS (the state is
+      client-only, so it guards that the success UI + animation are wired).
 - [ ] Unit tests cover validation, payload shaping, token refresh, and submit success/
-      failure with `fetch` mocked; smoke tests assert the subscribe block on **both**
+      failure with `fetch` mocked; smoke tests assert the subscribe block on all three
       surfaces on subscribe-unique copy.
-- [ ] Tests green; lint + build clean.
+- [ ] Tests green; lint + build clean; the reveal, success badge, and `/subscribe` page
+      verified in a real browser (desktop + mobile, motion + reduced-motion).
