@@ -621,7 +621,8 @@ Capture lessons as you go.
   unused for months - deploys do not exercise it (the cache is lazy), so nothing touches it until a
   visitor subscribes, by which point it has expired and they hit a 500. Any credential kept alive
   only as a side effect of user traffic will eventually die during a traffic lull. Exercise it on a
-  fixed schedule (cron), independent of traffic - `deploy/docker/refresh-ctct-token.sh`, daily.
+  fixed schedule (cron), independent of traffic - a daily `ctct refresh-token` (the ctct-cli
+  container) against the same `.env.site`, which alerts via Resend if a refresh ever fails.
 - **Cohosted sites on one CTCT account share the account's lists, not their app credentials.** Two
   V3 keys (different `client_id`) authorized on the same Constant Contact account can each mint
   tokens that read/write the same lists - which is why the cohosted rogueoak key was a valid

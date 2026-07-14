@@ -153,8 +153,9 @@ export function buildSignUpPayload(
  * clock resets only when it is used. Because this mint is lazy (it only fires on a
  * real subscribe, then the token is cached ~24h), a low-traffic period can let the
  * token sit idle past 180 days and expire (the 2026-07-14 outage). A daily cron on
- * the host (`deploy/docker/refresh-ctct-token.sh`) exercises the token out-of-band
- * so the idle clock never runs out; see docs/specs/0033.
+ * the host runs `ctct refresh-token` (the ctct-cli container) against this
+ * `.env.site` to exercise the token out-of-band so the idle clock never runs out;
+ * see docs/specs/0033.
  */
 export async function refreshAccessToken(
   { clientId, refreshToken }: { clientId: string; refreshToken: string },

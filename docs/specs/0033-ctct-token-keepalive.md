@@ -40,15 +40,21 @@ Observable when done:
 
 ## Approach
 
-- `deploy/docker/refresh-ctct-token.sh` (tracked): reads `.env.site`, POSTs
-  `grant_type=refresh_token` to the CTCT token endpoint, logs `OK`/`FAIL`, and on failure
-  sends a Resend alert. Runtime copy lives at `~/ctct-refresh/refresh-ctct-token.sh` on the
-  host - outside the git checkout so a deploy `git reset --hard` never disturbs it; re-copy
-  from the tracked source when it changes.
-- Host crontab (deploy user): `17 8 * * *` -> the script, appending stderr to
-  `~/ctct-refresh/cron.err`.
-- One-time re-auth (when a token is truly dead) uses the **device flow**; steps live in the
-  private `context/deploy-runbook.md`.
+The token-refresh logic lives in the versioned, unit-tested **`ctct` CLI**
+(`@mattmaynes/ctct-cli`, `ctct refresh-token`), not in a hand-rolled script - so it is one
+tested implementation shared across every site instead of duplicated `curl` in each repo.
+
+- The CLI runs as a container (the box has no Node runtime): a published image
+  `ghcr.io/mattmaynes/ctct-cli` is pulled and run with the site's `.env.site` passed in.
+  `ctct refresh-token` exchanges `CTCT_REFRESH_TOKEN` for a fresh access token (stateless -
+  it never writes the token back) and exits non-zero when the refresh fails.
+- A small host wrapper `~/ctct-refresh/ctct-keepalive.sh <env-file> <label>` runs
+  `docker run --rm --env-file <env-file> ghcr.io/mattmaynes/ctct-cli refresh-token`, logs
+  `OK`/`FAIL` (never the minted token), and on failure emails a Resend alert. It lives on the
+  host (outside the git checkout, so a deploy `git reset --hard` never disturbs it).
+- Host crontab (deploy user): `17 8 * * *` -> the wrapper for this site's `.env.site`.
+- One-time re-auth (when a token is truly dead) uses the **device flow** (`ctct login`, or the
+  raw device grant); steps live in the private `context/deploy-runbook.md`.
 
 ## Notes
 
@@ -57,10 +63,10 @@ here. A fresh matthewmaynes-owned token was minted via the device flow and insta
 container recreated, and a live subscribe verified `{ ok: true }`; the failure-alert path was
 tested end to end (bogus token -> Resend HTTP 200). The misleading "non-rotating / nothing to
 persist" comments in `src/lib/subscribe.ts` were corrected, and the failure mode recorded in
-`docs/overview/learnings.md`.
+`docs/overview/learnings.md`. The `ctct refresh-token` command + container image were added in
+`@mattmaynes/ctct-cli` (its own repo/PR).
 
 Out of scope: switching the key to rotating refresh tokens (more secure, but would require
 the app and cron to coordinate a single-writer token store and recreate the container on
 every rotation - unjustified for this endpoint). The cohosted rogueoak site shares the CTCT
-account and has the same latent risk; giving it the same keepalive is a follow-up in its own
-repo.
+account and has the same latent risk; it gets the same keepalive in its own repo.
