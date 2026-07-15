@@ -14,6 +14,8 @@ pending) · 📋 planned.
 | `/blog` | ✅ | Blog listing, newest-first from `content/blog/*.mdx`: each row a cover thumbnail, title, formatted date, a reading-time pill (spec 0015, the same `Clock` + "N min read" treatment as the post page), excerpt, and tag labels. Interactive discovery (spec 0012): a single-select Canopy `Combobox` tag filter (URL-synced `?tag=`), a keyword search over title/excerpt/tags, and a date-gated "New" badge on the newest post. Drop in a `.mdx` file to list a new post. An email "Subscribe for updates" block (spec 0018) sits at the bottom. |
 | `/blog/[slug]` | ✅ | Individual post, authored as MDX with frontmatter (statically generated). Renders a `Blog / {title}` breadcrumb trail at the top (spec 0022, Canopy's `Breadcrumb` Twig set) so the listing is one click away, then a header (title; a "By Matthew Maynes" byline with the headshot avatar; a date + a `Clock` reading-time pill; tags, each pill a link to its tag archive - spec 0027), a cover image, the MDX body at a comfortable 18px (`text-body-lg`, a site semantic type role) reading measure with Harbor prose styling and blur-placeholder inline images, a "thoughts and views are my own" disclaimer, an email "Subscribe for updates" block (spec 0018), previous/next post navigation to the chronological neighbours (spec 0021, older post left / newer post right; stacked next-first on mobile; each tile carries a reading-time pill + tags), and a "Back to blog" link. Its cover doubles as a per-post Open Graph / Twitter share card. |
 | `/blog/tags/[tag]` | ✅ | A statically generated archive per tag (spec 0027): every post carrying that tag, newest-first, rendered with the same row treatment as `/blog`, under a "Posts tagged {Tag}" heading with an "All posts" link back and a subscribe block. One page per tag (including single-post tags; a future tag gets a page on the next build); an unknown tag slug is a clean 404. A route-unique `<title>`/description makes each an indexable landing page; every archive is listed in the sitemap. The post-page tag pills link here, and the `/blog` tag Combobox remains the in-place browse surface. |
+| `/blog/drafts` | ✅ | The drafts index (spec 0034): lists every unpublished post (`draft: true` frontmatter), newest-first with the same row treatment as `/blog`, each row linking to `/blog/drafts/[slug]`. Deliberately `noindex` and **not** linked from any nav or the sitemap - reachable only by knowing the URL. Empty when there are no drafts. |
+| `/blog/drafts/[slug]` | ✅ | An individual draft post (spec 0034), statically generated and rendered identically to a published post via the shared `PostArticle` (so it previews exactly as it will publish), plus a visible "Draft" marker banner and a `Blog / Drafts / {title}` breadcrumb. `noindex`; no subscribe block. Removing `draft: true` moves the post to `/blog/[slug]` on the next build. A published slug 404s here, and a draft slug 404s at `/blog/[slug]`. |
 | `/contact` | ✅ | A working contact form (full-width, first on the page) that emails Matthew an on-brand HTML notification via `POST /v1/contact` and records the sender in Constant Contact (unsubscribed by default; an opt-in "Subscribe for updates from me" checkbox also adds them to the mailing list - spec 0032), plus a column of icon + URL-path social links (LinkedIn, X, Facebook, Instagram). No email/phone shown. |
 | `/subscribe` | ✅ | A focused, shareable mailing-list landing page (spec 0018): a heading + short invitation, the subscribe form with all three fields (email, name, button) shown up front, then a "Latest post" card (newest post, with its tags) and a "See all posts" button to `/blog`. **Not** in the top nav (the shared nav/footer still render), but it **is** in the sitemap so the URL is crawlable when shared. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017) documenting what the site actually does: PostHog analytics with masked-input session replay, the Resend-relayed contact form, transient IP use, self-hosted assets, no tracking cookies/ads/database. Cookieless legitimate-interest basis (no consent banner). Linked from the footer, not the top nav or sitemap. Lists a dedicated public `privacy@` address for data requests - the only email on the site. |
@@ -98,7 +100,8 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
 
 ## Blog
 
-- Posts as `.mdx` files; filename → slug. Frontmatter: `title`, `date`, `tags`, `excerpt`.
+- Posts as `.mdx` files; filename → slug. Frontmatter: `title`, `date`, `tags`, `excerpt`, an
+  optional `cover`/`coverCaption`, and an optional `draft: true` (spec 0034; absent = published).
 - Tag groups: Technical · Leadership · Nature · Life. Newest first.
 - Reading-experience chrome (spec 0011) lives on the post page: a reading-time estimate
   (`estimateReadingMinutes` in the pure `blog.js` core, ~200 wpm, floored at 1 minute, markup
@@ -125,8 +128,16 @@ Eagle SNAP (iOS SNOWTAM app) · Visual Data Transformer (no-code ETL) · Streami
   `PostRow` (used by both the client island and this server page), and a `toPostRows` server mapper
   resolves covers + the global "New" badge for both surfaces. Post-page tag pills link to these
   archives; the sitemap lists every archive (and every post - previously the sitemap omitted posts).
+- Drafts (spec 0034): a post with `draft: true` in its frontmatter is hidden from every public
+  surface - the `/blog` listing, the home-page latest slot, `/subscribe`, the RSS feed, the sitemap,
+  the tag pages, the "New" badge, and published post nav all enumerate `getPublishedPosts()` (drafts
+  filtered out). Drafts instead live under `/blog/drafts` (an unlinked, `noindex` index) and
+  `/blog/drafts/[slug]` (the post, `noindex`, with a "Draft" marker), both statically generated over
+  `getDraftPosts()`. Reachable-by-URL, not secret (no auth). Publishing is one edit - remove
+  `draft: true` and the post moves to `/blog/[slug]` on the next build with no file move. The
+  published and draft post routes reject each other's slugs so a post is served from exactly one URL.
 - RSS feed (spec 0013): a valid RSS 2.0 feed at `/blog/feed.xml`, statically generated
-  (`dynamic = "force-static"`) from `getAllPosts`, listing every post newest-first with an absolute
+  (`dynamic = "force-static"`) from `getPublishedPosts`, listing every post newest-first with an absolute
   link, `pubDate`, and the escaped excerpt. An `Rss` subscribe button on `/blog` and `/blog/[slug]`
   links to it, and both surfaces advertise it via `<link rel="alternate" type="application/rss+xml">`
   autodiscovery. The feed XML is assembled by the pure, fs-free `src/lib/rss.js` builder

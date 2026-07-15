@@ -30,6 +30,9 @@ export type Post = {
   coverKey?: string;
   /** Optional caption shown under the cover; inline markdown (may carry a link). */
   coverCaption?: string;
+  /** True for an unpublished draft: hidden from every public surface, reachable
+   *  only under /blog/drafts (spec 0034). Absent frontmatter key = published. */
+  draft?: boolean;
   /** Raw MDX body, to be compiled on the post page. */
   content: string;
 };
@@ -42,6 +45,8 @@ export type Frontmatter = {
   excerpt: string;
   cover?: string;
   coverCaption?: string;
+  /** `draft: true` marks the post unpublished (spec 0034); absent = published. */
+  draft?: boolean;
 };
 
 // Re-exported so the Server Component post page and the `"use client"` listing
@@ -74,7 +79,7 @@ export function parseFrontmatter(raw: string): {
   }
   const [, block, body] = match;
 
-  const data: Record<string, string | string[]> = {};
+  const data: Record<string, string | string[] | boolean> = {};
   for (const line of block.split(/\r?\n/)) {
     if (!line.trim()) continue;
     const kv = /^([A-Za-z][\w-]*):\s*(.*)$/.exec(line);
@@ -88,6 +93,10 @@ export function parseFrontmatter(raw: string): {
       data.tags = inner
         ? inner.split(",").map((t) => stripQuotes(t.trim())).filter(Boolean)
         : [];
+    } else if (key === "draft") {
+      // Boolean flag (spec 0034): only a literal `true` marks a draft; any other
+      // value, or an absent key, is published. Not a required field.
+      data.draft = stripQuotes(value) === "true";
     } else if (
       ["title", "date", "excerpt", "cover", "coverCaption"].includes(key)
     ) {
@@ -222,6 +231,7 @@ function readPost(filename: string): Post {
     excerpt: data.excerpt,
     coverKey: data.cover,
     coverCaption: data.coverCaption,
+    draft: data.draft === true,
     content,
   };
 }
@@ -251,6 +261,24 @@ export function sortPostsNewestFirst<T extends { date: string }>(
  */
 export function getAllPosts(): Post[] {
   return sortPostsNewestFirst(listPostFiles().map(readPost));
+}
+
+/**
+ * Published posts only (drafts filtered out), newest-first. This is the set
+ * every PUBLIC surface enumerates - the listing, home, subscribe, feed, sitemap,
+ * tag pages, the "New" badge, and published post nav (spec 0034). A pure
+ * derivation of `getAllPosts()`, so it preserves the source order.
+ */
+export function getPublishedPosts(): Post[] {
+  return getAllPosts().filter((p) => !p.draft);
+}
+
+/**
+ * Draft posts only, newest-first - the set behind /blog/drafts and its per-post
+ * pages (spec 0034). The complement of `getPublishedPosts()` over `getAllPosts()`.
+ */
+export function getDraftPosts(): Post[] {
+  return getAllPosts().filter((p) => p.draft);
 }
 
 /**

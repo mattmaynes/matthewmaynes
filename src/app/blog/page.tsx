@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
@@ -27,12 +27,13 @@ export const metadata: Metadata = {
 const NOW_MS = Date.now();
 
 export default function BlogPage() {
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
 
   // Resolve covers on the SERVER and compute the "New" badge once (the newest
   // post within the 30-day window), baked into the SSG HTML - shared with the
   // tag archive via `toPostRows` so both surfaces render identical rows. The
-  // badge slug is derived over ALL posts, so it is global (same on the tag page).
+  // badge slug is derived over all published posts, so it is global (same on the
+  // tag page); drafts (spec 0034) are excluded via getPublishedPosts() above.
   const newSlug = newPostSlug(posts, NOW_MS, 30);
   const listPosts = toPostRows(posts, newSlug);
 

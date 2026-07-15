@@ -32,6 +32,9 @@ export type PostRowData = {
   isNew: boolean;
   /** Estimated reading time in whole minutes (server-computed, spec 0015). */
   minutes: number;
+  /** URL base the row links under - "/blog" for published rows, "/blog/drafts"
+   *  for the drafts index (spec 0034). The href is `${basePath}/${slug}`. */
+  basePath: string;
 };
 
 /**

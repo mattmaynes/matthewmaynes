@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { deriveTags, tagSlug, tagFromSlug, filterPosts } from "@/lib/blog-view";
 import { toPostRows } from "@/lib/post-summaries";
 import { PostRow } from "@/components/post-row";
@@ -23,7 +23,7 @@ export const dynamicParams = false;
 // yields a page on the next build with no config change - the params derive
 // from the posts.
 export function generateStaticParams(): Params[] {
-  return deriveTags(getAllPosts()).map((tag) => ({ tag: tagSlug(tag) }));
+  return deriveTags(getPublishedPosts()).map((tag) => ({ tag: tagSlug(tag) }));
 }
 
 export async function generateMetadata({
@@ -32,7 +32,7 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { tag: slug } = await params;
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
   const tag = tagFromSlug(slug, deriveTags(posts));
   if (!tag) return { title: "Blog" };
   const count = filterPosts(posts, tag, "").length;
@@ -50,7 +50,7 @@ export default async function TagPage({
   params: Promise<Params>;
 }) {
   const { tag: slug } = await params;
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
   const tag = tagFromSlug(slug, deriveTags(posts));
   if (!tag) notFound();
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
-import { getAllPosts, formatPostDate, readingMinutes } from "@/lib/blog";
+import { getPublishedPosts, formatPostDate, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function SubscribePage() {
   // The most recent post, shown below the form as "Latest post" so a first-time
   // visitor gets an immediate taste of what they are subscribing to. Cover is
   // resolved server-side (carries its blurDataURL) exactly like the listing.
-  const latest = getAllPosts()[0];
+  const latest = getPublishedPosts()[0];
   const cover = latest?.coverKey ? getBlogImage(latest.coverKey) : undefined;
   const pixelated = cover?.pixelated === true;
 

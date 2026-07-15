@@ -24,8 +24,9 @@
   with the first code-bearing post.
 - **Blog RSS feed (spec 0013):** a second pure, fs-free seam `src/lib/rss.js` (like `blog-view.js`)
   assembles the RSS 2.0 XML (`escapeXml`, `toRfc822`, `buildBlogFeed`), unit-tested without a server.
-  The route `app/blog/feed.xml/route.ts` is a thin `force-static` `GET` that feeds `getAllPosts` and
-  `site` into the builder and returns `application/rss+xml`. Absolute links are joined against
+  The route `app/blog/feed.xml/route.ts` is a thin `force-static` `GET` that feeds
+  `getPublishedPosts` (drafts excluded, spec 0034) and `site` into the builder and returns
+  `application/rss+xml`. Absolute links are joined against
   `site.url` (the sitemap pattern); output is deterministic (`lastBuildDate` = newest post's date).
 - **Blog tag pages (spec 0027):** a statically generated `app/blog/tags/[tag]/page.tsx`, mirroring
   the post route - `generateStaticParams` over `deriveTags(getAllPosts())`, `dynamicParams = false`
@@ -36,6 +37,20 @@
   this Server Component; a server-only `src/lib/post-summaries.ts` maps posts to row data (resolving
   covers via `blog-images.js` and the **global** "New" badge slug, computed once over all posts and
   passed in - never recomputed from a per-tag subset, feedback 0016). Post-page tag pills link here.
+- **Blog drafts (spec 0034):** a `draft: true` frontmatter flag partitions posts into two pure seams
+  in `blog.js` - `getPublishedPosts()` and `getDraftPosts()`, both filtered derivations of the single
+  `getAllPosts()` source (which stays unfiltered). Every **public** enumeration switched from
+  `getAllPosts()` to `getPublishedPosts()` (listing, home, `/subscribe`, feed, sitemap, tag pages,
+  "New" badge, published post nav + `generateStaticParams`), so a draft is simply not in the set they
+  map over. Drafts get their own routes: `app/blog/drafts/page.tsx` (the index over `getDraftPosts()`)
+  and `app/blog/drafts/[slug]/page.tsx` (the post, `generateStaticParams` over `getDraftPosts()`),
+  both `noindex`. The published `[slug]` and draft `[slug]` route shells resolve the post, `notFound()`
+  on the wrong kind, and render one shared `src/components/post-article.tsx` (the old inline post body,
+  extracted) parameterised by `basePath` (breadcrumb/nav/back-link) and an `isDraft` marker - so a
+  draft previews identically to how it will publish and the two routes cannot drift. `basePath` also
+  threads through `PostRowData`/`PostNavItem` so draft rows/tiles link under `/blog/drafts`. The static
+  segment `drafts` takes precedence over `[slug]`, which reserves `drafts` as a post slug (noted, no
+  guard).
 - **Content as data:** blog posts in `content/blog/*.mdx`, project data in `content/projects/`.
   No database, no runtime fetching.
 

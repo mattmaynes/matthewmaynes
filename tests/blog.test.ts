@@ -10,6 +10,8 @@ import {
   slugify,
   sortPostsNewestFirst,
   getAllPosts,
+  getPublishedPosts,
+  getDraftPosts,
   getPostBySlug,
   getAdjacentPosts,
   estimateReadingMinutes,
@@ -80,6 +82,19 @@ test("parseFrontmatter throws when a required field is missing", () => {
   }
 });
 
+test("parseFrontmatter reads the draft flag; absent or non-true is published (spec 0034)", () => {
+  const draftFm = (val) =>
+    parseFrontmatter(
+      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\ndraft: ${val}\n---\nbody\n`,
+    ).data;
+  assert.equal(draftFm("true").draft, true);
+  // Any non-`true` value is published.
+  assert.equal(draftFm("false").draft, false);
+  assert.equal(draftFm("yes").draft, false);
+  // Absent key -> falsy (published); the GOOD fixture has no draft line.
+  assert.ok(!parseFrontmatter(GOOD).data.draft, "absent draft key is published");
+});
+
 test("parseFrontmatter throws on an empty tag array", () => {
   const raw = "---\ntitle: T\ndate: 2026-01-01\ntags: []\nexcerpt: E\n---\nbody\n";
   assert.throws(() => parseFrontmatter(raw), /missing required field: tags/i);
@@ -132,6 +147,28 @@ test("getAllPosts returns posts sorted newest-first", () => {
   const seed = posts.find((p) => p.slug === "i-picked-the-wrong-elective");
   assert.ok(seed, "expected the seed post by its filename slug");
   assert.equal(seed.title, "I Picked the Wrong Elective");
+});
+
+test("getPublishedPosts and getDraftPosts partition getAllPosts, order preserved (spec 0034)", () => {
+  const all = getAllPosts();
+  const published = getPublishedPosts();
+  const drafts = getDraftPosts();
+  // Exhaustive partition: every post lands in exactly one set.
+  assert.equal(published.length + drafts.length, all.length, "counts must add up");
+  assert.ok(published.every((p) => !p.draft), "published set has no drafts");
+  assert.ok(drafts.every((p) => p.draft === true), "draft set is all drafts");
+  // Each filtered set is a subsequence of getAllPosts, so newest-first is kept.
+  const order = (xs) => xs.map((p) => p.slug);
+  const allOrder = order(all);
+  for (const subset of [published, drafts]) {
+    const idxs = order(subset).map((s) => allOrder.indexOf(s));
+    assert.deepEqual([...idxs].sort((a, b) => a - b), idxs, "filter preserves order");
+  }
+  // The draft under test is hidden from published and present in drafts (also
+  // keeps the `.every` checks above non-vacuous while a draft exists).
+  const carSlug = "the-car-that-taught-me-how-to-decide";
+  assert.ok(drafts.some((p) => p.slug === carSlug), "car post is a draft");
+  assert.ok(!published.some((p) => p.slug === carSlug), "car post is not published");
 });
 
 test("estimateReadingMinutes counts a multi-paragraph body at ~200 wpm", () => {

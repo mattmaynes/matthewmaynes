@@ -29,6 +29,9 @@ export type PostNavItem = {
    *  title so the preview carries the same metadata as a listing row (spec 0023). */
   minutes: number;
   tags: string[];
+  /** URL base the tile links under ("/blog", or "/blog/drafts" for a draft's
+   *  neighbours, spec 0034). Defaults to "/blog" when omitted. */
+  basePath?: string;
 };
 
 function NavTile({
@@ -42,7 +45,7 @@ function NavTile({
   const Arrow = isPrev ? ArrowLeftIcon : ArrowRightIcon;
   return (
     <Link
-      href={`/blog/${item.slug}`}
+      href={`${item.basePath ?? "/blog"}/${item.slug}`}
       className={`group flex w-full items-center gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-border-strong sm:w-[calc(50%-0.5rem)] ${FOCUS_RING} ${
         // For "next", reverse the row so the text sits left and the arrow right,
         // and right-align the label/title. DOM order stays arrow -> cover -> text.
