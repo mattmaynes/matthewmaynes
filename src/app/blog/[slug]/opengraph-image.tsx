@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { site } from "@/lib/site";
-import { getAllPosts, getPostBySlug, readingMinutes } from "@/lib/blog";
+import { getPublishedPosts, getPostBySlug, readingMinutes } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 
 // Needs the Node runtime to read the cover + font files off disk.
@@ -15,7 +15,7 @@ export const contentType = "image/png";
 // Bake one card per post at build so this route is static, rather than reading
 // content/ per request and relying on Next file-tracing to have copied it.
 export function generateStaticParams() {
-  return getAllPosts().map((post) => ({ slug: post.slug }));
+  return getPublishedPosts().map((post) => ({ slug: post.slug }));
 }
 
 // Harbor-dark palette (see brand/harbor/ + src/styles/brand-harbor.generated.css), matching the site card.

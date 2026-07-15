@@ -1,4 +1,4 @@
-import { getAllPosts } from "@/lib/blog";
+import { getPublishedPosts } from "@/lib/blog";
 import { buildBlogFeed } from "@/lib/rss";
 import { site, blogFeedTitle } from "@/lib/site";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-static";
 // posts (newest-first from getAllPosts) and returns the string with the RSS
 // content type.
 export function GET() {
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
   const xml = buildBlogFeed({
     posts,
     siteUrl: site.url,

@@ -20,7 +20,7 @@ export function PostRow({ post }: { post: PostRowData }) {
     <li className="grid gap-5 border-b border-border pb-10 last:border-b-0 sm:grid-cols-[200px_1fr]">
       {post.cover ? (
         <Link
-          href={`/blog/${post.slug}`}
+          href={`${post.basePath}/${post.slug}`}
           className={`block self-center overflow-hidden rounded-lg border-[0.5px] border-border ${RING}`}
         >
           <Image
@@ -37,7 +37,7 @@ export function PostRow({ post }: { post: PostRowData }) {
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-h3 font-semibold">
             <Link
-              href={`/blog/${post.slug}`}
+              href={`${post.basePath}/${post.slug}`}
               className={`rounded-sm text-text hover:text-primary ${RING}`}
             >
               {post.title}
