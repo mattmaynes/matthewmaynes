@@ -68,8 +68,7 @@ export default async function DraftPostPage({
       previous={toNavItem(previous)}
       next={toNavItem(next)}
       minutes={minutes}
-      isDraft
-      basePath="/blog/drafts"
+      variant="draft"
     />
   );
 }

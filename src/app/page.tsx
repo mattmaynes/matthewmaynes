@@ -24,12 +24,13 @@ export default function HomePage() {
   // a fresh reason to head into the blog (spec 0029). Resolved server-side (the
   // page is a Server Component) so the row is fully in the SSG HTML, and mapped
   // through the same `toPostRows` + `PostRow` the listing/tag archives use, so
-  // it stays pixel-identical to a `/blog` row. `newPostSlug` runs over the FULL
-  // post set so the "New" badge is a whole-corpus fact (learnings 0027).
+  // it stays pixel-identical to a `/blog` row. `newPostSlug` runs over the full
+  // PUBLISHED set so the "New" badge is a whole-corpus fact (learnings 0027) and
+  // a draft (spec 0034) is never surfaced here - keep this on getPublishedPosts().
   const posts = getPublishedPosts();
   // Only the newest post is highlighted, so resolve just its cover - but derive
-  // the "New" slug from the FULL set so the badge stays a whole-corpus fact
-  // (learnings 0027), not "newest of the one row we kept".
+  // the "New" slug from the full published set so the badge stays a whole-corpus
+  // fact (learnings 0027), not "newest of the one row we kept".
   const newSlug = newPostSlug(posts, NOW_MS, 30);
   const latest = toPostRows(posts.slice(0, 1), newSlug)[0] ?? null;
 

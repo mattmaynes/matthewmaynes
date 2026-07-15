@@ -633,3 +633,23 @@ Capture lessons as you go.
   device-grant browser approval, not a code+PKCE callback.** When a refresh token is truly dead it
   cannot be refreshed - it must be re-minted by a human approving in a browser. Runbook (private):
   `context/deploy-runbook.md`.
+
+## Draft posts (spec 0034, feedback 0017)
+
+- **An exclusion acceptance ("hidden from every public surface") needs a failable marker on EVERY
+  surface that renders the entity, enumerated explicitly - not just the headline listing.** Spec 0034
+  hides a draft from the blog; the first test cut guarded `/blog`, the feed, and the draft's sitemap
+  post URL, but a blog post is also rendered by the home "Latest post" slot, the `/subscribe` "Latest
+  post" block, every per-tag archive (and its sitemap tag URL), the prev/next nav, and the OG card.
+  Each is an independent surface with its own `getAllPosts()`/`getPublishedPosts()` choice, so each can
+  regress alone: the car draft is the newest post BY DATE, so a `/subscribe` revert to `getAllPosts()`
+  would surface it as "Latest post" with every other marker green. A surface covered only *transitively*
+  (the home slot derives its expected slug from `/blog`) is not a substitute for a direct assertion on
+  that surface. This is the recurring "assert what the unit uniquely produces" lesson (0001/0009/0018)
+  generalized to *set-exclusion across many surfaces*: list the surfaces, guard each one directly.
+- **Encode "route base + treatment" as ONE discriminator prop, not two correlated booleans/strings.**
+  `PostArticle` first took both `isDraft` and `basePath`; they are perfectly correlated (a draft is
+  always `/blog/drafts`), so two props let the type express a contradictory combo and invited drift as
+  the shared component is reused. Collapsing to a single `variant: "published" | "draft"` that derives
+  both removes the impossible state - the same "make illegal states unrepresentable" reason a route-kind
+  should be one value, not a bag of parallel flags. (architect review, PR #125)

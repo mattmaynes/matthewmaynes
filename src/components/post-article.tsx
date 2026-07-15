@@ -25,11 +25,10 @@ import { FOCUS_RING as RING } from "@/lib/focus-ring";
  * the draft route (`/blog/drafts/[slug]`), so a draft previews pixel-identically
  * to how it will look once published and the two routes cannot drift (spec 0034).
  *
- * Parameterised by:
- * - `basePath` - "/blog" or "/blog/drafts": drives the breadcrumb trail, the
- *   previous/next nav hrefs, and the "Back to ..." button.
- * - `isDraft` - renders the "Draft" marker banner and swaps the subscribe CTA
- *   off (a draft is not a subscribe surface).
+ * Parameterised by a single `variant` ("published" | "draft") that drives both
+ * the base path (breadcrumb trail, previous/next nav hrefs, "Back to ..." button)
+ * and the "Draft" marker banner + subscribe suppression - one prop, so the route
+ * base and the draft treatment can never contradict (review: PR #125).
  *
  * A Server Component (it renders the async `PostBody`/`InlineMdx`), like the
  * routes that use it.
@@ -120,16 +119,16 @@ export function PostArticle({
   previous,
   next,
   minutes,
-  isDraft = false,
-  basePath = "/blog",
+  variant = "published",
 }: {
   post: ArticlePost;
   previous: PostNavItem | null;
   next: PostNavItem | null;
   minutes: number;
-  isDraft?: boolean;
-  basePath?: string;
+  variant?: "published" | "draft";
 }) {
+  const isDraft = variant === "draft";
+  const basePath = isDraft ? "/blog/drafts" : "/blog";
   const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
   const pixelated = cover?.pixelated === true;
 

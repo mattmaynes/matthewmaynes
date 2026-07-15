@@ -290,8 +290,10 @@ const routes = [
     ],
     // No heading={false}: the form's own "Subscribe for updates" h2 must be gone
     // here (the page supplies its own H1 + copy), so a regression that re-enabled
-    // it would be a duplicate heading.
-    absent: ["Placeholder", "Subscribe for updates"],
+    // it would be a duplicate heading. The car draft is the newest post BY DATE, so
+    // its title in the "Latest post" block would prove /subscribe reverted to
+    // getAllPosts() and leaked the draft (spec 0034 acceptance - review: PR #125).
+    absent: ["Placeholder", "Subscribe for updates", "The Car That Taught Me How to Decide"],
     // No hasBlur assertion: it would only pass while the newest post's cover happens
     // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
     // inlined blurDataURL), so it would redden on unrelated content changes. The blur
@@ -1102,7 +1104,11 @@ test("robots, sitemap, and manifest are served", async () => {
     /\/blog\/tags\/[a-z0-9-]+<\/loc>/,
     "expected per-tag archive URLs in the sitemap",
   );
-  // A draft is absent from the sitemap (spec 0034).
+  // A draft is absent from the sitemap (spec 0034): both its post URL and the tag
+  // archive for any tag UNIQUE to the draft (a tag it shares with a published post
+  // legitimately still has a page). A draft-only tag must neither list nor 404-less
+  // resolve, or a tag-path revert to getAllPosts() would leak reachable draft-only
+  // archives with the post-URL check still green (review: PR #125).
   const draft = getDraftPosts()[0];
   if (draft) {
     assert.doesNotMatch(
@@ -1110,6 +1116,20 @@ test("robots, sitemap, and manifest are served", async () => {
       new RegExp(`/blog/${draft.slug}</loc>`),
       "a draft post URL must not appear in the sitemap",
     );
+    const publishedTags = new Set(
+      deriveTags(getPublishedPosts()).map((t) => t.toLowerCase()),
+    );
+    for (const t of draft.tags) {
+      if (publishedTags.has(t.toLowerCase())) continue; // a shared tag has a real page
+      const s = tagSlug(t);
+      assert.doesNotMatch(
+        sitemapXml,
+        new RegExp(`/blog/tags/${s}</loc>`),
+        `a draft-only tag archive (${s}) must not be in the sitemap`,
+      );
+      const tagRes = await fetch(BASE + `/blog/tags/${s}`);
+      assert.equal(tagRes.status, 404, `a draft-only tag archive (${s}) must 404`);
+    }
   }
 
   // Manifest is valid JSON and its declared install icons actually resolve.
