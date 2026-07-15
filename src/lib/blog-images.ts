@@ -16,6 +16,7 @@ import houseQuicksand from "../../public/images/blog/house-quicksand.png";
 import snowyRunway from "../../public/images/blog/snowy-runway.png";
 import analystTableTransformer from "../../public/images/blog/analyst-table-transformer.png";
 import streamProcessorDesk from "../../public/images/blog/stream-processor-desk.png";
+import redMazda3 from "../../public/images/blog/red-mazda-3.png";
 
 import type { SiteImage } from "./site";
 
@@ -51,6 +52,10 @@ export const blogImages = {
   "stream-processor-desk.png": {
     ...streamProcessorDesk,
     alt: "A desk by a window with a monitor showing q stream-processor code beside a pipeline diagram, a whiteboard behind it sketching determinism, exactly-once, checkpoints and failure recovery, an open notebook, and a KX-branded mug and book.",
+  },
+  "red-mazda-3.png": {
+    ...redMazda3,
+    alt: "A red 2008 Mazda 3 photographed head-on in a residential parking area under a grey winter sky, bare trees and suburban houses behind it.",
   },
 } satisfies Record<string, BlogImage>;
 
