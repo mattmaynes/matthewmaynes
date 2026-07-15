@@ -18,8 +18,14 @@ import type { PostRowData } from "@/lib/blog-view";
  *
  * @param posts - the posts to render (any subset), already newest-first
  * @param newSlug - the globally-newest recent post's slug, or null
+ * @param basePath - the URL base each row links under ("/blog" by default, or
+ *   "/blog/drafts" for the drafts index, spec 0034)
  */
-export function toPostRows(posts: Post[], newSlug: string | null): PostRowData[] {
+export function toPostRows(
+  posts: Post[],
+  newSlug: string | null,
+  basePath = "/blog",
+): PostRowData[] {
   return posts.map((post) => {
     const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
     return {
@@ -32,6 +38,7 @@ export function toPostRows(posts: Post[], newSlug: string | null): PostRowData[]
       pixelated: cover?.pixelated === true,
       isNew: post.slug === newSlug,
       minutes: readingMinutes(post),
+      basePath,
     };
   });
 }

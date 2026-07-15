@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { nav, site } from "@/lib/site";
-import { getAllPosts } from "@/lib/blog";
+import { getPublishedPosts } from "@/lib/blog";
 import { deriveTags, tagSlug } from "@/lib/blog-view";
 
 // Routes that are not in the top nav but should still be crawlable/shareable.
@@ -19,7 +19,8 @@ type SitemapEntry = MetadataRoute.Sitemap[number];
 // only nav routes were listed - individual posts were absent).
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-  const posts = getAllPosts();
+  // Published posts only - drafts are deliberately absent from the sitemap (spec 0034).
+  const posts = getPublishedPosts();
 
   const staticEntries: SitemapEntry[] = [
     ...nav.map((item) => item.href),

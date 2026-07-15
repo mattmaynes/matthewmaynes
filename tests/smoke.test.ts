@@ -15,7 +15,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { assembleStandalone } from "../scripts/lib/standalone.ts";
-import { getAllPosts, getAdjacentPosts } from "../src/lib/blog.ts";
+import { getPublishedPosts, getDraftPosts, getAdjacentPosts } from "../src/lib/blog.ts";
 import { deriveTags, tagSlug } from "../src/lib/blog-view.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -160,7 +160,8 @@ const routes = [
       // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
       "transition-all duration-200 ease-out motion-reduce:transition-none",
     ],
-    absent: ["Placeholder", "No posts yet", "sm:max-w-md"],
+    // The draft post (spec 0034) must NOT appear on the public listing.
+    absent: ["Placeholder", "No posts yet", "sm:max-w-md", "The Car That Taught Me How to Decide"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -295,6 +296,21 @@ const routes = [
     // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
     // inlined blurDataURL), so it would redden on unrelated content changes. The blur
     // treatment is guarded on the stable image-bearing routes instead (feedback 0005).
+  },
+  {
+    // The drafts index (spec 0034): unlinked, noindex, lists unpublished posts and
+    // links each row to its /blog/drafts/<slug> page (not the public /blog URL).
+    path: "/blog/drafts",
+    title: "Drafts - Matthew Maynes",
+    contains: [
+      "The Car That Taught Me How to Decide",
+      'href="/blog/drafts/the-car-that-taught-me-how-to-decide"',
+      // Deliberately noindex (the robots meta the drafts pages emit).
+      "noindex",
+    ],
+    absent: ["Placeholder"],
+    // The car cover is a static-imported photo, so its row carries a blur placeholder.
+    hasBlur: true,
   },
 ];
 
@@ -832,6 +848,43 @@ test("GET /blog/feed.xml serves an RSS feed listing the seed post", async () => 
     xml.includes("I Picked the Wrong Elective"),
     "expected the feed to list the seed post title",
   );
+  // A draft must never leak into the public feed (spec 0034).
+  const draft = getDraftPosts()[0];
+  if (draft) {
+    assert.ok(
+      !xml.includes(draft.title),
+      "the RSS feed must not list a draft post",
+    );
+  }
+});
+
+// Draft posts (spec 0034): hidden from the public surfaces above, but reachable
+// under /blog/drafts/<slug> with a visible marker and noindex. The published and
+// draft routes reject each other's slugs, so a post is served from exactly one.
+test("a draft is reachable + marked + noindex under /blog/drafts, and the routes 404 across kinds", async () => {
+  const draft = getDraftPosts()[0];
+  if (!draft) return; // no drafts to exercise
+  const published = getPublishedPosts()[0];
+
+  const draftRes = await fetch(BASE + `/blog/drafts/${draft.slug}`);
+  assert.equal(draftRes.status, 200, "expected 200 for the draft page");
+  const draftHtml = await draftRes.text();
+  assert.ok(draftHtml.includes(draft.title), "expected the draft's title on its page");
+  assert.ok(
+    draftHtml.includes("Draft preview"),
+    "expected the 'Draft' marker on the draft page",
+  );
+  assert.ok(draftHtml.includes("noindex"), "expected the draft page to be noindex");
+
+  // The published route refuses a draft slug (the draft lives at /blog/drafts/<slug>).
+  const wrongPublished = await fetch(BASE + `/blog/${draft.slug}`);
+  assert.equal(wrongPublished.status, 404, "a draft slug must 404 at /blog/<slug>");
+
+  // The draft route refuses a published slug.
+  if (published) {
+    const wrongDraft = await fetch(BASE + `/blog/drafts/${published.slug}`);
+    assert.equal(wrongDraft.status, 404, "a published slug must 404 at /blog/drafts/<slug>");
+  }
 });
 
 // Previous/next post navigation (spec 0021). Derive the expected neighbours from
@@ -841,7 +894,7 @@ test("GET /blog/feed.xml serves an RSS feed listing the seed post", async () => 
 // newest always has a Previous and no Next (>= 2 posts) - so this covers both the
 // single-sided cases and the direction of each tile.
 test("a post renders previous/next navigation to its chronological neighbours", async () => {
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
   if (posts.length < 2) return; // nothing adjacent to link with a single post
 
   const oldest = posts[posts.length - 1];
@@ -941,7 +994,7 @@ test("a post renders previous/next navigation to its chronological neighbours", 
 // and its slug from the SAME source the route renders from (getAllPosts +
 // deriveTags + tagSlug), so this never time-bombs as posts/tags change.
 test("a tag archive lists its posts with a route-unique title; unknown tag 404s", async () => {
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
   const tags = deriveTags(posts);
   assert.ok(tags.length > 0, "fixture sanity: at least one tag exists");
   const tag = tags[0];
@@ -1038,7 +1091,7 @@ test("robots, sitemap, and manifest are served", async () => {
   // spec 0027: individual posts and per-tag archives are now crawlable. Assert a
   // real post URL (posts were previously absent from the sitemap entirely) and a
   // tag archive URL are both listed.
-  const somePost = getAllPosts()[0];
+  const somePost = getPublishedPosts()[0];
   assert.match(
     sitemapXml,
     new RegExp(`/blog/${somePost.slug}</loc>`),
@@ -1049,6 +1102,15 @@ test("robots, sitemap, and manifest are served", async () => {
     /\/blog\/tags\/[a-z0-9-]+<\/loc>/,
     "expected per-tag archive URLs in the sitemap",
   );
+  // A draft is absent from the sitemap (spec 0034).
+  const draft = getDraftPosts()[0];
+  if (draft) {
+    assert.doesNotMatch(
+      sitemapXml,
+      new RegExp(`/blog/${draft.slug}</loc>`),
+      "a draft post URL must not appear in the sitemap",
+    );
+  }
 
   // Manifest is valid JSON and its declared install icons actually resolve.
   const manifest = await fetch(BASE + "/manifest.webmanifest");

@@ -9,7 +9,7 @@ import {
   ResumeIcon,
 } from "@/components/nav-icons";
 import { PostRow } from "@/components/post-row";
-import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { images, site } from "@/lib/site";
 
@@ -26,7 +26,7 @@ export default function HomePage() {
   // through the same `toPostRows` + `PostRow` the listing/tag archives use, so
   // it stays pixel-identical to a `/blog` row. `newPostSlug` runs over the FULL
   // post set so the "New" badge is a whole-corpus fact (learnings 0027).
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
   // Only the newest post is highlighted, so resolve just its cover - but derive
   // the "New" slug from the FULL set so the badge stays a whole-corpus fact
   // (learnings 0027), not "newest of the one row we kept".

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAllPosts, newPostSlug } from "@/lib/blog";
+import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 const NOW_MS = Date.now();
 
 export default function BlogPage() {
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
 
   // Resolve covers on the SERVER and compute the "New" badge once (the newest
   // post within the 30-day window), baked into the SSG HTML - shared with the
