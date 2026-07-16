@@ -258,7 +258,10 @@ per-component code. Already implemented in `src/styles/`.
 - **Server errors**: `src/instrumentation.ts` exports `onRequestError` (Node-runtime-guarded) which
   lazy-imports `src/lib/posthog-server.ts` (a singleton posthog-node client, `flushAt:1`) and calls
   `captureExceptionImmediate`, so RSC/route-handler/`/v1/contact` failures reach Error tracking.
-  `src/app/global-error.tsx` is the client boundary for a root render crash.
+  `src/app/error.tsx` is the route-level boundary and `src/app/global-error.tsx` the root-crash
+  boundary; both re-apply the theme in their effect (they render outside the root layout, so the
+  pre-paint script never ran) and route a `ChunkLoadError` through `src/lib/chunk-recovery.ts`, which
+  forces one guarded full reload onto the fresh build after a deploy renamed the chunks.
 - **Same-origin proxy**: `next.config.ts` `rewrites()` map `/ingest/static|array/*` to
   `us-assets.i.posthog.com` and `/ingest/*` to `us.i.posthog.com`, with
   `skipTrailingSlashRedirect: true` (PostHog ingest paths use trailing slashes Next would otherwise
