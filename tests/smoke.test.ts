@@ -160,7 +160,9 @@ const routes = [
       // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
       "transition-all duration-200 ease-out motion-reduce:transition-none",
     ],
-    absent: ["Placeholder", "No posts yet", "sm:max-w-md"],
+    // The sample draft (spec 0034) must NOT appear on the public listing - a
+    // regression to getAllPosts() here would list it, so its title reddens.
+    absent: ["Placeholder", "No posts yet", "sm:max-w-md", "This Is a Sample Draft"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -289,28 +291,31 @@ const routes = [
     ],
     // No heading={false}: the form's own "Subscribe for updates" h2 must be gone
     // here (the page supplies its own H1 + copy), so a regression that re-enabled
-    // it would be a duplicate heading.
-    absent: ["Placeholder", "Subscribe for updates"],
+    // it would be a duplicate heading. The sample draft is dated to be the NEWEST
+    // post, so if /subscribe reverted to getAllPosts() it would surface in the
+    // "Latest post" block - its title absent proves the draft is filtered out
+    // (spec 0034 acceptance - review: PR #125).
+    absent: ["Placeholder", "Subscribe for updates", "This Is a Sample Draft"],
     // No hasBlur assertion: it would only pass while the newest post's cover happens
     // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
     // inlined blurDataURL), so it would redden on unrelated content changes. The blur
     // treatment is guarded on the stable image-bearing routes instead (feedback 0005).
   },
   {
-    // The drafts index (spec 0034): unlinked and noindex. With no drafts in the
-    // content right now it renders the empty state; the row treatment + linking is
-    // covered by the toPostRows/getDraftPosts unit tests and re-asserted here the
-    // next time a draft exists.
+    // The drafts index (spec 0034): unlinked, noindex, lists unpublished posts and
+    // links each row to its /blog/drafts/<slug> page (not the public /blog URL).
+    // The sample-draft fixture (content/blog/this-is-a-sample-draft.mdx) keeps this
+    // surface - and the public draft-leak guards below - exercised with a real draft.
     path: "/blog/drafts",
     title: "Drafts - Matthew Maynes",
     contains: [
-      // Empty-state copy proves the index rendered (and that no published post
-      // leaked in - a regression to getAllPosts() would list posts here instead).
-      "No drafts right now.",
+      "This Is a Sample Draft",
+      'href="/blog/drafts/this-is-a-sample-draft"',
       // Deliberately noindex (the robots meta the drafts pages emit).
       "noindex",
     ],
-    absent: ["Placeholder"],
+    // The empty-state copy must be gone now that a draft exists.
+    absent: ["Placeholder", "No drafts right now."],
   },
 ];
 
