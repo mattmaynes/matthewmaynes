@@ -164,11 +164,13 @@ test("getPublishedPosts and getDraftPosts partition getAllPosts, order preserved
     const idxs = order(subset).map((s) => allOrder.indexOf(s));
     assert.deepEqual([...idxs].sort((a, b) => a - b), idxs, "filter preserves order");
   }
-  // The draft under test is hidden from published and present in drafts (also
-  // keeps the `.every` checks above non-vacuous while a draft exists).
+  // The car post is published: it must be in the published set and never in
+  // drafts. (There is no draft in the tracked content right now, so the draft
+  // branch of the partition runs empty here; the draft-flag parsing itself is
+  // exercised against fixtures by the parseFrontmatter `draft` test above.)
   const carSlug = "the-car-that-taught-me-to-commit-and-move-on";
-  assert.ok(drafts.some((p) => p.slug === carSlug), "car post is a draft");
-  assert.ok(!published.some((p) => p.slug === carSlug), "car post is not published");
+  assert.ok(published.some((p) => p.slug === carSlug), "car post is published");
+  assert.ok(!drafts.some((p) => p.slug === carSlug), "car post is not a draft");
 });
 
 test("estimateReadingMinutes counts a multi-paragraph body at ~200 wpm", () => {
