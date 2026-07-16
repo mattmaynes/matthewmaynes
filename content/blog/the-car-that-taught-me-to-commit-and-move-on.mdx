@@ -1,0 +1,63 @@
+---
+title: The Car That Taught Me to Commit and Move On
+date: 2026-07-14
+tags: [Resilience, Growth, Engineering Leadership]
+excerpt: In 2014 I bought a red Mazda 3 that turned out to be a rebuild write-off. Coming to terms with that bad decision, then learning to fix the car myself, taught me a resilience I leaned on the day I crashed Constant Contact.
+cover: red-mazda-3.png
+coverCaption: $8,000, low kilometres, and one word in the contract I should have asked about.
+draft: true
+---
+
+In 2014 I bought my first car. Technically it was my second, the first had been a gift from my parents, but this was the first one I paid for myself. I had a tight budget and I wanted something small. Maybe something sporty. After a few weeks of searching I found it. A 2008 red Mazda 3. The price was hard to believe, $8,000 when comparable cars were going for well over $12,000. I couldn't pass it up.
+
+## Zoom Zoom
+
+Sarah, my girlfriend at the time and my wife now, and I hopped on a bus to go see it. The garage only had room for six cars, and the red Mazda sat at the end of the row. We found a salesperson and asked for a test drive. I loved it. Mazda's Zoom Zoom slogan is not just marketing. It was a blast to drive. In terrible negotiating fashion, once we got back to the garage, I offered full price and we made a deal.
+
+Some might call that decision hasty. In hindsight, it was. A few days later I picked up the car and drove off the lot. What I hadn't been proactive about was insurance. We had a temporary slip to get us home and two weeks to sort out a real policy. During the signing, the dealer had used the word "rebuild" a few times. It didn't mean much to me then. It meant a lot to the insurance agent who called a few days later.
+
+## What's a rebuild?
+
+The car had been in an accident and had once been written off. The contract I'd signed waived any liability the garage had for that. They'd rebuilt the car from a wrecked state and sold it to me without a second thought. Insurance companies do not look kindly on that kind of car. The cheapest policy I could find was a high risk plan, $3,000 a year.
+
+I was upset. I felt cheated, and a little helpless. Regret is a heavy thing to sit with.
+
+**Then I decided to commit and move on.**
+
+I couldn't change what had happened, but I could still decide how I responded to it, and that part was mine.
+
+## Living with it
+
+I won't pretend that I moved on overnight. It took some time to heal. But something interesting happened as time passed. Like all cars, this one still needed maintenance. I had never done anything more than lift up the hood to fill up the windshield washer fluid. With some help from my father-in-law, I decided to start changing the oil myself. Then changing tires. It didn't happen all at once but I slowly started to build confidence in myself.
+
+A few years into owning the car, I noticed that when I hit a bump, it felt awful. Then I noticed that the wear on the tire was uneven. The struts had failed. The repairs were going to be much more than I could afford and dread began to set in. *"Why did I buy this car," "this wouldn't have happened if I'd just bought the Suzuki."* Then I paused. What if *I* replaced the struts? What's the worst that could happen (bad things, don't think about it). But really, what's the worst that could happen? I can't afford the repair, and I can't keep driving it as is. I might as well try.
+
+So I set out on a YouTube crash course to become an expert on strut replacement. I bought the parts and borrowed some tools and found myself back in my father-in-law's garage. I worked up the courage and started jacking up the car. With the exception of a small struggle with an over torqued screw, the replacement went smoothly.
+
+I had done it. The job was done, and I could still afford rent!
+
+## Not that gateway
+
+Looking back at that experience, I realize it gave me resilience in the face of dread. It taught me that there is always a way through a bad situation. I've carried those lessons with me in my career. It has helped me keep my cool when things go sideways, especially when it's a moment of high stress. I was thankful for that resilience when just a few months ago, I crashed Constant Contact.
+
+In my current role, I am responsible for infrastructure that services nearly every web UI request for Constant Contact. In front of it all is a simple reverse proxy for managing traffic. To publish new changes to the system, a canary deployment process rolls out changes to small portions of traffic. A load balancer slowly shifts traffic from an A gateway to a B gateway, increasing until the change is available for everyone.
+
+One day, our deploy had a hiccup. Not a big deal. The rollout process got stuck and we needed to reset it. I hopped in to make the quick fix so that we could resume regular deploys. I connected to the control plane and deleted the canary gateway, gateway A. Because the traffic was flowing through gateway B, right?
+
+The blood drained from my face.
+
+In my haste to fix the deploy, I had made an assumption, the wrong assumption. Traffic flip-flops between gateways A and B depending on what deploy we are on. At the moment I deleted A, all traffic was on A. **I had deleted the production gateway.**
+
+My heart was racing.
+
+I knew what I had done, but it was too late. The entire site crashed. *I need to restore it as quickly as possible. I need to hurry. I need to recreate the gateway. I need to reroute the traffic.*
+
+*Breathe.*
+
+I took a moment to calm myself. I had made a bad decision. I needed to **commit and move on**. The only way through was to fix my mistake. In that moment, I switched modes from panic to coordinator. I took charge and quickly organized my team around the problem. Someone worked on restoring the gateway while someone else rerouted traffic. With my orchestration, we got the site back up and running in under 10 minutes.
+
+## Navigating through
+
+Of course life would have been easier without those stressful events, but life isn't easy. I won't say I'm thankful for them, but I am thankful for what they taught me. I came through the other side with more resilience, knowing that by staying calm, you can navigate some of life's most stressful events. The first step to fixing a bad situation is to accept what has happened so you can move on.
+
+While it might have helped to understand what it meant to have a branded car title, the Mazda turned out fine. I drove it for four more years. I still don't know exactly what the previous owner did to write it off, and at this point I've stopped asking.
