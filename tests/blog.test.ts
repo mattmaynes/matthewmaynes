@@ -166,7 +166,7 @@ test("getPublishedPosts and getDraftPosts partition getAllPosts, order preserved
   }
   // The draft under test is hidden from published and present in drafts (also
   // keeps the `.every` checks above non-vacuous while a draft exists).
-  const carSlug = "the-car-that-taught-me-how-to-decide";
+  const carSlug = "the-car-that-taught-me-to-commit-and-move-on";
   assert.ok(drafts.some((p) => p.slug === carSlug), "car post is a draft");
   assert.ok(!published.some((p) => p.slug === carSlug), "car post is not published");
 });
