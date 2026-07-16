@@ -160,8 +160,7 @@ const routes = [
       // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
       "transition-all duration-200 ease-out motion-reduce:transition-none",
     ],
-    // The draft post (spec 0034) must NOT appear on the public listing.
-    absent: ["Placeholder", "No posts yet", "sm:max-w-md", "The Car That Taught Me to Commit and Move On"],
+    absent: ["Placeholder", "No posts yet", "sm:max-w-md"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -290,29 +289,28 @@ const routes = [
     ],
     // No heading={false}: the form's own "Subscribe for updates" h2 must be gone
     // here (the page supplies its own H1 + copy), so a regression that re-enabled
-    // it would be a duplicate heading. The car draft is the newest post BY DATE, so
-    // its title in the "Latest post" block would prove /subscribe reverted to
-    // getAllPosts() and leaked the draft (spec 0034 acceptance - review: PR #125).
-    absent: ["Placeholder", "Subscribe for updates", "The Car That Taught Me to Commit and Move On"],
+    // it would be a duplicate heading.
+    absent: ["Placeholder", "Subscribe for updates"],
     // No hasBlur assertion: it would only pass while the newest post's cover happens
     // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
     // inlined blurDataURL), so it would redden on unrelated content changes. The blur
     // treatment is guarded on the stable image-bearing routes instead (feedback 0005).
   },
   {
-    // The drafts index (spec 0034): unlinked, noindex, lists unpublished posts and
-    // links each row to its /blog/drafts/<slug> page (not the public /blog URL).
+    // The drafts index (spec 0034): unlinked and noindex. With no drafts in the
+    // content right now it renders the empty state; the row treatment + linking is
+    // covered by the toPostRows/getDraftPosts unit tests and re-asserted here the
+    // next time a draft exists.
     path: "/blog/drafts",
     title: "Drafts - Matthew Maynes",
     contains: [
-      "The Car That Taught Me to Commit and Move On",
-      'href="/blog/drafts/the-car-that-taught-me-to-commit-and-move-on"',
+      // Empty-state copy proves the index rendered (and that no published post
+      // leaked in - a regression to getAllPosts() would list posts here instead).
+      "No drafts right now.",
       // Deliberately noindex (the robots meta the drafts pages emit).
       "noindex",
     ],
     absent: ["Placeholder"],
-    // The car cover is a static-imported photo, so its row carries a blur placeholder.
-    hasBlur: true,
   },
 ];
 
