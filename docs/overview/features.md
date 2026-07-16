@@ -53,7 +53,8 @@ pending) · 📋 planned.
   (pageviews on every App Router route change, page-leave, and autocapture), **session replay**
   (with all form inputs masked - the contact form is additionally marked `ph-no-capture`, so a
   visitor's typed message is never recorded), and **error tracking** for both client exceptions
-  (autocapture + a `global-error` boundary) and server exceptions (`instrumentation.ts`
+  (autocapture + `error`/`global-error` boundaries, which also self-heal a stale-deploy
+  `ChunkLoadError` with a guarded reload and re-apply the visitor's theme) and server exceptions (`instrumentation.ts`
   `onRequestError` via posthog-node, covering `POST /v1/contact`). All traffic is proxied
   same-origin through `/ingest/*`, so tracker blockers and a future CSP need no third-party
   exception. No consent banner: analytics run for all visitors in cookieless mode. The contact

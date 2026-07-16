@@ -2,16 +2,22 @@
 
 import { useEffect } from "react";
 import { ThemeScript } from "@/components/theme-script";
+import { applyStoredTheme } from "@/lib/theme";
+import { recoverFromChunkError } from "@/lib/chunk-recovery";
 import { clientAnalyticsEnabled, initPostHogBrowser } from "@/lib/posthog-browser";
 import "./globals.css";
 
 /**
  * Root error boundary (spec 0014). When a render error escapes every nested
  * boundary it replaces the whole document, so this file must render its own
- * <html>/<body> (including <ThemeScript> so the fallback honours the visitor's
- * light/dark choice). It reports the crash to PostHog Error tracking - this is
- * NOT double-counted by `capture_exceptions`, because a boundary-caught render
- * error never reaches the global handler - then shows a branded fallback.
+ * <html>/<body>. It keeps <ThemeScript> for the SERVER-rendered case, but when
+ * the boundary mounts on the CLIENT that inline script never runs (React does
+ * not execute injected scripts and owns the <html> className), so the effect
+ * also calls applyStoredTheme() to re-apply the visitor's light/dark choice -
+ * without it the fallback always painted light. A stale-deploy ChunkLoadError is
+ * reloaded to the fresh build; otherwise the crash is reported to PostHog Error
+ * tracking (NOT double-counted: a boundary-caught render error never reaches the
+ * global handler) and the branded fallback shows.
  */
 export default function GlobalError({
   error,
@@ -21,6 +27,10 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    // Re-apply the theme first so the fallback matches the site even though the
+    // pre-paint inline script never executed on this client-mounted document.
+    applyStoredTheme();
+    if (recoverFromChunkError(error)) return;
     if (clientAnalyticsEnabled()) initPostHogBrowser().captureException(error);
   }, [error]);
 
