@@ -164,10 +164,13 @@ test("getPublishedPosts and getDraftPosts partition getAllPosts, order preserved
     const idxs = order(subset).map((s) => allOrder.indexOf(s));
     assert.deepEqual([...idxs].sort((a, b) => a - b), idxs, "filter preserves order");
   }
-  // The car post is published: it must be in the published set and never in
-  // drafts. (There is no draft in the tracked content right now, so the draft
-  // branch of the partition runs empty here; the draft-flag parsing itself is
-  // exercised against fixtures by the parseFrontmatter `draft` test above.)
+  // Direct markers on real content, so the partition can actually fail: the
+  // sample-draft fixture is present in drafts and hidden from published (this
+  // also keeps the `.every` checks above non-vacuous), while the published car
+  // post is the mirror image.
+  const draftSlug = "this-is-a-sample-draft";
+  assert.ok(drafts.some((p) => p.slug === draftSlug), "sample draft is a draft");
+  assert.ok(!published.some((p) => p.slug === draftSlug), "sample draft is not published");
   const carSlug = "the-car-that-taught-me-to-commit-and-move-on";
   assert.ok(published.some((p) => p.slug === carSlug), "car post is published");
   assert.ok(!drafts.some((p) => p.slug === carSlug), "car post is not a draft");
