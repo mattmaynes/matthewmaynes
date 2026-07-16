@@ -161,7 +161,7 @@ const routes = [
       "transition-all duration-200 ease-out motion-reduce:transition-none",
     ],
     // The draft post (spec 0034) must NOT appear on the public listing.
-    absent: ["Placeholder", "No posts yet", "sm:max-w-md", "The Car That Taught Me How to Decide"],
+    absent: ["Placeholder", "No posts yet", "sm:max-w-md", "The Car That Taught Me to Commit and Move On"],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -293,7 +293,7 @@ const routes = [
     // it would be a duplicate heading. The car draft is the newest post BY DATE, so
     // its title in the "Latest post" block would prove /subscribe reverted to
     // getAllPosts() and leaked the draft (spec 0034 acceptance - review: PR #125).
-    absent: ["Placeholder", "Subscribe for updates", "The Car That Taught Me How to Decide"],
+    absent: ["Placeholder", "Subscribe for updates", "The Car That Taught Me to Commit and Move On"],
     // No hasBlur assertion: it would only pass while the newest post's cover happens
     // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
     // inlined blurDataURL), so it would redden on unrelated content changes. The blur
@@ -305,8 +305,8 @@ const routes = [
     path: "/blog/drafts",
     title: "Drafts - Matthew Maynes",
     contains: [
-      "The Car That Taught Me How to Decide",
-      'href="/blog/drafts/the-car-that-taught-me-how-to-decide"',
+      "The Car That Taught Me to Commit and Move On",
+      'href="/blog/drafts/the-car-that-taught-me-to-commit-and-move-on"',
       // Deliberately noindex (the robots meta the drafts pages emit).
       "noindex",
     ],
