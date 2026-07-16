@@ -67,7 +67,12 @@ feedback that taught the lesson.
 - **Verify a token class name against the actual theme before using it** (`text-text-muted`, not
   `text-muted`; `--color-primary-foreground`, not `text-on-primary`) - grep the generated CSS/Roots. A
   wrong token renders unreadable, silently. A page that renders its own `<html>` must include the theme
-  script or it ignores the visitor's theme. (0014)
+  script or it ignores the visitor's theme. (0014) That inline script only runs in SERVER-rendered HTML,
+  though: a boundary that mounts on the client (`global-error`, or the `__next_error__` shell that hosts
+  `error.tsx` on a server error) never executes it, so re-apply the theme in the boundary's effect. (0018)
+- **A `ChunkLoadError` is a signal to reload, not a crash to display**: a tab left open across a deploy
+  requests content-hashed chunks the new build renamed. Detect it in the error boundary and force one
+  guarded full reload onto the current build instead of showing a dead fallback. (0018)
 - **Reach for a semantic type/colour ROLE, not a raw Tailwind step**, on a token-first codebase; add a
   `@theme` role if one is missing, and grep the built CSS to confirm it emitted (a mis-declared `@theme`
   is a silent no-op). (0011)
