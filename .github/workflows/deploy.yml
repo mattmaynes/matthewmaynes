@@ -10,6 +10,8 @@ name: deploy
 on:
   push:
     branches: [main]
+  # Manual fallback: if a push to main does not auto-trigger a deploy (a GitHub
+  # event-delivery hiccup), run it by hand: `gh workflow run deploy.yml --ref main`.
   workflow_dispatch: {}
 
 # Default to read-only; the build job opts into packages: write for itself only.
