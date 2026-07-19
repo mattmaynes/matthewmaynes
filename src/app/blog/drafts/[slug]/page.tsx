@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { PostArticle } from "@/components/post-article";
 import { type PostNavItem } from "@/components/post-nav";
+import { Button } from "@/components/ui";
 import {
   getPreviewPosts,
   getPostBySlug,
@@ -10,21 +14,16 @@ import {
   readingMinutes,
 } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
+import { COOKIE_NAME, verifySession } from "@/lib/preview-auth";
+import { FOCUS_RING as RING } from "@/lib/focus-ring";
 
 type Params = { slug: string };
 
-// Re-check the clock every 60s (shared ISR window, spec 0035): a scheduled post
-// leaves this preview route on its own once its publishAt passes (it moves to
-// /blog/<slug>), so a stale preview does not linger after it publishes.
-export const revalidate = 60;
-
-// Statically generate every preview post (drafts + scheduled) so each is
-// reachable by direct URL. Publishing a draft (remove `draft: true`) or a
-// scheduled post (its publishAt passes) moves it to /blog/[slug] instead
-// (spec 0034/0035).
-export function generateStaticParams(): Params[] {
-  return getPreviewPosts().map((post) => ({ slug: post.slug }));
-}
+// This route is DYNAMIC on purpose (it reads the session cookie below): the OG
+// metadata is served to EVERYONE so a draft/scheduled link unfurls with the post's
+// own card, while the readable BODY is gated behind the preview login (feedback
+// 0022). No generateStaticParams/revalidate here - a preview leaves this route
+// once it publishes, resolved per request from the content dir.
 
 export async function generateMetadata({
   params,
@@ -36,9 +35,9 @@ export async function generateMetadata({
   // Previews are never indexed. A published slug 404s here (it lives at /blog/<slug>).
   const robots = { index: false, follow: false };
   if (!post || !isPreviewNow(post)) return { title: "Blog", robots };
-  // Still emit a real share card so the preview can be link-preview tested: the
-  // co-located opengraph-image route supplies og:image automatically; noindex
-  // keeps it out of search, not out of an unfurl.
+  // Emit the post's real share card so the preview unfurls (Slack/iMessage/etc.)
+  // even though the body is gated: the co-located opengraph-image route supplies
+  // og:image automatically; noindex keeps it out of search, not out of an unfurl.
   return {
     title: `${post.title} - ${post.draft ? "Draft" : "Scheduled"}`,
     description: post.excerpt,
@@ -67,6 +66,49 @@ export default async function DraftPostPage({
   // (or missing) slug 404s so each post is served from exactly one route at any
   // instant (spec 0034/0035).
   if (!post || !isPreviewNow(post)) notFound();
+
+  // Gate the readable BODY: only a valid preview session sees the full post. An
+  // unauthenticated visitor (or an unfurler bot) still gets the metadata above and
+  // the teaser below, so link previews work without exposing the writing (spec 0036).
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  const authed = await verifySession(token, process.env.PREVIEW_PASSWORD);
+
+  if (!authed) {
+    const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
+    const loginHref = `/login?next=${encodeURIComponent(`/blog/drafts/${post.slug}`)}`;
+    return (
+      <section className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
+        <Link
+          href="/blog"
+          className={`inline-block rounded-sm text-caption text-text-subtle hover:text-primary ${RING}`}
+        >
+          &larr; All posts
+        </Link>
+        <p className="mt-6 text-caption font-semibold uppercase tracking-wide text-accent-strong">
+          {post.draft ? "Draft preview" : "Scheduled preview"}
+        </p>
+        <h1 className="mt-2 text-h1 font-bold text-text">{post.title}</h1>
+        <p className="mt-4 text-body text-text-muted">{post.excerpt}</p>
+        {cover ? (
+          <Image
+            src={cover}
+            alt={cover.alt}
+            placeholder={cover.pixelated ? "empty" : "blur"}
+            sizes="(min-width: 768px) 768px, 100vw"
+            className="mt-8 w-full rounded-lg object-cover"
+          />
+        ) : null}
+        <div className="mt-8 rounded-lg border border-border bg-surface p-6">
+          <p className="text-body text-text">
+            This is a private preview. Log in to read the full post.
+          </p>
+          <Button asChild className="mt-4">
+            <Link href={loginHref}>Log in to read</Link>
+          </Button>
+        </div>
+      </section>
+    );
+  }
 
   const minutes = readingMinutes(post);
 

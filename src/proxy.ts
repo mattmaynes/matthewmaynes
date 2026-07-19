@@ -3,34 +3,25 @@ import { COOKIE_NAME, verifySession } from "@/lib/preview-auth";
 
 /**
  * Preview login gate (spec 0036), as a Next "proxy" (the successor to the
- * middleware convention). Gates the not-yet-public area at /blog/drafts (drafts +
- * scheduled previews from specs 0034/0035): a request without a valid session
- * cookie is redirected to /login. The session is a stateless HMAC of the shared
+ * middleware convention). Gates ONLY the drafts INDEX at /blog/drafts, which
+ * enumerates every not-yet-public post (drafts + scheduled previews from specs
+ * 0034/0035) - that list should not leak, so an unauthenticated request is
+ * redirected to /login. The session is a stateless HMAC of the shared
  * PREVIEW_PASSWORD (see preview-auth.ts), verified here with Web Crypto so no
  * session store is needed. Fail-closed: with PREVIEW_PASSWORD unset, verifySession
- * returns false, so previews are locked rather than leaked.
+ * returns false, so the index is locked rather than leaked.
+ *
+ * The per-post preview PAGES (/blog/drafts/<slug>) are deliberately NOT gated here:
+ * they self-gate their readable BODY at the page level while serving their OG
+ * metadata publicly, so link-preview unfurling works (feedback 0022). The
+ * per-post OG-image route is public for the same reason. Hence the matcher below
+ * is the exact index only.
  */
-
-// Match the drafts index and every nested preview route. The OG-image sub-route is
-// let through in code below (a matcher exclusion regex is brittle).
 export const config = {
-  matcher: ["/blog/drafts", "/blog/drafts/:path*"],
+  matcher: ["/blog/drafts"],
 };
 
-// Exactly the preview OG-image route: /blog/drafts/<slug>/opengraph-image. A precise
-// match (not endsWith) so a preview post slugged literally "opengraph-image" cannot
-// slip the gate via /blog/drafts/opengraph-image.
-const OG_ROUTE = /^\/blog\/drafts\/[^/]+\/opengraph-image$/;
-
 export async function proxy(req: NextRequest): Promise<NextResponse> {
-  const { pathname } = req.nextUrl;
-
-  // Keep preview OG cards PUBLIC (spec 0036) so link-preview unfurling still works;
-  // only the readable HTML pages are gated. The published post's own OG card is
-  // separately gated by isPublishedNow (spec 0035), so a scheduled post's card is
-  // reachable only here, which is the accepted, bounded exposure.
-  if (OG_ROUTE.test(pathname)) return NextResponse.next();
-
   const token = req.cookies.get(COOKIE_NAME)?.value;
   if (await verifySession(token, process.env.PREVIEW_PASSWORD)) {
     return NextResponse.next();
@@ -40,6 +31,6 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   const url = req.nextUrl.clone();
   url.pathname = "/login";
   url.search = "";
-  url.searchParams.set("next", pathname);
+  url.searchParams.set("next", req.nextUrl.pathname);
   return NextResponse.redirect(url);
 }
