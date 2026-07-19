@@ -37,6 +37,7 @@ export function toPostRows(
       cover: cover ? { ...cover, alt: cover.alt } : undefined,
       pixelated: cover?.pixelated === true,
       isNew: post.slug === newSlug,
+      series: post.series,
       minutes: readingMinutes(post),
       basePath,
     };

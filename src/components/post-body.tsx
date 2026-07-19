@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 import Image from "next/image";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { getBlogImage } from "@/lib/blog-images";
+import { getBlogVideo } from "@/lib/blog-videos";
 
 /**
  * Renders a compiled MDX post body with a Harbor-token prose style. This is a
@@ -59,8 +60,55 @@ function PostImage({
   );
 }
 
+/**
+ * <PostVideo name="..."/> in the MDX -> a self-hosted HTML5 <video> resolved
+ * through the blog-videos registry. Mirrors PostImage: it fails the build loudly
+ * on an unknown name (compiled over our own tracked content only), reserves the
+ * intrinsic aspect ratio via width/height (no layout shift), and caps a tall
+ * portrait clip at 75vh so it never dominates the reading column. The clips are
+ * transcoded to browser-safe H.264 with location metadata stripped before they
+ * are registered, so there is no third-party embed and nothing to leak.
+ */
+function PostVideo({
+  name,
+  children,
+}: {
+  name: string;
+  children?: ReactNode;
+}) {
+  const video = getBlogVideo(name);
+  if (!video) {
+    throw new Error(`Unknown blog video referenced in MDX: "${name}"`);
+  }
+  return (
+    <figure className="my-8 flex flex-col items-center">
+      <span className="inline-flex max-w-full overflow-hidden rounded-lg border-[0.5px] border-border">
+        <video
+          src={video.src}
+          poster={video.poster}
+          width={video.width}
+          height={video.height}
+          controls
+          playsInline
+          preload="metadata"
+          aria-label={video.alt}
+          className="h-auto max-h-[75vh] max-w-full"
+        >
+          {video.alt}
+        </video>
+      </span>
+      {children ? (
+        <figcaption className="mt-3 max-w-2xl text-center text-caption text-text-subtle italic [&_p]:m-0 [&_p]:text-caption">
+          {children}
+        </figcaption>
+      ) : null}
+    </figure>
+  );
+}
+
 const components = {
   PostImage,
+  PostVideo,
   h2: (props: ComponentProps<"h2">) => (
     <h2
       className="mt-12 border-b border-border pb-2 text-h2 font-semibold text-text"
