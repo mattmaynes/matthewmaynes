@@ -28,7 +28,11 @@ post's own `og:title` (not the site default) plus the login prompt, with the bod
 Also separated the test fixtures from live content: the sample draft + scheduled posts moved to
 `tests/fixtures/blog`, injected via a `BLOG_FIXTURES_DIR` env the loader reads alongside `content/blog`
 (the `npm test` script sets it absolute). Removing the sample posts from `content/blog` no longer guts
-the smoke/unit coverage, and no placeholder post appears on the live site.
+the smoke/unit coverage, and no placeholder post appears on the live site. CI needs the env on BOTH the
+`npm run build` AND `npm test` steps in `verify.yml`, because the smoke `before()` hook REUSES the
+standalone artifact the earlier build step produced - a fixture-less build there would serve a
+fixture-less index to the smoke suite. The DEPLOYED image is built separately by the Dockerfile, which
+never sets `BLOG_FIXTURES_DIR`, so it stays fixture-free.
 
 ## Learning
 

@@ -289,10 +289,18 @@ function readPost({ dir, file }: PostFile): Post {
  *  each tagged with the directory it came from so `readPost` reads the right file. */
 function listPostFiles(): PostFile[] {
   const out: PostFile[] = [];
+  const seen = new Set<string>();
   for (const dir of blogDirs()) {
     try {
       for (const file of readdirSync(dir)) {
-        if (file.endsWith(".mdx")) out.push({ dir, file });
+        if (!file.endsWith(".mdx")) continue;
+        // De-dupe by slug (filename basename): content/blog (the first dir) wins, so
+        // a same-named fixture never yields a duplicate post - which would otherwise
+        // double up on /blog, the feed, sitemap, and generateStaticParams.
+        const slug = file.replace(/\.mdx$/, "");
+        if (seen.has(slug)) continue;
+        seen.add(slug);
+        out.push({ dir, file });
       }
     } catch {
       // dir absent - skip

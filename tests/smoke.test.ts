@@ -945,6 +945,10 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
   const published = getPublishedPosts()[0];
   const headers = await previewCookie(); // preview area is gated (spec 0036)
 
+  // A body-only sentence from tests/fixtures/blog/this-is-a-sample-draft.mdx - it
+  // is NOT in the title/excerpt, so it renders only when the FULL body renders.
+  const BODY_ONLY = "keeps the drafts view working";
+
   const draftRes = await fetch(BASE + `/blog/drafts/${draft.slug}`, { headers });
   assert.equal(draftRes.status, 200, "expected 200 for the draft page");
   const draftHtml = await draftRes.text();
@@ -954,6 +958,25 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
     "expected the 'Draft' marker on the draft page",
   );
   assert.ok(draftHtml.includes("noindex"), "expected the draft page to be noindex");
+  // With a valid session the FULL body renders (not just the teaser chrome, which
+  // also carries the title + "Draft preview"). Keys on a body-only sentence so a
+  // regression that shows only the teaser to an authed user reddens (spec 0036).
+  assert.ok(
+    draftHtml.includes(BODY_ONLY),
+    "expected the full draft body to render with a valid session",
+  );
+
+  // Without a session the body is WITHHELD: the teaser + login prompt render, but
+  // the body-only sentence must NOT leak (feedback 0022). This is the failable
+  // guard against a future body-leak on the public teaser.
+  const teaser = await fetch(BASE + `/blog/drafts/${draft.slug}`);
+  assert.equal(teaser.status, 200, "expected the teaser to render (200) without a session");
+  const teaserHtml = await teaser.text();
+  assert.ok(teaserHtml.includes("Log in to read"), "expected the login prompt on the teaser");
+  assert.ok(
+    !teaserHtml.includes(BODY_ONLY),
+    "the draft body must NOT be served on the public teaser (no session)",
+  );
 
   // The published route refuses a draft slug (the draft lives at /blog/drafts/<slug>).
   const wrongPublished = await fetch(BASE + `/blog/${draft.slug}`);
