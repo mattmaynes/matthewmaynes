@@ -78,6 +78,15 @@
   refresh token, cached in module scope with **in-flight-mint dedup** and a **401 self-heal** (clear +
   re-mint + retry once); the add hits the create-or-update `sign_up_form` endpoint (idempotent) and
   throws status-only (never the body, which can echo the email).
+- **Preview login gate (spec 0036):** `src/proxy.ts` (the Next "proxy" convention, successor to
+  middleware; Edge) gates the not-yet-public area at
+  `/blog/drafts` (drafts + scheduled previews) - no valid session → redirect to `/login`. The session
+  is a **stateless HMAC** of the shared `PREVIEW_PASSWORD` (pure `preview-auth.ts`, Web Crypto so the
+  one impl runs in both the Edge middleware and the Node `POST /v1/login` verify handler), so nothing
+  is stored server-side and it survives the blue/green rollout. `/v1/login` reuses the `http-guards`
+  per-IP limiter + same-origin check; the cookie is `httpOnly`+`Secure`+`SameSite=Lax`. **Fail-closed**
+  (unset password → gate denies), and the preview `opengraph-image` routes are deliberately left
+  **public** so link-preview unfurling still works (the readable HTML is what's gated).
 
 ## Analytics & observability (spec 0014/0016)
 
@@ -115,8 +124,9 @@
 - Env (all server-only, provided at runtime, `.env.local` locally): `SITE_URL`; contact
   (`RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`); CTCT (`CTCT_CLIENT_ID`,
   `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID`, `CTCT_WEBSITE_LIST_ID`) powering both subscribe and the contact
-  record/opt-in. On the host they live in a git-ignored `deploy/docker/.env.site` (survives the deploy's
-  `git reset --hard`).
+  record/opt-in; and `PREVIEW_PASSWORD` (spec 0036) - the shared password gating the `/blog/drafts`
+  preview area (unset → the gate fails closed, so previews are locked, not leaked). On the host they
+  live in a git-ignored `deploy/docker/.env.site` (survives the deploy's `git reset --hard`).
 - **Exception:** `NEXT_PUBLIC_POSTHOG_*` is **inlined by `next build`**, not read at runtime, so the
   "config-free image" rule doesn't apply - the key is PostHog's publishable client token, carried as a
   committed default so CI/Docker need no new secret.

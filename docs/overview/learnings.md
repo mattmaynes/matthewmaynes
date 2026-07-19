@@ -23,6 +23,11 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   Force creds empty so guard/error paths (4xx/5xx/honeypot) run without the real upstream. (0007/0008)
 - **Verify the real artifact, not that it "rendered".** A green build only proves it compiled: fetch
   the OG card and assert `200` + `image/png`, count the PDF's pages, eyeball the output. (0004)
+- **A new server-only secret needs a structural "absent from the client bundle" test.** Reading it
+  server-side is only a convention; one `NEXT_PUBLIC_`/stray-import mistake ships it to the browser on
+  a public repo. Extend the existing bundle-grep guard (the one that checks the PostHog key) to assert
+  each new secret's value is absent. Likewise, a new HTTP route needs its own failable end-to-end
+  smoke test - unit-testing the pure core is not coverage of the handler's cookie/redirect wiring. (0020)
 
 ## Next.js & rendering
 
@@ -58,6 +63,10 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 - **Verify a token class name against the actual theme before using it** (`text-text-muted`, not
   `text-muted`) - grep the generated CSS. A wrong token renders unreadable, silently. Reach for a
   semantic role, not a raw Tailwind step; add a `@theme` role if missing and confirm it emitted. (0011/0014)
+- **Reuse the design-system field seed (`Input`), never hand-roll an `<input>`.** A raw input silently
+  drops the seed's error (`aria-invalid`), disabled, placeholder, and iOS-zoom-safe treatment, so the
+  error state can look identical to the resting state. Hand-rolling a component the design system
+  already ships is a review red flag. (0020, relating to 0017)
 - **A page that renders its own `<html>` must run the theme script**, and it only runs in SERVER-
   rendered HTML - a client-mounted boundary (`global-error`, the error shell) must re-apply the theme
   in its effect. (0014/0018)
