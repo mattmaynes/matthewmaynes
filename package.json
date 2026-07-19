@@ -19,11 +19,12 @@
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist-mono": "^5.2.8",
-    "@rogueoak/canopy": "^0.11.0",
+    "@rogueoak/canopy": "^1.1.0",
     "@rogueoak/icons": "^0.10.1",
     "@rogueoak/roots": "^0.10.1",
     "next": "16.2.9",
     "next-mdx-remote": "6.0.0",
+    "video.js": "^8.23.4",
     "posthog-js": "^1.396.3",
     "posthog-node": "^5.39.2",
     "react": "19.2.4",

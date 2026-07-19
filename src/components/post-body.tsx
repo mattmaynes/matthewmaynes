@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import Image from "next/image";
 import { compileMDX } from "next-mdx-remote/rsc";
+import { Video } from "@/components/ui";
 import { getBlogImage } from "@/lib/blog-images";
 import { getBlogVideo } from "@/lib/blog-videos";
 
@@ -61,13 +62,17 @@ function PostImage({
 }
 
 /**
- * <PostVideo name="..."/> in the MDX -> a self-hosted HTML5 <video> resolved
- * through the blog-videos registry. Mirrors PostImage: it fails the build loudly
- * on an unknown name (compiled over our own tracked content only), reserves the
- * intrinsic aspect ratio via width/height (no layout shift), and caps a tall
- * portrait clip at 75vh so it never dominates the reading column. The clips are
- * transcoded to browser-safe H.264 with location metadata stripped before they
- * are registered, so there is no third-party embed and nothing to leak.
+ * <PostVideo name="..."/> in the MDX -> Canopy's `Video` Branch (video.js, spec
+ * 0070) resolved through the blog-videos registry. Mirrors PostImage: it fails
+ * the build loudly on an unknown name (compiled over our own tracked content
+ * only). The player is fluid (fills its column and keeps the clip's aspect
+ * ratio); `aspectRatio` reserves that ratio up front so there is no layout shift
+ * while video.js lazy-loads. A tall portrait clip is capped at 75vh by bounding
+ * the wrapper width to `75vh * (w/h)` (never wider than the column), so it never
+ * dominates the reading column. The controls are skinned by Canopy's token
+ * `video.css` (wired in globals.css) and pick up the Harbor brand automatically.
+ * The clips are transcoded to browser-safe H.264 with location metadata stripped
+ * before they are registered, so there is no third-party embed and nothing to leak.
  */
 function PostVideo({
   name,
@@ -82,21 +87,22 @@ function PostVideo({
   }
   return (
     <figure className="my-8 flex flex-col items-center">
-      <span className="inline-flex max-w-full overflow-hidden rounded-lg border-[0.5px] border-border">
-        <video
+      <div
+        className="w-full overflow-hidden rounded-lg border-[0.5px] border-border"
+        // Cap a portrait clip at 75vh of height (width = 75vh * aspect), but never
+        // wider than the reading column - `min()` takes whichever is smaller.
+        style={{
+          maxWidth: `min(100%, calc(75vh * ${video.width} / ${video.height}))`,
+        }}
+      >
+        <Video
           src={video.src}
           poster={video.poster}
-          width={video.width}
-          height={video.height}
-          controls
-          playsInline
+          aspectRatio={`${video.width}:${video.height}`}
           preload="metadata"
           aria-label={video.alt}
-          className="h-auto max-h-[75vh] max-w-full"
-        >
-          {video.alt}
-        </video>
-      </span>
+        />
+      </div>
       {children ? (
         <figcaption className="mt-3 max-w-2xl text-center text-caption text-text-subtle italic [&_p]:m-0 [&_p]:text-caption">
           {children}
