@@ -36,16 +36,25 @@ function clientIp(req: Request): string {
 }
 
 /**
- * 303-redirect back to the login screen with a generic error, preserving `next`.
+ * A 303 redirect with a RELATIVE Location. Behind the Caddy proxy `req.url`'s host
+ * is the container's internal bind (0.0.0.0:3000), so building an ABSOLUTE redirect
+ * from it (`new URL(path, req.url)`) sends the browser to an unreachable
+ * 0.0.0.0:3000 URL (feedback 0021). A relative Location is resolved by the browser
+ * against the public origin it actually connected to, so it is proxy-correct with
+ * no host-header trust. `safeNext` still constrains the target to a same-origin path.
+ */
+function seeOther(location: string): NextResponse {
+  return new NextResponse(null, { status: 303, headers: { Location: location } });
+}
+
+/**
+ * Redirect back to the login screen with a generic error, preserving `next`.
  * A plain form POST should always land on a rendered page, not a JSON body. The
  * `code` picks the (generic) message: "rate" for the limiter, "1" for everything
  * else (wrong/malformed/cross-origin) - no info leak either way.
  */
-function fail(req: Request, next: string, code: "1" | "rate" = "1"): Response {
-  const url = new URL("/login", req.url);
-  url.searchParams.set("error", code);
-  url.searchParams.set("next", safeNext(next));
-  return NextResponse.redirect(url, 303);
+function fail(next: string, code: "1" | "rate" = "1"): NextResponse {
+  return seeOther(`/login?error=${code}&next=${encodeURIComponent(safeNext(next))}`);
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -58,7 +67,7 @@ export async function POST(req: Request): Promise<Response> {
       req.headers.get("host"),
     )
   ) {
-    return fail(req, DEFAULT_NEXT);
+    return fail(DEFAULT_NEXT);
   }
 
   // 2. Bound the body before buffering it (abuse path - a bare 413 is fine here).
@@ -72,7 +81,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     form = await req.formData();
   } catch {
-    return fail(req, DEFAULT_NEXT);
+    return fail(DEFAULT_NEXT);
   }
   const password = String(form.get("password") ?? "");
   const next = String(form.get("next") ?? DEFAULT_NEXT);
@@ -80,7 +89,7 @@ export async function POST(req: Request): Promise<Response> {
   // 4. Rate limit, keyed on the real client IP -> back to login with the "rate"
   //    message so the user knows to wait, not a JSON 429.
   if (!limiter.check(clientIp(req))) {
-    return fail(req, next, "rate");
+    return fail(next, "rate");
   }
 
   // 5. Verify the password constant-time (fail-closed if PREVIEW_PASSWORD unset).
@@ -88,10 +97,11 @@ export async function POST(req: Request): Promise<Response> {
   //    reuses the pure core's constant-time check and never logs the password.
   const secret = process.env.PREVIEW_PASSWORD;
   const ok = await verifySession(await signSession(password), secret);
-  if (!ok) return fail(req, next);
+  if (!ok) return fail(next);
 
-  // 6. Success: set the session cookie and 303-redirect to the safe target.
-  const res = NextResponse.redirect(new URL(safeNext(next), req.url), 303);
+  // 6. Success: set the session cookie and 303-redirect to the safe (relative)
+  //    target, so the browser lands on the public origin, not 0.0.0.0:3000.
+  const res = seeOther(safeNext(next));
   res.cookies.set({
     name: COOKIE_NAME,
     value: await signSession(secret),
