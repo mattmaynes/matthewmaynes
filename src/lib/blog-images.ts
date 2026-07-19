@@ -17,7 +17,7 @@ import snowyRunway from "../../public/images/blog/snowy-runway.png";
 import analystTableTransformer from "../../public/images/blog/analyst-table-transformer.png";
 import streamProcessorDesk from "../../public/images/blog/stream-processor-desk.png";
 import redMazda3 from "../../public/images/blog/red-mazda-3.png";
-import sheaOnSheepskin from "../../public/images/blog/shea-on-sheepskin.jpg";
+import sheaAndSasha from "../../public/images/blog/shea-and-sasha.jpg";
 import sheaPlayGym from "../../public/images/blog/shea-play-gym.jpg";
 import sashaRunning from "../../public/images/blog/sasha-running.jpg";
 
@@ -66,9 +66,9 @@ export const blogImages = {
     ...redMazda3,
     alt: "A red 2008 Mazda 3 photographed head-on in a residential parking area under a grey winter sky, bare trees and suburban houses behind it.",
   },
-  "shea-on-sheepskin.jpg": {
-    ...sheaOnSheepskin,
-    alt: "A baby in a pale pink bunny-print sleeper lying on a fluffy cream sheepskin and a quilted blanket, looking at the camera.",
+  "shea-and-sasha.jpg": {
+    ...sheaAndSasha,
+    alt: "A baby in a pale pink bunny-print sleeper resting against Sasha, the family's fluffy white curly-coated dog, on a bed, looking at the camera.",
     // A tall portrait: top-align the cropped renders so the baby's head stays in
     // frame on the listing thumbnail and the OG card.
     focus: "top",
