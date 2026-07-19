@@ -1,0 +1,42 @@
+{/*
+  Series blog-post template. Copy me into content/blog/<slug>.mdx and fill in.
+  See docs/rules/blog-series.md for the full workflow (media prep, the email sash).
+  Delete this comment before shipping.
+
+  - The filename slug MUST equal the slugified title, or the build fails.
+  - `series` is what turns on the sash + pill; keep the display casing you want.
+  - Ships as `draft: true` so it lands under /blog/drafts; remove that line to publish.
+  - Body is prose plus the known components ONLY: <PostImage> and <PostVideo>.
+    Register images in src/lib/blog-images.ts and video in src/lib/blog-videos.ts first.
+  - Quote the title when it contains a colon (as a "Series #N: ..." title usually does).
+*/}
+---
+title: "Life Log #N: <Title>"
+date: <YYYY-MM-DD>
+tags: [Life, Family]
+excerpt: <One or two sentences. The listing teaser and the email preheader draw from this.>
+cover: <cover-image-key.jpg>
+coverCaption: <Optional caption under the cover; may carry an inline [link](/path).>
+series: Life Log
+draft: true
+---
+
+Open with a short, human lead paragraph. A Life Log entry is part reflection, part update, so set
+the tone in the first few lines rather than with a heading.
+
+## <First section>
+
+<PostImage name="<image-key.jpg>"><Optional caption in your own voice.</PostImage>
+
+Section prose.
+
+## <Second section>
+
+<PostVideo name="<video-key.mp4>"><Optional caption.</PostVideo>
+
+Section prose.
+
+## Closing thoughts
+
+Wrap up. Keep any AI-usage note as a site-relative link, e.g. see my [AI policy](/ai-policy) - never
+paste an absolute `https://matthewmaynes.com/...` link into a post.

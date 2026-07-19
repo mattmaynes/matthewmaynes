@@ -86,3 +86,6 @@ ctct email send      <campaign_id>                              # send now
 - Both files are table-based, inline-styled, Outlook-hardened (MSO ghost tables + VML button),
   mobile-responsive, and carry a `prefers-color-scheme` dark-mode block.
 - Gold accents use `#9c6a2c` - the brightest gold that meets WCAG AA on white at normal text size.
+- **Series posts (e.g. Life Log):** email clients drop CSS `transform`, so the site's series "sash"
+  cannot be done in CSS here. Bake it into a `<slug>-email-cover.jpg` cover and set the eyebrow to
+  `New series - <Series>`. Full steps in [`docs/rules/blog-series.md`](../docs/rules/blog-series.md).
