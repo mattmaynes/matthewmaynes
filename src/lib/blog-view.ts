@@ -41,6 +41,14 @@ export type PostRowData = {
   /** URL base the row links under - "/blog" for published rows, "/blog/drafts"
    *  for the drafts index (spec 0034). The href is `${basePath}/${slug}`. */
   basePath: string;
+  /** For a row in the /blog/drafts preview index (spec 0035): whether it is a
+   *  draft or a scheduled post, driving the row's "Draft"/"Scheduled" marker.
+   *  Absent on a published row. */
+  previewState?: "draft" | "scheduled";
+  /** For a scheduled preview row: the formatted `publishAt` shown in the marker
+   *  (e.g. "July 19, 2026 at 7:00 p.m."). Absent unless previewState is
+   *  "scheduled". */
+  publishAtLabel?: string;
 };
 
 /**
@@ -55,6 +63,54 @@ export function formatPostDate(date: string): string {
     day: "numeric",
     timeZone: "UTC",
   });
+}
+
+/**
+ * Format a scheduled post's ISO 8601 `publishAt` for the "Scheduled for ..."
+ * preview marker (spec 0035), e.g. "July 19, 2026 at 7:00 p.m. EDT". Unlike
+ * `formatPostDate` this keeps the time, and renders in the timestamp's OWN zone
+ * (the offset it carries, or UTC for a bare datetime) so the author sees the
+ * instant they scheduled rather than the server's zone. Client-safe (no fs), so
+ * both the Server Component preview and any client caller share one formatter.
+ * Returns the raw string unchanged if it does not parse (belt-and-suspenders;
+ * the build already rejects an unparseable publishAt).
+ */
+export function formatPublishAt(iso: string): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return iso;
+  // Derive the timestamp's own UTC offset (minutes) from the string: an explicit
+  // "Z" or "+/-HH:MM" is honoured; a bare datetime is treated as UTC. Rendering
+  // in that fixed offset keeps the label stable regardless of the server's zone.
+  const zone = offsetZoneFromIso(iso);
+  return new Date(ms).toLocaleString("en-CA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+    ...(zone ? { timeZone: zone } : {}),
+  });
+}
+
+/** The IANA-ish fixed-offset time zone (e.g. "UTC" or "Etc/GMT+4") implied by an
+ *  ISO 8601 string's offset, or null when it carries a named/local time we should
+ *  leave to the runtime. A bare datetime (no offset) is treated as UTC. */
+function offsetZoneFromIso(iso: string): string | null {
+  if (/[zZ]$/.test(iso)) return "UTC";
+  const m = /([+-])(\d{2}):?(\d{2})$/.exec(iso);
+  if (!m) {
+    // No offset at all: a bare "YYYY-MM-DDTHH:MM" is read as UTC (Date.parse
+    // treats the date-time form as UTC), so label it in UTC to match.
+    return "UTC";
+  }
+  const sign = m[1];
+  const hours = Number(m[2]);
+  const minutes = Number(m[3]);
+  if (minutes !== 0) return null; // Etc/GMT only supports whole-hour offsets.
+  // Etc/GMT is POSIX-signed: Etc/GMT+4 is UTC-4 (e.g. EDT). Flip the sign.
+  const flipped = sign === "+" ? "-" : "+";
+  return `Etc/GMT${flipped}${hours}`;
 }
 
 /**

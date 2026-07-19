@@ -36,6 +36,13 @@ export type Post = {
   /** True for an unpublished draft: hidden from every public surface, reachable
    *  only under /blog/drafts (spec 0034). Absent frontmatter key = published. */
   draft?: boolean;
+  /** ISO 8601 timestamp to publish this post at (spec 0035). While it is in the
+   *  future the post is "scheduled" - hidden from every public surface and
+   *  previewable under /blog/drafts - and flips live on its own once the time
+   *  passes. Absent = publishes immediately (subject to `draft`). A bare
+   *  datetime with no offset is read as UTC. `draft` wins: a draft is never
+   *  scheduled. */
+  publishAt?: string;
   /** Raw MDX body, to be compiled on the post page. */
   content: string;
 };
@@ -52,6 +59,8 @@ export type Frontmatter = {
   series?: string;
   /** `draft: true` marks the post unpublished (spec 0034); absent = published. */
   draft?: boolean;
+  /** ISO 8601 time to auto-publish at (spec 0035); absent = publish immediately. */
+  publishAt?: string;
 };
 
 // Re-exported so the Server Component post page and the `"use client"` listing
@@ -103,9 +112,15 @@ export function parseFrontmatter(raw: string): {
       // value, or an absent key, is published. Not a required field.
       data.draft = stripQuotes(value) === "true";
     } else if (
-      ["title", "date", "excerpt", "cover", "coverCaption", "series"].includes(
-        key,
-      )
+      [
+        "title",
+        "date",
+        "excerpt",
+        "cover",
+        "coverCaption",
+        "series",
+        "publishAt",
+      ].includes(key)
     ) {
       data[key] = stripQuotes(value);
     }
@@ -120,6 +135,16 @@ export function parseFrontmatter(raw: string): {
     if (missing) {
       throw new Error(`Frontmatter is missing required field: ${field}`);
     }
+  }
+
+  // A scheduling time (spec 0035) must be a real timestamp, or the build fails
+  // loudly - a typo (e.g. `2026-13-40`) would otherwise silently leave the post
+  // "scheduled" forever instead of publishing at the intended time.
+  if (
+    typeof data.publishAt === "string" &&
+    Number.isNaN(Date.parse(data.publishAt))
+  ) {
+    throw new Error(`Frontmatter has an unparseable publishAt: ${data.publishAt}`);
   }
 
   return { data: data as unknown as Frontmatter, content: body };
@@ -240,6 +265,7 @@ function readPost(filename: string): Post {
     coverCaption: data.coverCaption,
     series: data.series,
     draft: data.draft === true,
+    publishAt: data.publishAt,
     content,
   };
 }
@@ -272,21 +298,91 @@ export function getAllPosts(): Post[] {
 }
 
 /**
- * Published posts only (drafts filtered out), newest-first. This is the set
- * every PUBLIC surface enumerates - the listing, home, subscribe, feed, sitemap,
- * tag pages, the "New" badge, and published post nav (spec 0034). A pure
- * derivation of `getAllPosts()`, so it preserves the source order.
+ * The ISR revalidation window, in seconds, for every public blog surface
+ * (spec 0035). The whole site is otherwise static, so a scheduled post would not
+ * appear until the next deploy; each surface sets `export const revalidate = 60`
+ * so it re-renders on this interval and re-runs the time-aware
+ * `getPublishedPosts()`, and a post flips live on its own within ~a minute of its
+ * `publishAt` (on the first request past the window; Next revalidation is
+ * request-triggered, not a wall-clock timer).
+ *
+ * NOTE: this constant documents the window and is asserted by the unit tests, but
+ * the routes must inline the literal `60` in their `export const revalidate` -
+ * Next requires route segment config to be a statically-analyzable literal, so an
+ * imported identifier is rejected ("Invalid segment configuration export").
  */
-export function getPublishedPosts(): Post[] {
-  return getAllPosts().filter((p) => !p.draft);
+export const BLOG_REVALIDATE_SECONDS = 60;
+
+/** A post's visibility state at a given instant (spec 0035). `draft` wins over
+ *  `publishAt`, so a draft is never "scheduled". Pure - the caller injects
+ *  `nowMs`, so it is unit-testable with a fixed clock. */
+export function postState(
+  post: { draft?: boolean; publishAt?: string },
+  nowMs: number,
+): "draft" | "scheduled" | "published" {
+  if (post.draft) return "draft";
+  if (post.publishAt && Date.parse(post.publishAt) > nowMs) return "scheduled";
+  return "published";
+}
+
+/** Whether a post is publicly published as of `nowMs` (spec 0035). A thin
+ *  wrapper over `postState` whose `Date.now()` default lives HERE, in this plain
+ *  module, so a Server Component page can call `isPublishedNow(post)` without a
+ *  `Date.now()` in its render body (react-hooks/purity, learnings 0012). */
+export function isPublishedNow(
+  post: { draft?: boolean; publishAt?: string },
+  nowMs: number = Date.now(),
+): boolean {
+  return postState(post, nowMs) === "published";
+}
+
+/** Whether a post belongs to the not-yet-public preview area (draft or
+ *  scheduled) as of `nowMs` (spec 0035). Same `Date.now()`-default rationale as
+ *  `isPublishedNow`. */
+export function isPreviewNow(
+  post: { draft?: boolean; publishAt?: string },
+  nowMs: number = Date.now(),
+): boolean {
+  return postState(post, nowMs) !== "published";
 }
 
 /**
- * Draft posts only, newest-first - the set behind /blog/drafts and its per-post
- * pages (spec 0034). The complement of `getPublishedPosts()` over `getAllPosts()`.
+ * Published posts only, newest-first. This is the set every PUBLIC surface
+ * enumerates - the listing, home, subscribe, feed, sitemap, tag pages, the "New"
+ * badge, and published post nav (spec 0034/0035). Time-aware: drafts and
+ * not-yet-due scheduled posts are excluded as of `nowMs` (default now), so a
+ * scheduled post simply is not in the set until its `publishAt` passes. A pure
+ * derivation of `getAllPosts()`, so it preserves the source order.
+ */
+export function getPublishedPosts(nowMs: number = Date.now()): Post[] {
+  return getAllPosts().filter((p) => postState(p, nowMs) === "published");
+}
+
+/**
+ * Draft posts only, newest-first (spec 0034) - `draft: true`, regardless of any
+ * `publishAt`. A subset of the preview area; distinct from scheduled posts.
  */
 export function getDraftPosts(): Post[] {
   return getAllPosts().filter((p) => p.draft);
+}
+
+/**
+ * Scheduled posts only, newest-first (spec 0035) - not a draft, with a
+ * `publishAt` still in the future as of `nowMs`. These flip into
+ * `getPublishedPosts()` once their time passes.
+ */
+export function getScheduledPosts(nowMs: number = Date.now()): Post[] {
+  return getAllPosts().filter((p) => postState(p, nowMs) === "scheduled");
+}
+
+/**
+ * The not-yet-public preview set, newest-first (spec 0035): drafts + scheduled
+ * posts (everything that is not published as of `nowMs`). This is what the
+ * /blog/drafts index and its per-post preview pages enumerate, so a single path
+ * prefix covers both kinds. A pure derivation of `getAllPosts()`.
+ */
+export function getPreviewPosts(nowMs: number = Date.now()): Post[] {
+  return getAllPosts().filter((p) => postState(p, nowMs) !== "published");
 }
 
 /**

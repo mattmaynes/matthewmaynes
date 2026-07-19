@@ -15,7 +15,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { assembleStandalone } from "../scripts/lib/standalone.ts";
-import { getPublishedPosts, getDraftPosts, getAdjacentPosts } from "../src/lib/blog.ts";
+import {
+  getPublishedPosts,
+  getDraftPosts,
+  getScheduledPosts,
+  getAdjacentPosts,
+} from "../src/lib/blog.ts";
 import { deriveTags, tagSlug } from "../src/lib/blog-view.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -160,9 +165,16 @@ const routes = [
       // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
       "transition-all duration-200 ease-out motion-reduce:transition-none",
     ],
-    // The sample draft (spec 0034) must NOT appear on the public listing - a
-    // regression to getAllPosts() here would list it, so its title reddens.
-    absent: ["Placeholder", "No posts yet", "sm:max-w-md", "This Is a Sample Draft"],
+    // The sample draft (spec 0034) and sample scheduled post (spec 0035) must NOT
+    // appear on the public listing - a regression to getAllPosts(), or dropping the
+    // time-aware filter, would list one of them, so both titles redden.
+    absent: [
+      "Placeholder",
+      "No posts yet",
+      "sm:max-w-md",
+      "This Is a Sample Draft",
+      "This Is a Sample Scheduled Post",
+    ],
     // No hasBlur: the only image is the pixel-art cover, which is deliberately
     // rendered un-blurred (image-rendering: pixelated), never blur-upscaled. Its
     // presence is asserted via the "turing-sunrise" asset name above instead.
@@ -295,7 +307,12 @@ const routes = [
     // post, so if /subscribe reverted to getAllPosts() it would surface in the
     // "Latest post" block - its title absent proves the draft is filtered out
     // (spec 0034 acceptance - review: PR #125).
-    absent: ["Placeholder", "Subscribe for updates", "This Is a Sample Draft"],
+    absent: [
+      "Placeholder",
+      "Subscribe for updates",
+      "This Is a Sample Draft",
+      "This Is a Sample Scheduled Post",
+    ],
     // No hasBlur assertion: it would only pass while the newest post's cover happens
     // to be non-pixelated (a pixel-art newest cover renders placeholder="empty", no
     // inlined blurDataURL), so it would redden on unrelated content changes. The blur
@@ -313,9 +330,16 @@ const routes = [
       'href="/blog/drafts/this-is-a-sample-draft"',
       // Deliberately noindex (the robots meta the drafts pages emit).
       "noindex",
+      // The preview index now lists scheduled posts too (spec 0035), each with a
+      // "Scheduled" marker - the sample scheduled fixture proves both the listing
+      // and the marker render (its title reddens if getPreviewPosts regresses to
+      // drafts-only, and "Scheduled" reddens if the row marker is dropped).
+      "This Is a Sample Scheduled Post",
+      'href="/blog/drafts/this-is-a-sample-scheduled-post"',
+      "Scheduled",
     ],
-    // The empty-state copy must be gone now that a draft exists.
-    absent: ["Placeholder", "No drafts right now."],
+    // The empty-state copy must be gone now that previews exist.
+    absent: ["Placeholder", "Nothing here right now."],
   },
 ];
 
@@ -861,6 +885,16 @@ test("GET /blog/feed.xml serves an RSS feed listing the seed post", async () => 
       "the RSS feed must not list a draft post",
     );
   }
+  // Nor a not-yet-due scheduled post (spec 0035): the feed builds from the
+  // time-aware getPublishedPosts, so a still-scheduled post is absent until its
+  // publishAt (the sample fixture is dated far in the future).
+  const scheduled = getScheduledPosts()[0];
+  if (scheduled) {
+    assert.ok(
+      !xml.includes(scheduled.title),
+      "the RSS feed must not list a not-yet-due scheduled post",
+    );
+  }
 });
 
 // Draft posts (spec 0034): hidden from the public surfaces above, but reachable
@@ -890,6 +924,31 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
     const wrongDraft = await fetch(BASE + `/blog/drafts/${published.slug}`);
     assert.equal(wrongDraft.status, 404, "a published slug must 404 at /blog/drafts/<slug>");
   }
+});
+
+// Scheduled posts (spec 0035): a not-yet-due post is hidden from the public
+// /blog/<slug> (404) but previewable under /blog/drafts/<slug> with a "Scheduled"
+// marker + noindex, exactly like a draft. It flips onto /blog on its own at its
+// publishAt (the time-aware flip is covered by the getPublishedPosts unit test;
+// this smoke asserts the "before its time" surfaces, using the far-future fixture).
+test("a scheduled post is hidden from /blog, previewable + marked + noindex under /blog/drafts", async () => {
+  const scheduled = getScheduledPosts()[0];
+  if (!scheduled) return; // no scheduled posts to exercise
+
+  // Hidden from the public post URL until its time.
+  const publicRes = await fetch(BASE + `/blog/${scheduled.slug}`);
+  assert.equal(publicRes.status, 404, "a not-yet-due scheduled post must 404 at /blog/<slug>");
+
+  // Previewable under /blog/drafts with the Scheduled marker + noindex.
+  const previewRes = await fetch(BASE + `/blog/drafts/${scheduled.slug}`);
+  assert.equal(previewRes.status, 200, "expected 200 for the scheduled preview page");
+  const previewHtml = await previewRes.text();
+  assert.ok(previewHtml.includes(scheduled.title), "expected the scheduled post's title on its preview");
+  assert.ok(
+    previewHtml.includes("Scheduled for"),
+    "expected the 'Scheduled for ...' marker on the scheduled preview",
+  );
+  assert.ok(previewHtml.includes("noindex"), "expected the scheduled preview to be noindex");
 });
 
 // Previous/next post navigation (spec 0021). Derive the expected neighbours from
@@ -1112,6 +1171,16 @@ test("robots, sitemap, and manifest are served", async () => {
   // legitimately still has a page). A draft-only tag must neither list nor 404-less
   // resolve, or a tag-path revert to getAllPosts() would leak reachable draft-only
   // archives with the post-URL check still green (review: PR #125).
+  // A not-yet-due scheduled post is also absent from the sitemap (spec 0035),
+  // until its publishAt (the fixture is dated far in the future).
+  const scheduledPost = getScheduledPosts()[0];
+  if (scheduledPost) {
+    assert.doesNotMatch(
+      sitemapXml,
+      new RegExp(`/blog/${scheduledPost.slug}</loc>`),
+      "a not-yet-due scheduled post URL must not appear in the sitemap",
+    );
+  }
   const draft = getDraftPosts()[0];
   if (draft) {
     assert.doesNotMatch(

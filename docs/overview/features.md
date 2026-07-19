@@ -14,7 +14,7 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
 | `/blog` | ✅ | Listing, newest-first from `content/blog/*.mdx`: each row a cover thumb, title, date, reading-time pill, excerpt, tags, and a series pill. Discovery (spec 0012): a URL-synced (`?tag=`) Canopy `Combobox` tag filter, keyword search, and a date-gated "New" badge. A subscribe block sits at the bottom. |
 | `/blog/[slug]` | ✅ | Individual post (MDX + frontmatter, statically generated): breadcrumb, header (title, byline + avatar, date + reading-time pill, tag-archive links), cover hero (with a series sash when the post is in a series), the MDX body at an 18px measure with blur-placeholder inline images and self-hosted video, a disclaimer, a subscribe block, previous/next nav, and a "Back to blog" link. The cover doubles as the per-post OG/Twitter card. |
 | `/blog/tags/[tag]` | ✅ | Statically generated archive per tag (spec 0027): every post with that tag, same row treatment as `/blog`, route-unique title/description, listed in the sitemap. Unknown slug → 404. |
-| `/blog/drafts` + `/blog/drafts/[slug]` | ✅ | Drafts index + preview (spec 0034): unpublished (`draft: true`) posts, `noindex`, not in any nav/sitemap, reachable only by URL. The `[slug]` page renders identically to a published post via the shared `PostArticle`, plus a "Draft" banner. Removing `draft: true` publishes it on the next build. |
+| `/blog/drafts` + `/blog/drafts/[slug]` | ✅ | Preview area (spec 0034/0035): the not-yet-public set - drafts (`draft: true`) **and** scheduled posts (a future `publishAt`) - `noindex`, not in any nav/sitemap, reachable only by URL. The `[slug]` page renders identically to a published post via the shared `PostArticle`, plus a "Draft" or "Scheduled for ..." banner. Removing `draft: true` publishes on the next build; a scheduled post publishes on its own once `publishAt` passes. |
 | `/contact` | ✅ | Working contact form (spec 0008/0032): emails an on-brand HTML notification via `POST /v1/contact` and records the sender in Constant Contact (unsubscribed by default; an opt-in checkbox adds them to the list). A column of icon + URL-path social links. No email/phone shown. |
 | `/subscribe` | ✅ | Shareable mailing-list landing page (spec 0018): heading + invitation, the full subscribe form, a latest-post card, and a link to `/blog`. Not in the nav, but in the sitemap. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017): PostHog analytics with masked replay, the Resend contact form, transient IP use, no cookies/ads/database. Cookieless legitimate-interest basis. Lists the only email on the site (`privacy@`). Footer link. |
@@ -41,7 +41,8 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
 
 - Posts are `.mdx` files (filename → slug). Frontmatter: `title`, `date`, `tags`, `excerpt`, optional
   `cover`/`coverCaption`, optional `series` (e.g. "Life Log" - renders a corner **sash** on the hero
-  and a pill on rows), and optional `draft: true` (spec 0034; absent = published).
+  and a pill on rows), optional `draft: true` (spec 0034; absent = published), and optional
+  `publishAt` (spec 0035; an ISO 8601 time to auto-publish at - a bare datetime is read as UTC).
 - Body is prose + known components only: `<PostImage>` (static-imported, blur placeholder, a
   `pixelated` flag) and `<PostVideo>` (self-hosted, browser-safe H.264 with a poster, from the
   `blog-videos` registry). Both fail the build loudly on an unknown name.
@@ -52,8 +53,11 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
   `Combobox` + keyword search + "New" badge, with the active tag mirrored in `?tag=` via
   `history.replaceState` + `useSyncExternalStore` (keeps the page statically generated).
 - Tag archives (spec 0027), an RSS 2.0 feed at `/blog/feed.xml` (spec 0013, from the pure `rss.js`
-  builder), and drafts (spec 0034) all enumerate `getPublishedPosts()` so a draft never leaks onto a
-  public surface. Announcement emails live in `emails/blog/<slug>.html` (filled from
+  builder), and the preview area (spec 0034/0035) all enumerate `getPublishedPosts()` so a draft or a
+  not-yet-due scheduled post never leaks onto a public surface. `getPublishedPosts(now)` is
+  **time-aware** (spec 0035) and every public surface sets `revalidate = 60`, so a scheduled post
+  flips live on its own within ~a minute of `publishAt` - no deploy. Announcement emails live in
+  `emails/blog/<slug>.html` (filled from
   `emails/templates/`, published via the `ctct` CLI).
 
 ## Projects (spec 0031)

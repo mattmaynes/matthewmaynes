@@ -13,10 +13,15 @@ import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { images, site } from "@/lib/site";
 
-// Evaluated once when the route module loads - i.e. at build time for this
-// statically-generated page, which is exactly the "new as of this build/deploy"
-// semantics the "New" badge wants. Computing it inline in render would trip
-// react-hooks/purity (learnings 0012).
+// Re-render every 60s (shared ISR window, spec 0035) so a scheduled post can take
+// over the "Latest post" highlight on its own once its publishAt passes - the
+// time-aware getPublishedPosts below is re-run each revalidation, with no deploy.
+export const revalidate = 60;
+
+// Evaluated once when the route module loads - i.e. build/process start for this
+// page, which is the "new as of this build/deploy" semantics the "New" badge
+// wants. Computing it inline in render would trip react-hooks/purity (learnings
+// 0012).
 const NOW_MS = Date.now();
 
 export default function HomePage() {

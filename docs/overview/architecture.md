@@ -27,12 +27,21 @@
   the island and the tag archive; a server-only `post-summaries.ts` maps posts to row data (resolving
   covers + the **global** "New" badge, computed once over all posts). A `series` frontmatter field
   drives the hero **sash** (`post-article.tsx`) and the row pill - see `docs/rules/blog-series.md`.
-- **Drafts:** a `draft: true` flag partitions `getAllPosts()` into `getPublishedPosts()` /
-  `getDraftPosts()`. Every public enumeration (listing, home, `/subscribe`, feed, sitemap, tag pages,
-  "New" badge, published nav + `generateStaticParams`) uses the published set; drafts get their own
-  `noindex` routes under `/blog/drafts`. The published and draft `[slug]` shells render one shared
-  `post-article.tsx` parameterised by a single `variant` discriminator, so a draft previews identically
+- **Drafts + scheduling:** a `draft: true` flag and an optional `publishAt` timestamp give each post
+  one derived `postState` - `draft` | `scheduled` | `published` (`draft` wins). `getPublishedPosts(now)`
+  is time-aware; `getPreviewPosts(now)` = drafts + scheduled. Every public enumeration (listing, home,
+  `/subscribe`, feed, sitemap, tag pages, "New" badge, published nav + `generateStaticParams`) uses the
+  published set; the not-yet-public set gets its own `noindex` routes under `/blog/drafts`. The
+  published and preview `[slug]` shells render one shared `post-article.tsx` parameterised by a single
+  three-way `variant` discriminator (spec 0034/0035), so a draft or scheduled post previews identically
   to how it will publish.
+- **Auto-publish without a deploy (spec 0035):** the site is otherwise static, so every public blog
+  surface sets `export const revalidate = 60` (the RSS route swapped `force-static` for it) and re-runs
+  the time-aware `getPublishedPosts()` on that ISR window; a scheduled post flips live on its own within
+  ~a minute of `publishAt`. Revalidation is request-triggered, so the only `Date.now()` calls live in
+  the `blog.ts` seam's default args (never a component render body - purity). `revalidate` must be an
+  inlined literal (`60`), not the imported `BLOG_REVALIDATE_SECONDS` constant, because Next requires
+  route segment config to be statically analyzable; a unit test greps every surface for it.
 - **RSS:** a pure, fs-free `rss.js` builder (unit-tested) feeds a `force-static` `app/blog/feed.xml`
   route; output is deterministic (`lastBuildDate` = newest post's date, not `Date.now()`).
 - Each post has a `generateStaticParams`-baked satori OG card (`app/blog/[slug]/opengraph-image.tsx`).

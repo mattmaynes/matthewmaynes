@@ -3,6 +3,10 @@ import { nav, site } from "@/lib/site";
 import { getPublishedPosts } from "@/lib/blog";
 import { deriveTags, tagSlug } from "@/lib/blog-view";
 
+// Re-generate every 60s (shared ISR window, spec 0035) so a scheduled post enters
+// the sitemap on its own once its publishAt passes, with no deploy.
+export const revalidate = 60;
+
 // Routes that are not in the top nav but should still be crawlable/shareable.
 // `/subscribe` (spec 0020) is a focused landing page meant to be handed out, so it
 // belongs in the sitemap even though it is deliberately kept out of `nav`. (An
