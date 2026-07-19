@@ -29,7 +29,12 @@ export function PostRow({ post }: { post: PostRowData }) {
             sizes="(max-width: 640px) 100vw, 200px"
             placeholder={post.pixelated ? "empty" : "blur"}
             className="aspect-[16/10] w-full object-cover"
-            style={post.pixelated ? { imageRendering: "pixelated" } : undefined}
+            style={{
+              ...(post.pixelated ? { imageRendering: "pixelated" } : {}),
+              // A tall portrait cover top-aligns so its subject's head is not
+              // cropped out of the 16:10 thumbnail; default is centre.
+              ...(post.coverFocus === "top" ? { objectPosition: "top" } : {}),
+            }}
           />
         </Link>
       ) : null}
