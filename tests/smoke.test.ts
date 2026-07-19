@@ -22,10 +22,20 @@ import {
   getAdjacentPosts,
 } from "../src/lib/blog.ts";
 import { deriveTags, tagSlug } from "../src/lib/blog-view.ts";
+import { signSession, COOKIE_NAME } from "../src/lib/preview-auth.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
 const BASE = `http://127.0.0.1:${PORT}`;
+// The shared preview password the test server is booted with (see the before hook)
+// and the cookie the tests mint from it to reach the gated /blog/drafts area.
+const PREVIEW_PASSWORD = "test-secret";
+
+// A request header object carrying a valid preview session cookie (spec 0036), for
+// the tests that need to reach the gated /blog/drafts preview area.
+async function previewCookie(): Promise<{ cookie: string }> {
+  return { cookie: `${COOKIE_NAME}=${await signSession(PREVIEW_PASSWORD)}` };
+}
 
 // Locate the standalone `server.js`. Normally it sits at the standalone root,
 // but inside a nested `.worktrees/<slug>` checkout Next infers the outer repo as
@@ -325,6 +335,10 @@ const routes = [
     // surface - and the public draft-leak guards below - exercised with a real draft.
     path: "/blog/drafts",
     title: "Drafts - Matthew Maynes",
+    // Gated behind the preview login (spec 0036): the crawler sends a valid session
+    // cookie so this index still renders and its content assertions hold. The
+    // no-cookie redirect is asserted separately in the login-gate test below.
+    gated: true,
     contains: [
       "This Is a Sample Draft",
       'href="/blog/drafts/this-is-a-sample-draft"',
@@ -401,6 +415,10 @@ before(async () => {
       CTCT_REFRESH_TOKEN: "",
       CTCT_LIST_ID: "",
       CTCT_WEBSITE_LIST_ID: "",
+      // The preview login gate (spec 0036): give the server a known shared
+      // password so the tests can mint a valid session cookie and exercise both
+      // the gated (no cookie -> redirect) and authed (valid cookie -> 200) paths.
+      PREVIEW_PASSWORD: PREVIEW_PASSWORD,
     },
   });
   await waitForReady();
@@ -490,7 +508,12 @@ test("GET /resume renders the real resume with no contact PII", async () => {
 
 for (const route of routes) {
   test(`GET ${route.path} renders the right page`, async () => {
-    const res = await fetch(BASE + route.path);
+    // A gated route (spec 0036) needs a valid preview session cookie to render;
+    // public routes send none.
+    const headers = route.gated
+      ? { cookie: `${COOKIE_NAME}=${await signSession(PREVIEW_PASSWORD)}` }
+      : undefined;
+    const res = await fetch(BASE + route.path, headers ? { headers } : undefined);
     assert.equal(res.status, 200, `expected 200 for ${route.path}`);
     const html = await res.text();
     // Route-unique title: proves this exact route's metadata rendered.
@@ -904,8 +927,9 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
   const draft = getDraftPosts()[0];
   if (!draft) return; // no drafts to exercise
   const published = getPublishedPosts()[0];
+  const headers = await previewCookie(); // preview area is gated (spec 0036)
 
-  const draftRes = await fetch(BASE + `/blog/drafts/${draft.slug}`);
+  const draftRes = await fetch(BASE + `/blog/drafts/${draft.slug}`, { headers });
   assert.equal(draftRes.status, 200, "expected 200 for the draft page");
   const draftHtml = await draftRes.text();
   assert.ok(draftHtml.includes(draft.title), "expected the draft's title on its page");
@@ -919,9 +943,10 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
   const wrongPublished = await fetch(BASE + `/blog/${draft.slug}`);
   assert.equal(wrongPublished.status, 404, "a draft slug must 404 at /blog/<slug>");
 
-  // The draft route refuses a published slug.
+  // The draft route refuses a published slug (with a valid session, so the 404 is
+  // the route's own not-found, not the gate redirect).
   if (published) {
-    const wrongDraft = await fetch(BASE + `/blog/drafts/${published.slug}`);
+    const wrongDraft = await fetch(BASE + `/blog/drafts/${published.slug}`, { headers });
     assert.equal(wrongDraft.status, 404, "a published slug must 404 at /blog/drafts/<slug>");
   }
 });
@@ -939,8 +964,10 @@ test("a scheduled post is hidden from /blog, previewable + marked + noindex unde
   const publicRes = await fetch(BASE + `/blog/${scheduled.slug}`);
   assert.equal(publicRes.status, 404, "a not-yet-due scheduled post must 404 at /blog/<slug>");
 
-  // Previewable under /blog/drafts with the Scheduled marker + noindex.
-  const previewRes = await fetch(BASE + `/blog/drafts/${scheduled.slug}`);
+  // Previewable under /blog/drafts (gated, spec 0036) with the Scheduled marker + noindex.
+  const previewRes = await fetch(BASE + `/blog/drafts/${scheduled.slug}`, {
+    headers: await previewCookie(),
+  });
   assert.equal(previewRes.status, 200, "expected 200 for the scheduled preview page");
   const previewHtml = await previewRes.text();
   assert.ok(previewHtml.includes(scheduled.title), "expected the scheduled post's title on its preview");
@@ -968,6 +995,68 @@ test("a scheduled post is hidden from /blog, previewable + marked + noindex unde
     !homeHtml.includes(scheduled.title),
     "the home latest-post slot must not show a not-yet-due scheduled post",
   );
+});
+
+// Preview login gate (spec 0036): the /blog/drafts area is gated - no cookie ->
+// redirect to /login; a valid cookie -> 200. The OG-image sub-route stays public
+// (so link-preview unfurling works), and no published route is ever redirected.
+test("the /blog/drafts area redirects to /login without a session, and renders with one", async () => {
+  // Index: no cookie -> redirect to /login?next=/blog/drafts.
+  const noCookie = await fetch(BASE + "/blog/drafts", { redirect: "manual" });
+  assert.ok(
+    noCookie.status === 307 || noCookie.status === 302,
+    `expected a redirect from /blog/drafts without a session, got ${noCookie.status}`,
+  );
+  assert.match(
+    noCookie.headers.get("location") ?? "",
+    /\/login\?next=/,
+    "expected the redirect to point at /login with a next param",
+  );
+
+  // A preview slug: no cookie -> redirect too.
+  const preview = getDraftPosts()[0] ?? getScheduledPosts()[0];
+  if (preview) {
+    const slugNoCookie = await fetch(BASE + `/blog/drafts/${preview.slug}`, {
+      redirect: "manual",
+    });
+    assert.ok(
+      slugNoCookie.status === 307 || slugNoCookie.status === 302,
+      `expected a redirect from a preview slug without a session, got ${slugNoCookie.status}`,
+    );
+
+    // But the preview OG card stays PUBLIC (no cookie) so unfurling still works.
+    const og = await fetch(BASE + `/blog/drafts/${preview.slug}/opengraph-image`);
+    assert.equal(og.status, 200, "the preview OG card must be public (no login)");
+    assert.match(
+      og.headers.get("content-type") ?? "",
+      /^image\//,
+      "expected the preview OG card to be an image",
+    );
+  }
+
+  // With a valid session cookie, the index renders (200).
+  const authed = await fetch(BASE + "/blog/drafts", { headers: await previewCookie() });
+  assert.equal(authed.status, 200, "expected /blog/drafts to render with a valid session");
+
+  // A published route is never gated (no cookie -> still 200).
+  const published = getPublishedPosts()[0];
+  if (published) {
+    const pub = await fetch(BASE + `/blog/${published.slug}`, { redirect: "manual" });
+    assert.equal(pub.status, 200, "a published post must never be gated");
+  }
+});
+
+// The login screen renders its password form and is noindex (spec 0036).
+test("GET /login renders the password form and is noindex", async () => {
+  const res = await fetch(BASE + "/login");
+  assert.equal(res.status, 200, "expected 200 for /login");
+  const html = await res.text();
+  assert.ok(html.includes('name="password"'), "expected a password field on /login");
+  assert.ok(
+    html.includes('action="/v1/login"'),
+    "expected the login form to post to /v1/login",
+  );
+  assert.ok(html.includes("noindex"), "expected /login to be noindex");
 });
 
 // Previous/next post navigation (spec 0021). Derive the expected neighbours from
