@@ -29,6 +29,9 @@ export type PostRowData = {
   tags: string[];
   cover?: Cover;
   pixelated: boolean;
+  /** Focal point for the ratio-cropped thumbnail; `"top"` keeps a tall portrait's
+   *  top (a face) in frame. Absent/`"center"` centre-crops. */
+  coverFocus?: "top" | "center";
   isNew: boolean;
   /** Series name (e.g. "Life Log"), if the post belongs to one; drives the
    *  series pill on the row. Absent = standalone post. */

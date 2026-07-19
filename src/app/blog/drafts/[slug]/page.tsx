@@ -28,10 +28,23 @@ export async function generateMetadata({
   // Drafts are never indexed. A non-draft slug 404s here (it lives at /blog/<slug>).
   const robots = { index: false, follow: false };
   if (!post || !post.draft) return { title: "Blog", robots };
+  // Still emit a real share card so the draft can be link-preview tested: the
+  // co-located opengraph-image route supplies og:image automatically; noindex
+  // keeps it out of search, not out of an unfurl.
   return {
     title: `${post.title} - Draft`,
     description: post.excerpt,
     robots,
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.excerpt,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+    },
   };
 }
 

@@ -23,8 +23,14 @@ import sashaRunning from "../../public/images/blog/sasha-running.jpg";
 
 import type { SiteImage } from "./site";
 
-/** A blog image: the static import + alt text, plus a pixel-art flag. */
-export type BlogImage = SiteImage & { pixelated?: boolean };
+/** A blog image: the static import + alt text, a pixel-art flag, and an optional
+ *  focal point for cropped renders (the listing thumbnail and the OG card crop a
+ *  cover to a fixed ratio; `focus: "top"` keeps the top of a tall portrait -
+ *  e.g. a face - in frame instead of centre-cropping it out). Default is centre. */
+export type BlogImage = SiteImage & {
+  pixelated?: boolean;
+  focus?: "top" | "center";
+};
 
 export const blogImages = {
   "turing-sunrise.png": {
@@ -63,6 +69,9 @@ export const blogImages = {
   "shea-on-sheepskin.jpg": {
     ...sheaOnSheepskin,
     alt: "A baby in a pale pink bunny-print sleeper lying on a fluffy cream sheepskin and a quilted blanket, looking at the camera.",
+    // A tall portrait: top-align the cropped renders so the baby's head stays in
+    // frame on the listing thumbnail and the OG card.
+    focus: "top",
   },
   "shea-play-gym.jpg": {
     ...sheaPlayGym,
