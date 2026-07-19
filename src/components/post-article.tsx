@@ -15,7 +15,7 @@ import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { PostNav, type PostNavItem } from "@/components/post-nav";
 import { formatPostDate } from "@/lib/blog";
-import { tagSlug } from "@/lib/blog-view";
+import { tagSlug, formatPublishAt } from "@/lib/blog-view";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site } from "@/lib/site";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
@@ -25,10 +25,12 @@ import { FOCUS_RING as RING } from "@/lib/focus-ring";
  * the draft route (`/blog/drafts/[slug]`), so a draft previews pixel-identically
  * to how it will look once published and the two routes cannot drift (spec 0034).
  *
- * Parameterised by a single `variant` ("published" | "draft") that drives both
- * the base path (breadcrumb trail, previous/next nav hrefs, "Back to ..." button)
- * and the "Draft" marker banner + subscribe suppression - one prop, so the route
- * base and the draft treatment can never contradict (review: PR #125).
+ * Parameterised by a single `variant` ("published" | "draft" | "scheduled") that
+ * drives both the base path (breadcrumb trail, previous/next nav hrefs, "Back
+ * to ..." button) and the preview marker banner + subscribe suppression - one
+ * prop, so the route base and the preview treatment can never contradict
+ * (review: PR #125). A draft and a scheduled post are both previews under
+ * /blog/drafts (spec 0035); they differ only in the banner copy.
  *
  * A Server Component (it renders the async `PostBody`/`InlineMdx`), like the
  * routes that use it.
@@ -44,6 +46,9 @@ export type ArticlePost = {
   /** Series this post belongs to (e.g. "Life Log"); drives the corner sash on
    *  the cover hero and the series pill on the no-cover header. */
   series?: string;
+  /** ISO 8601 publish time (spec 0035); shown in the "Scheduled for ..." banner
+   *  on a scheduled preview. Absent on a published or draft post. */
+  publishAt?: string;
   content: string;
 };
 
@@ -128,18 +133,24 @@ export function PostArticle({
   previous: PostNavItem | null;
   next: PostNavItem | null;
   minutes: number;
-  variant?: "published" | "draft";
+  variant?: "published" | "draft" | "scheduled";
 }) {
+  // A draft and a scheduled post are both not-yet-public previews under
+  // /blog/drafts (spec 0035); `isPreview` drives the shared preview treatment
+  // (base path, breadcrumb crumb, subscribe suppression, "Back to drafts"),
+  // while `isDraft`/`isScheduled` only pick the banner copy.
   const isDraft = variant === "draft";
-  const basePath = isDraft ? "/blog/drafts" : "/blog";
+  const isScheduled = variant === "scheduled";
+  const isPreview = isDraft || isScheduled;
+  const basePath = isPreview ? "/blog/drafts" : "/blog";
   const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
   const pixelated = cover?.pixelated === true;
 
   return (
     <article className="mx-auto max-w-4xl px-6 py-12 sm:py-16">
       {/* Breadcrumb trail (spec 0022): a persistent way back up to the listing from
-          the top of the post. On a draft the trail inserts a "Drafts" crumb so it
-          reads Blog / Drafts / Title (spec 0034). */}
+          the top of the post. On a preview (draft or scheduled) the trail inserts a
+          "Drafts" crumb so it reads Blog / Drafts / Title (spec 0034/0035). */}
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -147,7 +158,7 @@ export function PostArticle({
               <Link href="/blog">Blog</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
-          {isDraft ? (
+          {isPreview ? (
             <>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -175,6 +186,25 @@ export function PostArticle({
           </span>
           <span className="text-text-muted">
             Draft preview - this post is not published and is hidden from the blog.
+          </span>
+        </div>
+      ) : null}
+
+      {isScheduled ? (
+        // The scheduled counterpart of the draft banner (spec 0035): same
+        // treatment, copy that names when the post will go live. It flips onto
+        // the public blog on its own at that time.
+        <div
+          role="status"
+          className="mb-6 flex items-center gap-2 rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-caption text-text"
+        >
+          <span className="rounded-full bg-accent px-2 py-0.5 font-semibold text-accent-foreground">
+            Scheduled
+          </span>
+          <span className="text-text-muted">
+            {post.publishAt
+              ? `Scheduled for ${formatPublishAt(post.publishAt)} - not published yet and hidden from the blog until then.`
+              : "Scheduled - not published yet and hidden from the blog until its time."}
           </span>
         </div>
       ) : null}
@@ -272,9 +302,9 @@ export function PostArticle({
         The thoughts and views expressed here are my own.
       </p>
 
-      {/* A draft is not a subscribe surface - only published posts invite readers
-          to subscribe (spec 0034). */}
-      {!isDraft ? (
+      {/* A preview (draft or scheduled) is not a subscribe surface - only published
+          posts invite readers to subscribe (spec 0034/0035). */}
+      {!isPreview ? (
         <SubscribeForm source="blog_post" className="mt-12 border-t border-border pt-10" />
       ) : null}
 
@@ -296,7 +326,7 @@ export function PostArticle({
 
       <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">
-          <Link href={basePath}>{isDraft ? "Back to drafts" : "Back to blog"}</Link>
+          <Link href={basePath}>{isPreview ? "Back to drafts" : "Back to blog"}</Link>
         </Button>
         <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">
           <a href="/blog/feed.xml">

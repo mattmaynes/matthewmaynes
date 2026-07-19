@@ -44,6 +44,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   so fonts are traced into the `output: standalone` build (`src/` is not deployed; `public/` is). (0004)
 - **A per-post metadata route (`opengraph-image`) needs `generateStaticParams` too**, or it goes
   dynamic and reads `content/` per request. (0009)
+- **`generateStaticParams` scoping is NOT access control.** `dynamicParams` defaults to true, so an
+  un-baked slug still renders on demand (more so once the route is dynamic/ISR). A per-slug
+  metadata/OG route must carry the SAME runtime state guard as its page (`isPublishedNow` +
+  `notFound()`), kept in lockstep with it - a hidden post excluded from the page but served by its OG
+  route leaks. Each exclusion needs a failable per-surface smoke assertion (the OG-route 404 was
+  untested). (0019, generalising 0017/0034)
 - **Make illegal states unrepresentable:** encode "a kind + its correlated treatment" as ONE
   discriminator prop (`variant: "published" | "draft"`), not two flags that can contradict. (0034)
 

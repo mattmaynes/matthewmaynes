@@ -2,9 +2,12 @@ import { getPublishedPosts } from "@/lib/blog";
 import { buildBlogFeed } from "@/lib/rss";
 import { site, blogFeedTitle } from "@/lib/site";
 
-// Force static so the feed bakes at build like the rest of the site (no runtime
-// content reads) - getAllPosts parses the tracked content/blog/*.mdx at build.
-export const dynamic = "force-static";
+// Re-bake every 60s (shared ISR window, spec 0035) instead of a one-time build
+// (force-static): the whole site is otherwise static, so a scheduled post would
+// never enter the feed until a deploy. Revalidation re-runs the time-aware
+// getPublishedPosts, so the post enters the feed on its own at its publishAt (and
+// never before it).
+export const revalidate = 60;
 
 // Served at /blog/feed.xml. The pure builder does the XML-escaping, RFC-822
 // dates, and absolute-URL joining (against site.url); this handler just loads

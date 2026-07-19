@@ -27,16 +27,33 @@
   the island and the tag archive; a server-only `post-summaries.ts` maps posts to row data (resolving
   covers + the **global** "New" badge, computed once over all posts). A `series` frontmatter field
   drives the hero **sash** (`post-article.tsx`) and the row pill - see `docs/rules/blog-series.md`.
-- **Drafts:** a `draft: true` flag partitions `getAllPosts()` into `getPublishedPosts()` /
-  `getDraftPosts()`. Every public enumeration (listing, home, `/subscribe`, feed, sitemap, tag pages,
-  "New" badge, published nav + `generateStaticParams`) uses the published set; drafts get their own
-  `noindex` routes under `/blog/drafts`. The published and draft `[slug]` shells render one shared
-  `post-article.tsx` parameterised by a single `variant` discriminator, so a draft previews identically
+- **Drafts + scheduling:** a `draft: true` flag and an optional `publishAt` timestamp give each post
+  one derived `postState` - `draft` | `scheduled` | `published` (`draft` wins). `getPublishedPosts(now)`
+  is time-aware; `getPreviewPosts(now)` = drafts + scheduled. Every public enumeration (listing, home,
+  `/subscribe`, feed, sitemap, tag pages, "New" badge, published nav + `generateStaticParams`) uses the
+  published set; the not-yet-public set gets its own `noindex` routes under `/blog/drafts`. The
+  published and preview `[slug]` shells render one shared `post-article.tsx` parameterised by a single
+  three-way `variant` discriminator (spec 0034/0035), so a draft or scheduled post previews identically
   to how it will publish.
-- **RSS:** a pure, fs-free `rss.js` builder (unit-tested) feeds a `force-static` `app/blog/feed.xml`
-  route; output is deterministic (`lastBuildDate` = newest post's date, not `Date.now()`).
-- Each post has a `generateStaticParams`-baked satori OG card (`app/blog/[slug]/opengraph-image.tsx`).
+- **Auto-publish without a deploy (spec 0035):** the site is otherwise static, so every public blog
+  surface sets `export const revalidate = 60` (the RSS route swapped `force-static` for it) and re-runs
+  the time-aware `getPublishedPosts()` on that ISR window; a scheduled post flips live on its own within
+  ~a minute of `publishAt`. Revalidation is request-triggered, so the only `Date.now()` calls live in
+  the `blog.ts` seam's default args (never a component render body - purity). `revalidate` must be an
+  inlined literal (`60`), not the imported `BLOG_REVALIDATE_SECONDS` constant, because Next requires
+  route segment config to be statically analyzable; a unit test greps every surface for it.
+- **RSS:** a pure, fs-free `rss.js` builder (unit-tested) feeds the `app/blog/feed.xml` route, which
+  now revalidates on the shared 60s ISR window (spec 0035; it dropped `force-static` so a scheduled
+  post enters the feed at its time); output is deterministic (`lastBuildDate` = newest published
+  post's date, not `Date.now()`).
+- Each post has a `generateStaticParams`-baked satori OG card (`app/blog/[slug]/opengraph-image.tsx`);
+  it gates on `isPublishedNow` and `notFound()`s a draft/not-yet-due scheduled post, so the card
+  cannot leak before `publishAt` (the not-yet-public card lives under `/blog/drafts/<slug>`).
   Syntax highlighting (`rehype-pretty-code` + Shiki) is planned but not yet wired.
+- **ISR cache is per-instance:** during a blue/green rollout the two overlapping instances hold
+  independent ISR caches, so a scheduled post can flip live on one a few seconds before the other
+  within the revalidate window. Benign at the current steady-state (one instance); a permanent 2+
+  instance topology would want a shared cache handler, and should be a conscious decision then.
 
 ## Metadata & sharing (spec 0004)
 

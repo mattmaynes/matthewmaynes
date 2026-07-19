@@ -11,9 +11,16 @@ import { FOCUS_RING as RING } from "@/lib/focus-ring";
 type Params = { tag: string };
 
 // Reference "now" for the "New" badge, captured once at module load - i.e. at
-// build time for these statically generated pages (learnings 0012, mirrors the
-// listing). Kept out of render so the component stays pure.
+// build/process start for these pages (learnings 0012, mirrors the listing).
+// Kept out of render so the component stays pure.
 const NOW_MS = Date.now();
+
+// Re-render every 60s (shared ISR window, spec 0035) so a scheduled post joins its
+// tag archive on its own once its publishAt passes, with no deploy. NOTE: the set
+// of tag PAGES is still baked at build (dynamicParams=false below), so a brand-new
+// tag introduced ONLY by a scheduled post gets its page on the next build; a tag
+// it shares with a published post already has a page that fills in on revalidation.
+export const revalidate = 60;
 
 // Every tag gets a page, baked at build; an unknown slug is a 404, never a
 // render (dynamicParams=false), so /blog/tags/<garbage> is a clean not-found.

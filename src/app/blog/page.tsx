@@ -20,10 +20,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Re-render every 60s (shared ISR window, spec 0035; see BLOG_REVALIDATE_SECONDS,
+// inlined because Next requires a literal here) so a scheduled post appears on the
+// listing on its own once its publishAt passes - the time-aware getPublishedPosts
+// below is re-run each revalidation, with no deploy.
+export const revalidate = 60;
+
 // Reference "now" for the "New" badge, captured once when this route module is
-// loaded - i.e. at build time for this statically generated page, so "New" means
-// "new as of this build/deploy" (plan 0012). Kept out of render so it stays a
-// pure component (react-hooks/purity forbids Date.now() during render).
+// loaded - i.e. build/process start for this page, so "New" means "new as of
+// this build/deploy" (plan 0012). Kept out of render so it stays a pure component
+// (react-hooks/purity forbids Date.now() during render).
 const NOW_MS = Date.now();
 
 export default function BlogPage() {
