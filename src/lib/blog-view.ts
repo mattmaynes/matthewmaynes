@@ -30,6 +30,9 @@ export type PostRowData = {
   cover?: Cover;
   pixelated: boolean;
   isNew: boolean;
+  /** Series name (e.g. "Life Log"), if the post belongs to one; drives the
+   *  series pill on the row. Absent = standalone post. */
+  series?: string;
   /** Estimated reading time in whole minutes (server-computed, spec 0015). */
   minutes: number;
   /** URL base the row links under - "/blog" for published rows, "/blog/drafts"

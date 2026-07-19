@@ -17,6 +17,9 @@ import snowyRunway from "../../public/images/blog/snowy-runway.png";
 import analystTableTransformer from "../../public/images/blog/analyst-table-transformer.png";
 import streamProcessorDesk from "../../public/images/blog/stream-processor-desk.png";
 import redMazda3 from "../../public/images/blog/red-mazda-3.png";
+import sheaOnSheepskin from "../../public/images/blog/shea-on-sheepskin.jpg";
+import sheaPlayGym from "../../public/images/blog/shea-play-gym.jpg";
+import sashaRunning from "../../public/images/blog/sasha-running.jpg";
 
 import type { SiteImage } from "./site";
 
@@ -57,16 +60,31 @@ export const blogImages = {
     ...redMazda3,
     alt: "A red 2008 Mazda 3 photographed head-on in a residential parking area under a grey winter sky, bare trees and suburban houses behind it.",
   },
+  "shea-on-sheepskin.jpg": {
+    ...sheaOnSheepskin,
+    alt: "A baby in a lavender sleeper reclining against a fluffy cream sheepskin on a bed, a bassinet in the background.",
+  },
+  "shea-play-gym.jpg": {
+    ...sheaPlayGym,
+    alt: "A baby doing tummy time on a butterfly-print blanket under a play gym, a hanging plush elephant above, looking up at the camera.",
+  },
+  "sasha-running.jpg": {
+    ...sashaRunning,
+    alt: "A white curly-coated dog running across a sunny green lawn toward the camera, tongue out, a treeline behind.",
+  },
 } satisfies Record<string, BlogImage>;
 
 export type BlogImageKey = keyof typeof blogImages;
 
 /**
- * Resolve an image by filename, tolerating the `.png` being omitted (the
- * <PostImage name="..."/> in the MDX uses the bare name). Returns undefined for
- * an unknown key so callers can decide how to handle a missing asset.
+ * Resolve an image by filename. Tries the exact key first (so a `.jpg` photo is
+ * referenced by its full name), then falls back to the legacy convention where a
+ * bare `<PostImage name="turing-sunrise"/>` implies a `.png`. Returns undefined
+ * for an unknown key so callers can decide how to handle a missing asset.
  */
 export function getBlogImage(name: string): BlogImage | undefined {
+  const direct = blogImages[name as BlogImageKey];
+  if (direct) return direct as BlogImage;
   const key = (name.endsWith(".png") ? name : `${name}.png`) as BlogImageKey;
   return blogImages[key] as BlogImage | undefined;
 }

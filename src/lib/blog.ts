@@ -30,6 +30,9 @@ export type Post = {
   coverKey?: string;
   /** Optional caption shown under the cover; inline markdown (may carry a link). */
   coverCaption?: string;
+  /** Series this post belongs to (e.g. "Life Log"), if any. Drives the series
+   *  sash on the hero and the series pill on listing rows. Absent = standalone. */
+  series?: string;
   /** True for an unpublished draft: hidden from every public surface, reachable
    *  only under /blog/drafts (spec 0034). Absent frontmatter key = published. */
   draft?: boolean;
@@ -45,6 +48,8 @@ export type Frontmatter = {
   excerpt: string;
   cover?: string;
   coverCaption?: string;
+  /** Series name (e.g. "Life Log"); absent = standalone post. */
+  series?: string;
   /** `draft: true` marks the post unpublished (spec 0034); absent = published. */
   draft?: boolean;
 };
@@ -98,7 +103,9 @@ export function parseFrontmatter(raw: string): {
       // value, or an absent key, is published. Not a required field.
       data.draft = stripQuotes(value) === "true";
     } else if (
-      ["title", "date", "excerpt", "cover", "coverCaption"].includes(key)
+      ["title", "date", "excerpt", "cover", "coverCaption", "series"].includes(
+        key,
+      )
     ) {
       data[key] = stripQuotes(value);
     }
@@ -231,6 +238,7 @@ function readPost(filename: string): Post {
     excerpt: data.excerpt,
     coverKey: data.cover,
     coverCaption: data.coverCaption,
+    series: data.series,
     draft: data.draft === true,
     content,
   };

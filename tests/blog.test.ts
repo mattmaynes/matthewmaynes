@@ -95,6 +95,17 @@ test("parseFrontmatter reads the draft flag; absent or non-true is published (sp
   assert.ok(!parseFrontmatter(GOOD).data.draft, "absent draft key is published");
 });
 
+test("parseFrontmatter reads the series field and a quoted title containing a colon", () => {
+  const raw =
+    '---\ntitle: "Life Log #1: A Toothless Dog"\ndate: 2026-07-18\ntags: [Life]\nexcerpt: E\nseries: Life Log\n---\nbody\n';
+  const { data } = parseFrontmatter(raw);
+  // The greedy value capture keeps the colon inside the quoted title intact.
+  assert.equal(data.title, "Life Log #1: A Toothless Dog");
+  assert.equal(data.series, "Life Log");
+  // Absent series key -> undefined (a standalone post); the GOOD fixture has none.
+  assert.equal(parseFrontmatter(GOOD).data.series, undefined);
+});
+
 test("parseFrontmatter throws on an empty tag array", () => {
   const raw = "---\ntitle: T\ndate: 2026-01-01\ntags: []\nexcerpt: E\n---\nbody\n";
   assert.throws(() => parseFrontmatter(raw), /missing required field: tags/i);

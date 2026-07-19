@@ -35,6 +35,14 @@ export function PostRow({ post }: { post: PostRowData }) {
       ) : null}
       <div>
         <div className="flex flex-wrap items-center gap-2">
+          {post.series ? (
+            // Series pill: marks a row as part of an ongoing series, styled
+            // distinctly from tags (bordered/muted) and the solid "New" badge -
+            // a tinted accent chip.
+            <span className="inline-flex items-center rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-caption font-semibold uppercase tracking-wide text-accent">
+              {post.series}
+            </span>
+          ) : null}
           <h2 className="text-h3 font-semibold">
             <Link
               href={`${post.basePath}/${post.slug}`}
