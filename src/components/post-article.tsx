@@ -41,6 +41,9 @@ export type ArticlePost = {
   tags: string[];
   coverKey?: string;
   coverCaption?: string;
+  /** Series this post belongs to (e.g. "Life Log"); drives the corner sash on
+   *  the cover hero and the series pill on the no-cover header. */
+  series?: string;
   content: string;
 };
 
@@ -195,6 +198,17 @@ export function PostArticle({
             <div className="absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/80 via-black/45 to-transparent px-7 pt-16 pb-7 sm:block">
               <HeroMeta post={post} minutes={minutes} overlay />
             </div>
+            {post.series ? (
+              // Series sash: a diagonal accent ribbon across the top-left corner
+              // of the cover, the strong visual marker that this post belongs to
+              // an ongoing series. The parent's `overflow-hidden` clips the band's
+              // overhanging ends into a clean corner banner.
+              <div
+                className="pointer-events-none absolute -left-16 top-7 z-10 w-56 -rotate-45 bg-accent py-1 text-center text-caption font-semibold uppercase tracking-wider text-accent-foreground shadow-md"
+              >
+                {post.series}
+              </div>
+            ) : null}
           </div>
           {/* Mobile: header below the clean cover, in default on-page colours. */}
           <div className="mt-4 sm:hidden">
@@ -212,6 +226,11 @@ export function PostArticle({
       ) : (
         // No cover: fall back to the plain, on-page header treatment.
         <header>
+          {post.series ? (
+            <span className="mb-3 inline-flex items-center rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-caption font-semibold uppercase tracking-wider text-accent">
+              {post.series}
+            </span>
+          ) : null}
           <h1 className="text-h1 font-bold text-text">{post.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <p className="text-caption text-text-subtle">
