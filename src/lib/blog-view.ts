@@ -67,50 +67,52 @@ export function formatPostDate(date: string): string {
 
 /**
  * Format a scheduled post's ISO 8601 `publishAt` for the "Scheduled for ..."
- * preview marker (spec 0035), e.g. "July 19, 2026 at 7:00 p.m. EDT". Unlike
- * `formatPostDate` this keeps the time, and renders in the timestamp's OWN zone
- * (the offset it carries, or UTC for a bare datetime) so the author sees the
- * instant they scheduled rather than the server's zone. Client-safe (no fs), so
- * both the Server Component preview and any client caller share one formatter.
- * Returns the raw string unchanged if it does not parse (belt-and-suspenders;
- * the build already rejects an unparseable publishAt).
+ * preview marker (spec 0035), e.g. "July 19, 2026, 7:00 p.m. (UTC-4)". Unlike
+ * `formatPostDate` this keeps the time, and renders the wall-clock in the
+ * timestamp's OWN offset (the offset it carries, or UTC for a bare datetime) so
+ * the author sees the instant they scheduled rather than the server's zone. Works
+ * for ANY offset, including half-hour zones like +05:30, by shifting the UTC
+ * instant rather than routing through whole-hour-only Etc/GMT zones. Client-safe
+ * (no fs), so both the Server Component preview and any client caller share one
+ * formatter. Returns the raw string unchanged if it does not parse (belt-and-
+ * suspenders; the build already rejects an unparseable publishAt).
  */
 export function formatPublishAt(iso: string): string {
   const ms = Date.parse(iso);
   if (Number.isNaN(ms)) return iso;
-  // Derive the timestamp's own UTC offset (minutes) from the string: an explicit
-  // "Z" or "+/-HH:MM" is honoured; a bare datetime is treated as UTC. Rendering
-  // in that fixed offset keeps the label stable regardless of the server's zone.
-  const zone = offsetZoneFromIso(iso);
-  return new Date(ms).toLocaleString("en-CA", {
+  const offsetMin = offsetMinutesFromIso(iso);
+  // Shift the UTC instant by the post's own offset, then format the components in
+  // UTC: the numbers shown are the wall-clock in that offset, on any server zone.
+  const wall = new Date(ms + offsetMin * 60_000).toLocaleString("en-CA", {
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    timeZoneName: "short",
-    ...(zone ? { timeZone: zone } : {}),
+    timeZone: "UTC",
   });
+  return `${wall} (${offsetLabel(offsetMin)})`;
 }
 
-/** The IANA-ish fixed-offset time zone (e.g. "UTC" or "Etc/GMT+4") implied by an
- *  ISO 8601 string's offset, or null when it carries a named/local time we should
- *  leave to the runtime. A bare datetime (no offset) is treated as UTC. */
-function offsetZoneFromIso(iso: string): string | null {
-  if (/[zZ]$/.test(iso)) return "UTC";
+/** The UTC offset in MINUTES carried by an ISO 8601 string: an explicit "Z", or
+ *  a bare datetime (which Date.parse reads as UTC), is 0; "+/-HH:MM" or "+/-HHMM"
+ *  is honoured with its minutes, so half-hour zones (e.g. +05:30) are exact. */
+function offsetMinutesFromIso(iso: string): number {
+  if (/[zZ]$/.test(iso)) return 0;
   const m = /([+-])(\d{2}):?(\d{2})$/.exec(iso);
-  if (!m) {
-    // No offset at all: a bare "YYYY-MM-DDTHH:MM" is read as UTC (Date.parse
-    // treats the date-time form as UTC), so label it in UTC to match.
-    return "UTC";
-  }
-  const sign = m[1];
-  const hours = Number(m[2]);
-  const minutes = Number(m[3]);
-  if (minutes !== 0) return null; // Etc/GMT only supports whole-hour offsets.
-  // Etc/GMT is POSIX-signed: Etc/GMT+4 is UTC-4 (e.g. EDT). Flip the sign.
-  const flipped = sign === "+" ? "-" : "+";
-  return `Etc/GMT${flipped}${hours}`;
+  if (!m) return 0; // bare "YYYY-MM-DDTHH:MM" -> UTC, matching Date.parse.
+  const sign = m[1] === "-" ? -1 : 1;
+  return sign * (Number(m[2]) * 60 + Number(m[3]));
+}
+
+/** A human, unambiguous offset label: "UTC", "UTC-4", or "UTC+5:30". */
+function offsetLabel(offsetMin: number): string {
+  if (offsetMin === 0) return "UTC";
+  const sign = offsetMin < 0 ? "-" : "+";
+  const abs = Math.abs(offsetMin);
+  const h = Math.floor(abs / 60);
+  const mm = abs % 60;
+  return `UTC${sign}${h}${mm ? `:${String(mm).padStart(2, "0")}` : ""}`;
 }
 
 /**

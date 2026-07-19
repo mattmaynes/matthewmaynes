@@ -1,4 +1,5 @@
-import { getPublishedPosts, getPostBySlug } from "@/lib/blog";
+import { notFound } from "next/navigation";
+import { getPublishedPosts, getPostBySlug, isPublishedNow } from "@/lib/blog";
 import { renderPostOgCard, alt, size, contentType } from "../og-card";
 
 // Needs the Node runtime to read the cover + font files off disk.
@@ -23,5 +24,12 @@ export default async function PostOpengraphImage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return renderPostOgCard(getPostBySlug(slug));
+  const post = getPostBySlug(slug);
+  // Mirror page.tsx: a draft or not-yet-due scheduled post is NOT published at
+  // this URL, so its card must not be fetchable here before publishAt (spec 0035;
+  // the "Never early / does not leak" guarantee). The not-yet-public card is
+  // served under /blog/drafts/<slug>/opengraph-image instead. ISR refreshes this
+  // 404 into the real card once the post is due.
+  if (!post || !isPublishedNow(post)) notFound();
+  return renderPostOgCard(post);
 }

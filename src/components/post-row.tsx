@@ -69,7 +69,11 @@ export function PostRow({ post }: { post: PostRowData }) {
             </span>
           ) : null}
           {post.previewState === "scheduled" ? (
-            <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-caption font-medium text-accent">
+            // text-accent-strong (amber.700), not text-accent (amber.500, a
+            // fill-only token ~2.83:1 on this tint): 12px caption text needs the
+            // AA-safe pairing. (The pre-existing series pill above shares the
+            // fill-token issue; left as a separate cleanup.)
+            <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-caption font-medium text-accent-strong">
               Scheduled
             </span>
           ) : null}

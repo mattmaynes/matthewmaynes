@@ -42,10 +42,18 @@
   the `blog.ts` seam's default args (never a component render body - purity). `revalidate` must be an
   inlined literal (`60`), not the imported `BLOG_REVALIDATE_SECONDS` constant, because Next requires
   route segment config to be statically analyzable; a unit test greps every surface for it.
-- **RSS:** a pure, fs-free `rss.js` builder (unit-tested) feeds a `force-static` `app/blog/feed.xml`
-  route; output is deterministic (`lastBuildDate` = newest post's date, not `Date.now()`).
-- Each post has a `generateStaticParams`-baked satori OG card (`app/blog/[slug]/opengraph-image.tsx`).
+- **RSS:** a pure, fs-free `rss.js` builder (unit-tested) feeds the `app/blog/feed.xml` route, which
+  now revalidates on the shared 60s ISR window (spec 0035; it dropped `force-static` so a scheduled
+  post enters the feed at its time); output is deterministic (`lastBuildDate` = newest published
+  post's date, not `Date.now()`).
+- Each post has a `generateStaticParams`-baked satori OG card (`app/blog/[slug]/opengraph-image.tsx`);
+  it gates on `isPublishedNow` and `notFound()`s a draft/not-yet-due scheduled post, so the card
+  cannot leak before `publishAt` (the not-yet-public card lives under `/blog/drafts/<slug>`).
   Syntax highlighting (`rehype-pretty-code` + Shiki) is planned but not yet wired.
+- **ISR cache is per-instance:** during a blue/green rollout the two overlapping instances hold
+  independent ISR caches, so a scheduled post can flip live on one a few seconds before the other
+  within the revalidate window. Benign at the current steady-state (one instance); a permanent 2+
+  instance topology would want a shared cache handler, and should be a conscious decision then.
 
 ## Metadata & sharing (spec 0004)
 

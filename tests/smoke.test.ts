@@ -949,6 +949,25 @@ test("a scheduled post is hidden from /blog, previewable + marked + noindex unde
     "expected the 'Scheduled for ...' marker on the scheduled preview",
   );
   assert.ok(previewHtml.includes("noindex"), "expected the scheduled preview to be noindex");
+
+  // The published OG-card route must ALSO hide a not-yet-due scheduled post: its
+  // real card (title/cover) must not be fetchable at /blog/<slug>/opengraph-image
+  // before publishAt, matching the page 404 (spec 0035, "never early"; the card
+  // lives under /blog/drafts/<slug>/opengraph-image until then).
+  const ogRes = await fetch(BASE + `/blog/${scheduled.slug}/opengraph-image`);
+  assert.equal(
+    ogRes.status,
+    404,
+    "a not-yet-due scheduled post's OG card must 404 at /blog/<slug>/opengraph-image",
+  );
+
+  // The home page renders a "Latest post" from getPublishedPosts(), so it must
+  // not surface a scheduled post's title before its time either.
+  const homeHtml = await (await fetch(BASE + "/")).text();
+  assert.ok(
+    !homeHtml.includes(scheduled.title),
+    "the home latest-post slot must not show a not-yet-due scheduled post",
+  );
 });
 
 // Previous/next post navigation (spec 0021). Derive the expected neighbours from

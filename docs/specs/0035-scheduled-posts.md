@@ -88,11 +88,16 @@ Log #1" needs to go live at 2026-07-19 19:00 EDT, hands-off.
 
 - **Auth on previews** - still reachable-by-URL, exactly as drafts are today. Locking down the
   not-yet-public area (drafts + scheduled) is spec 0036 (the login gate), a separate PR.
-- Sub-5-minute precision. The flip is bounded by the revalidation window (~5 min); "7pm" means
-  "live by ~7:05". A tighter SLA (on-demand revalidation webhook, scheduled deploy) is out.
+- Sub-minute precision. The flip is bounded by the 60s revalidation window and is request-triggered;
+  "7pm" means "live within ~a minute of the first request past 7pm". A tighter SLA (on-demand
+  revalidation webhook, scheduled deploy) is out.
 - A distinct `/blog/scheduled` route tree, a per-scheduled-post countdown UI, or auto-sending the
   series announcement email at publish time (that stays the manual `ctct` flow).
 - Timezone-picker UX / per-post tz field beyond "ISO 8601 string, bare = UTC".
+- **A new tag introduced ONLY by a scheduled post has no archive page until the next build.** Tag
+  pages keep `dynamicParams = false` (spec 0027), so `/blog/tags/<new-tag>` 404s until a build bakes
+  it; a tag the scheduled post SHARES with a published post already has a page that fills in on
+  revalidation. Accepted limitation, noted in code and here.
 
 ## Approach
 
