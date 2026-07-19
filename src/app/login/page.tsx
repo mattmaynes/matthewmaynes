@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Button } from "@/components/ui";
-import { FOCUS_RING } from "@/lib/focus-ring";
+import { Button, Input } from "@/components/ui";
 import { safeNext } from "@/lib/preview-auth";
 
 // The preview gate's login screen (spec 0036). Not indexed - it is only reached by
@@ -22,7 +21,13 @@ export default async function LoginPage({
   // Sanitise here too so the round-tripped hidden field can never carry an
   // off-site target (the handler re-sanitises as well - defence in depth).
   const nextPath = safeNext(next);
-  const showError = error === "1";
+  const showError = Boolean(error);
+  // Generic messages only (no info leak): distinguish the rate-limit case so a
+  // locked-out user knows to wait; everything else reads as a bad password.
+  const errorMessage =
+    error === "rate"
+      ? "Too many attempts. Please wait a moment and try again."
+      : "Incorrect password.";
 
   return (
     <section className="mx-auto max-w-md px-6 py-16 sm:py-24">
@@ -36,18 +41,18 @@ export default async function LoginPage({
         <input type="hidden" name="next" value={nextPath} />
         <label className="flex flex-col gap-2">
           <span className="text-caption font-medium text-text">Password</span>
-          <input
+          <Input
             type="password"
             name="password"
             autoComplete="current-password"
             required
             aria-invalid={showError || undefined}
-            className={`rounded-md border border-border bg-surface px-3 py-2 text-body text-text ${FOCUS_RING}`}
+            aria-describedby={showError ? "password-error" : undefined}
           />
         </label>
         {showError ? (
-          <p role="alert" className="text-caption text-danger">
-            Incorrect password.
+          <p id="password-error" role="alert" className="text-caption text-danger">
+            {errorMessage}
           </p>
         ) : null}
         <Button type="submit">Unlock</Button>

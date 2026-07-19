@@ -67,8 +67,10 @@ that works, not a user system.
   `safeNext(raw)` -> a same-origin path or the default. The token derives from `PREVIEW_PASSWORD`
   (single env var) so there is no second secret; rotating the password invalidates sessions (documented).
 - Env: `PREVIEW_PASSWORD` (server-only, runtime), added to the architecture doc's env list and the
-  host `.env.site`. No `NEXT_PUBLIC_` exposure. Force-empty in CI so the guard/error paths run
-  without a real secret (learnings 0007/0008).
+  host `.env.site`. No `NEXT_PUBLIC_` exposure. The fail-closed empty-secret path is covered by the
+  `preview-auth` UNIT test (empty secret -> `verifySession` false); the smoke server boots with
+  `PREVIEW_PASSWORD="test-secret"` to exercise the authed path, and a bundle-grep test proves that
+  value never reaches the client (learnings 0007/0008).
 - `/logout` handler that clears the cookie.
 - Tests: unit over `preview-auth.js` (sign/verify round-trip, tampered token fails, wrong/empty
   password fails, `safeNext` rejects `//evil.com` and `https://evil.com` and keeps `/blog/drafts/x`);

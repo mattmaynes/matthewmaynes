@@ -1023,6 +1023,11 @@ test("the /blog/drafts area redirects to /login without a session, and renders w
       slugNoCookie.status === 307 || slugNoCookie.status === 302,
       `expected a redirect from a preview slug without a session, got ${slugNoCookie.status}`,
     );
+    assert.match(
+      slugNoCookie.headers.get("location") ?? "",
+      /\/login\?next=/,
+      "expected the preview-slug redirect to point at /login with a next param",
+    );
 
     // But the preview OG card stays PUBLIC (no cookie) so unfurling still works.
     const og = await fetch(BASE + `/blog/drafts/${preview.slug}/opengraph-image`);
@@ -1057,6 +1062,55 @@ test("GET /login renders the password form and is noindex", async () => {
     "expected the login form to post to /v1/login",
   );
   assert.ok(html.includes("noindex"), "expected /login to be noindex");
+});
+
+// The verify handler POST /v1/login (spec 0036), end to end against the running
+// server (booted with PREVIEW_PASSWORD="test-secret"). Same-origin headers so the
+// http-guards same-origin check passes (it compares new URL(origin).host to Host,
+// which fetch sets to 127.0.0.1:PORT automatically).
+test("POST /v1/login mints a session on the right password and refuses the wrong one", async () => {
+  const sameOrigin = {
+    origin: BASE,
+    referer: BASE + "/login",
+    "content-type": "application/x-www-form-urlencoded",
+  };
+
+  // Correct password -> 303 to /blog/drafts, with a non-empty session cookie set.
+  const ok = await fetch(BASE + "/v1/login", {
+    method: "POST",
+    redirect: "manual",
+    headers: sameOrigin,
+    body: "password=test-secret&next=%2Fblog%2Fdrafts",
+  });
+  assert.equal(ok.status, 303, "expected 303 on a correct password");
+  assert.match(
+    ok.headers.get("location") ?? "",
+    /\/blog\/drafts$/,
+    "expected a correct login to redirect to /blog/drafts",
+  );
+  const okCookies = ok.headers.getSetCookie().join("; ");
+  assert.match(
+    okCookies,
+    /preview_session=[^;\s]+/,
+    "expected a correct login to set a non-empty preview_session cookie",
+  );
+
+  // Wrong password -> 303 back to /login with error=1, and NO session minted.
+  const bad = await fetch(BASE + "/v1/login", {
+    method: "POST",
+    redirect: "manual",
+    headers: sameOrigin,
+    body: "password=nope&next=%2Fblog%2Fdrafts",
+  });
+  assert.equal(bad.status, 303, "expected 303 on a wrong password");
+  const badLocation = bad.headers.get("location") ?? "";
+  assert.match(badLocation, /\/login/, "expected a wrong password to return to /login");
+  assert.match(badLocation, /error=1/, "expected the login error flag on a wrong password");
+  const badCookies = bad.headers.getSetCookie().join("; ");
+  assert.ok(
+    !/preview_session=[^;\s]+/.test(badCookies),
+    "a wrong password must NOT mint a preview_session cookie",
+  );
 });
 
 // Previous/next post navigation (spec 0021). Derive the expected neighbours from
@@ -1374,6 +1428,13 @@ test("client bundle ships only the publishable PostHog key", async () => {
   assert.ok(
     bundle.includes("127.0.0.1"),
     "expected the client bundle to ship the local-host suppression gate (spec 0016)",
+  );
+  // The preview password (spec 0036) is a server-only secret: the server boots with
+  // PREVIEW_PASSWORD="test-secret", so its absence from the client bundle proves the
+  // gate never leaks it (it is read only in the proxy + /v1/login, never a component).
+  assert.ok(
+    !bundle.includes("test-secret"),
+    "PREVIEW_PASSWORD must never reach the client bundle",
   );
 });
 

@@ -17,6 +17,11 @@ export const config = {
   matcher: ["/blog/drafts", "/blog/drafts/:path*"],
 };
 
+// Exactly the preview OG-image route: /blog/drafts/<slug>/opengraph-image. A precise
+// match (not endsWith) so a preview post slugged literally "opengraph-image" cannot
+// slip the gate via /blog/drafts/opengraph-image.
+const OG_ROUTE = /^\/blog\/drafts\/[^/]+\/opengraph-image$/;
+
 export async function proxy(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl;
 
@@ -24,7 +29,7 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   // only the readable HTML pages are gated. The published post's own OG card is
   // separately gated by isPublishedNow (spec 0035), so a scheduled post's card is
   // reachable only here, which is the accepted, bounded exposure.
-  if (pathname.endsWith("/opengraph-image")) return NextResponse.next();
+  if (OG_ROUTE.test(pathname)) return NextResponse.next();
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
   if (await verifySession(token, process.env.PREVIEW_PASSWORD)) {

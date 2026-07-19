@@ -35,16 +35,22 @@ function clientIp(req: Request): string {
   return parts[parts.length - 1]?.trim() || "unknown";
 }
 
-/** 303-redirect back to the login screen with a generic error, preserving `next`. */
-function fail(req: Request, next: string): Response {
+/**
+ * 303-redirect back to the login screen with a generic error, preserving `next`.
+ * A plain form POST should always land on a rendered page, not a JSON body. The
+ * `code` picks the (generic) message: "rate" for the limiter, "1" for everything
+ * else (wrong/malformed/cross-origin) - no info leak either way.
+ */
+function fail(req: Request, next: string, code: "1" | "rate" = "1"): Response {
   const url = new URL("/login", req.url);
-  url.searchParams.set("error", "1");
+  url.searchParams.set("error", code);
   url.searchParams.set("next", safeNext(next));
   return NextResponse.redirect(url, 303);
 }
 
 export async function POST(req: Request): Promise<Response> {
-  // 1. Same-origin: reject cross-origin drive-by POSTs.
+  // 1. Same-origin: reject cross-origin drive-by POSTs. Back to the login page
+  //    (generic error) rather than a JSON body - this is a browser form POST.
   if (
     !isSameOrigin(
       req.headers.get("origin"),
@@ -52,10 +58,10 @@ export async function POST(req: Request): Promise<Response> {
       req.headers.get("host"),
     )
   ) {
-    return NextResponse.json({ ok: false, error: "Forbidden." }, { status: 403 });
+    return fail(req, DEFAULT_NEXT);
   }
 
-  // 2. Bound the body before buffering it.
+  // 2. Bound the body before buffering it (abuse path - a bare 413 is fine here).
   const declaredLength = Number(req.headers.get("content-length") ?? "0");
   if (declaredLength > MAX_BODY_BYTES) {
     return NextResponse.json({ ok: false, error: "Request too large." }, { status: 413 });
@@ -71,12 +77,10 @@ export async function POST(req: Request): Promise<Response> {
   const password = String(form.get("password") ?? "");
   const next = String(form.get("next") ?? DEFAULT_NEXT);
 
-  // 4. Rate limit, keyed on the real client IP.
+  // 4. Rate limit, keyed on the real client IP -> back to login with the "rate"
+  //    message so the user knows to wait, not a JSON 429.
   if (!limiter.check(clientIp(req))) {
-    return NextResponse.json(
-      { ok: false, error: "Too many attempts - please try again shortly." },
-      { status: 429 },
-    );
+    return fail(req, next, "rate");
   }
 
   // 5. Verify the password constant-time (fail-closed if PREVIEW_PASSWORD unset).
