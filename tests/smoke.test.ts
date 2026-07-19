@@ -1083,10 +1083,14 @@ test("POST /v1/login mints a session on the right password and refuses the wrong
     body: "password=test-secret&next=%2Fblog%2Fdrafts",
   });
   assert.equal(ok.status, 303, "expected 303 on a correct password");
-  assert.match(
-    ok.headers.get("location") ?? "",
-    /\/blog\/drafts$/,
-    "expected a correct login to redirect to /blog/drafts",
+  // The Location must be RELATIVE ("/blog/drafts"), not an absolute URL built from
+  // req.url - behind the proxy that host is the container's 0.0.0.0:3000 bind, which
+  // is unreachable from a browser (feedback 0021). An absolute internal-host URL
+  // ending in /blog/drafts would slip a `endsWith` check, so assert exact equality.
+  assert.equal(
+    ok.headers.get("location"),
+    "/blog/drafts",
+    "expected a correct login to redirect to the RELATIVE /blog/drafts (feedback 0021)",
   );
   const okCookies = ok.headers.getSetCookie().join("; ");
   assert.match(
@@ -1104,12 +1108,36 @@ test("POST /v1/login mints a session on the right password and refuses the wrong
   });
   assert.equal(bad.status, 303, "expected 303 on a wrong password");
   const badLocation = bad.headers.get("location") ?? "";
-  assert.match(badLocation, /\/login/, "expected a wrong password to return to /login");
+  // Relative Location again (feedback 0021): must start with "/login", not an
+  // absolute internal-host URL.
+  assert.ok(
+    badLocation.startsWith("/login?"),
+    "expected a wrong password to return to the RELATIVE /login (feedback 0021)",
+  );
   assert.match(badLocation, /error=1/, "expected the login error flag on a wrong password");
   const badCookies = bad.headers.getSetCookie().join("; ");
   assert.ok(
     !/preview_session=[^;\s]+/.test(badCookies),
     "a wrong password must NOT mint a preview_session cookie",
+  );
+});
+
+// GET /v1/logout (spec 0036) clears the session and redirects to /blog with a
+// RELATIVE Location (feedback 0021), and expires the cookie.
+test("GET /v1/logout clears the session and redirects to /blog", async () => {
+  const res = await fetch(BASE + "/v1/logout", { method: "GET", redirect: "manual" });
+  assert.equal(res.status, 303, "expected 303 from /v1/logout");
+  assert.equal(
+    res.headers.get("location"),
+    "/blog",
+    "expected logout to redirect to the RELATIVE /blog (feedback 0021)",
+  );
+  const cookies = res.headers.getSetCookie().join("; ");
+  assert.match(cookies, /preview_session=/, "expected logout to set the preview_session cookie");
+  assert.match(
+    cookies,
+    /max-age=0|expires=/i,
+    "expected logout to expire the preview_session cookie",
   );
 });
 
