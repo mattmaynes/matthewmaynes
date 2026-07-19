@@ -49,6 +49,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   so fonts are traced into the `output: standalone` build (`src/` is not deployed; `public/` is). (0004)
 - **A per-post metadata route (`opengraph-image`) needs `generateStaticParams` too**, or it goes
   dynamic and reads `content/` per request. (0009)
+- **Never build a redirect/absolute link from `req.url` in a Route Handler.** Behind the Caddy proxy
+  `req.url` is the container's internal host (`0.0.0.0:3000`), so `new URL(path, req.url)` sends the
+  browser somewhere unreachable. Emit a RELATIVE `Location` (or use the forwarded host); the browser
+  resolves it against the origin it connected to. Middleware's `nextUrl` honours `x-forwarded-host`,
+  but Route Handlers' `req.url` does not. A smoke test run WITHOUT the proxy only catches this if it
+  asserts the Location is relative/host-correct, not just that it ends with the right path. (0021)
 - **`generateStaticParams` scoping is NOT access control.** `dynamicParams` defaults to true, so an
   un-baked slug still renders on demand (more so once the route is dynamic/ISR). A per-slug
   metadata/OG route must carry the SAME runtime state guard as its page (`isPublishedNow` +
