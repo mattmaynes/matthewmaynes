@@ -62,7 +62,7 @@ export const blogImages = {
   },
   "shea-on-sheepskin.jpg": {
     ...sheaOnSheepskin,
-    alt: "A baby in a lavender sleeper reclining against a fluffy cream sheepskin on a bed, a bassinet in the background.",
+    alt: "A baby in a pale pink bunny-print sleeper lying on a fluffy cream sheepskin and a quilted blanket, looking at the camera.",
   },
   "shea-play-gym.jpg": {
     ...sheaPlayGym,
