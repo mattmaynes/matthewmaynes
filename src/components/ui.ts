@@ -41,9 +41,11 @@ export {
   TopNavLink,
   TopNavLinks,
   TopNavMenuButton,
+  Video,
 } from "@rogueoak/canopy/branches";
 export type {
   ComboboxOption,
   SubscribeValues,
   SubscribeEventPhase,
+  VideoProps,
 } from "@rogueoak/canopy/branches";

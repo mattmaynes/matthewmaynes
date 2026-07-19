@@ -14,6 +14,14 @@
 @import '@fontsource-variable/figtree';
 @import '@fontsource-variable/geist-mono';
 
+/* Canopy Video (Branches/Video) wiring. video.js renders its control bar with structural
+   `.vjs-*` classes the Tailwind `@source` scan can't see, so its controls are styled by two
+   stylesheets: video.js's own base CSS, then Canopy's token skin AFTER it so the skin overrides.
+   The skin references only Roots semantic role vars, so it picks up the Harbor brand override
+   (brand-harbor.generated.css above) automatically - the player controls are Harbor-themed. */
+@import 'video.js/dist/video-js.css';
+@import '@rogueoak/canopy/video.css';
+
 /* Enable the rare explicit `dark:` utility; whole-UI theming is automatic via
    the semantic vars when `.dark` is on a root element. */
 @custom-variant dark (&:where(.dark, .dark *));
