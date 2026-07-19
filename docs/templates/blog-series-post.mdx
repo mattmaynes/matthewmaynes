@@ -6,6 +6,11 @@
   - The filename slug MUST equal the slugified title, or the build fails.
   - `series` is what turns on the sash + pill; keep the display casing you want.
   - Ships as `draft: true` so it lands under /blog/drafts; remove that line to publish.
+  - To SCHEDULE instead of publishing now (spec 0035): drop `draft: true` and add a
+    `publishAt` timestamp. The post stays hidden (previewable under /blog/drafts, marked
+    "Scheduled") and flips onto the blog + feed on its own within ~a minute of that time,
+    with no deploy. ALWAYS include a timezone offset - a bare datetime is read as UTC:
+      publishAt: 2026-07-19T19:00:00-04:00   # 7:00 p.m. Eastern (EDT)
   - Body is prose plus the known components ONLY: <PostImage> and <PostVideo>.
     Register images in src/lib/blog-images.ts and video in src/lib/blog-videos.ts first.
   - Quote the title when it contains a colon (as a "Series #N: ..." title usually does).
@@ -19,6 +24,7 @@ cover: <cover-image-key.jpg>
 coverCaption: <Optional caption under the cover; may carry an inline [link](/path).>
 series: Life Log
 draft: true
+# publishAt: 2026-07-19T19:00:00-04:00   # schedule instead of draft; include a tz offset
 ---
 
 Open with a short, human lead paragraph. A Life Log entry is part reflection, part update, so set

@@ -7,7 +7,7 @@
  */
 import { readingMinutes, type Post } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
-import type { PostRowData } from "@/lib/blog-view";
+import { formatPublishAt, type PostRowData } from "@/lib/blog-view";
 
 /**
  * Map posts to row summaries, tagging the one post whose slug is `newSlug` as
@@ -20,14 +20,24 @@ import type { PostRowData } from "@/lib/blog-view";
  * @param newSlug - the globally-newest recent post's slug, or null
  * @param basePath - the URL base each row links under ("/blog" by default, or
  *   "/blog/drafts" for the drafts index, spec 0034)
+ * @param markPreview - when true (the /blog/drafts index, spec 0035), each row
+ *   carries a "Draft"/"Scheduled" marker derived from the post: a `draft: true`
+ *   post is "draft", otherwise it is a scheduled post (the caller passes the
+ *   not-yet-public set), whose `publishAt` is formatted for the marker.
  */
 export function toPostRows(
   posts: Post[],
   newSlug: string | null,
   basePath = "/blog",
+  markPreview = false,
 ): PostRowData[] {
   return posts.map((post) => {
     const cover = post.coverKey ? getBlogImage(post.coverKey) : undefined;
+    const previewState = markPreview
+      ? post.draft
+        ? ("draft" as const)
+        : ("scheduled" as const)
+      : undefined;
     return {
       slug: post.slug,
       title: post.title,
@@ -41,6 +51,11 @@ export function toPostRows(
       series: post.series,
       minutes: readingMinutes(post),
       basePath,
+      previewState,
+      publishAtLabel:
+        previewState === "scheduled" && post.publishAt
+          ? formatPublishAt(post.publishAt)
+          : undefined,
     };
   });
 }

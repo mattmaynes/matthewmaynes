@@ -6,6 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { escapeXml, toRfc822, buildBlogFeed } from "../src/lib/rss.ts";
+import { getAllPosts, getPublishedPosts } from "../src/lib/blog.ts";
 
 test("escapeXml escapes the five XML metacharacters, ampersand first", () => {
   // A single call must escape all five without double-escaping the entities'
@@ -123,6 +124,40 @@ test("buildBlogFeed joins absolute links even when siteUrl has a trailing slash"
   // No doubled slash: new URL normalizes the join.
   assert.match(xml, /<link>https:\/\/example\.com\/blog\/post<\/link>/);
   assert.ok(!xml.includes("example.com//blog"), "must not double the slash");
+});
+
+test("the feed excludes a scheduled post before its time and includes it after (spec 0035)", () => {
+  // The feed route builds from the time-aware getPublishedPosts, so a scheduled
+  // post must be absent from the feed until its publishAt, then present - "not
+  // live early in the RSS feed, live on time". Drive it with the sample
+  // scheduled fixture and an injected clock (no wall-clock).
+  const schedSlug = "this-is-a-sample-scheduled-post";
+  const scheduledPost = getAllPosts().find((p) => p.slug === schedSlug);
+  assert.ok(scheduledPost?.publishAt, "fixture sanity: the sample scheduled post carries a publishAt");
+  const dueMs = Date.parse(scheduledPost.publishAt);
+  const feedFor = (nowMs) =>
+    buildBlogFeed({
+      posts: getPublishedPosts(nowMs),
+      siteUrl: "https://example.com",
+      title: "T",
+      description: "D",
+    });
+
+  const before = feedFor(dueMs - 1);
+  assert.ok(
+    !before.includes(scheduledPost.title),
+    "a scheduled post must not appear in the feed before its publishAt",
+  );
+  assert.ok(
+    !before.includes(`/blog/${schedSlug}`),
+    "a scheduled post's URL must not appear in the feed before its publishAt",
+  );
+
+  const after = feedFor(dueMs);
+  assert.ok(
+    after.includes(scheduledPost.title),
+    "a scheduled post must appear in the feed once its publishAt passes",
+  );
 });
 
 test("buildBlogFeed on an empty feed omits lastBuildDate and has no items", () => {

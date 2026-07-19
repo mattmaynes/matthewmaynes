@@ -5,6 +5,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import {
   parseFrontmatter,
   slugify,
@@ -12,11 +15,17 @@ import {
   getAllPosts,
   getPublishedPosts,
   getDraftPosts,
+  getScheduledPosts,
+  getPreviewPosts,
+  postState,
+  isPublishedNow,
+  isPreviewNow,
   getPostBySlug,
   getAdjacentPosts,
   estimateReadingMinutes,
   isRecent,
   newPostSlug,
+  BLOG_REVALIDATE_SECONDS,
 } from "../src/lib/blog.ts";
 import {
   formatPostDate,
@@ -95,6 +104,25 @@ test("parseFrontmatter reads the draft flag; absent or non-true is published (sp
   assert.ok(!parseFrontmatter(GOOD).data.draft, "absent draft key is published");
 });
 
+test("parseFrontmatter reads publishAt and throws on an unparseable value (spec 0035)", () => {
+  const withPublishAt = (val) =>
+    parseFrontmatter(
+      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\npublishAt: ${val}\n---\nbody\n`,
+    ).data;
+  // A valid ISO 8601 value is carried through verbatim.
+  assert.equal(withPublishAt("2026-07-19T19:00:00-04:00").publishAt, "2026-07-19T19:00:00-04:00");
+  // Absent key -> undefined (publishes immediately); the GOOD fixture has none.
+  assert.equal(parseFrontmatter(GOOD).data.publishAt, undefined);
+  // A typo must fail the build loudly, not silently strand the post as scheduled.
+  assert.throws(
+    () =>
+      parseFrontmatter(
+        "---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\npublishAt: not-a-time\n---\nbody\n",
+      ),
+    /unparseable publishAt/i,
+  );
+});
+
 test("parseFrontmatter reads the series field and a quoted title containing a colon", () => {
   const raw =
     '---\ntitle: "Life Log #1: A Toothless Dog"\ndate: 2026-07-18\ntags: [Life]\nexcerpt: E\nseries: Life Log\n---\nbody\n';
@@ -160,31 +188,142 @@ test("getAllPosts returns posts sorted newest-first", () => {
   assert.equal(seed.title, "I Picked the Wrong Elective");
 });
 
-test("getPublishedPosts and getDraftPosts partition getAllPosts, order preserved (spec 0034)", () => {
+test("getPublishedPosts, getDraftPosts, getScheduledPosts partition getAllPosts, order preserved (spec 0034/0035)", () => {
   const all = getAllPosts();
   const published = getPublishedPosts();
   const drafts = getDraftPosts();
-  // Exhaustive partition: every post lands in exactly one set.
-  assert.equal(published.length + drafts.length, all.length, "counts must add up");
+  const scheduled = getScheduledPosts();
+  const preview = getPreviewPosts();
+  // Exhaustive 3-way partition as of now: every post lands in exactly one of
+  // published / draft / scheduled (postState returns exactly one).
+  assert.equal(
+    published.length + drafts.length + scheduled.length,
+    all.length,
+    "counts must add up",
+  );
+  // The preview set is exactly drafts + scheduled.
+  assert.equal(preview.length, drafts.length + scheduled.length, "preview = drafts + scheduled");
   assert.ok(published.every((p) => !p.draft), "published set has no drafts");
   assert.ok(drafts.every((p) => p.draft === true), "draft set is all drafts");
+  assert.ok(scheduled.every((p) => !p.draft && p.publishAt), "scheduled set is non-draft with a publishAt");
+  assert.ok(preview.every((p) => !isPublishedNow(p)), "preview set is all not-yet-public");
   // Each filtered set is a subsequence of getAllPosts, so newest-first is kept.
   const order = (xs) => xs.map((p) => p.slug);
   const allOrder = order(all);
-  for (const subset of [published, drafts]) {
+  for (const subset of [published, drafts, scheduled, preview]) {
     const idxs = order(subset).map((s) => allOrder.indexOf(s));
     assert.deepEqual([...idxs].sort((a, b) => a - b), idxs, "filter preserves order");
   }
   // Direct markers on real content, so the partition can actually fail: the
-  // sample-draft fixture is present in drafts and hidden from published (this
-  // also keeps the `.every` checks above non-vacuous), while the published car
-  // post is the mirror image.
+  // sample-draft and sample-scheduled fixtures sit in their sets and are hidden
+  // from published (keeping the `.every` checks non-vacuous), while the published
+  // car post is the mirror image.
   const draftSlug = "this-is-a-sample-draft";
   assert.ok(drafts.some((p) => p.slug === draftSlug), "sample draft is a draft");
   assert.ok(!published.some((p) => p.slug === draftSlug), "sample draft is not published");
+  const schedSlug = "this-is-a-sample-scheduled-post";
+  assert.ok(scheduled.some((p) => p.slug === schedSlug), "sample scheduled post is scheduled");
+  assert.ok(preview.some((p) => p.slug === schedSlug), "sample scheduled post is in preview");
+  assert.ok(!published.some((p) => p.slug === schedSlug), "sample scheduled post is not published");
+  assert.ok(!drafts.some((p) => p.slug === schedSlug), "sample scheduled post is not a draft");
   const carSlug = "the-car-that-taught-me-to-commit-and-move-on";
   assert.ok(published.some((p) => p.slug === carSlug), "car post is published");
   assert.ok(!drafts.some((p) => p.slug === carSlug), "car post is not a draft");
+});
+
+test("postState resolves draft/scheduled/published, draft wins, boundary at nowMs (spec 0035)", () => {
+  const now = at("2026-07-19");
+  const future = "2026-07-20T00:00:00Z";
+  const past = "2026-07-18T00:00:00Z";
+  // A future publishAt is scheduled; a past one is published.
+  assert.equal(postState({ publishAt: future }, now), "scheduled");
+  assert.equal(postState({ publishAt: past }, now), "published");
+  // No publishAt -> published.
+  assert.equal(postState({}, now), "published");
+  // draft wins over any publishAt (a draft is never "scheduled").
+  assert.equal(postState({ draft: true, publishAt: future }, now), "draft");
+  assert.equal(postState({ draft: true }, now), "draft");
+  // Boundary: exactly at nowMs is NOT in the future, so it is published (the
+  // instant it is due it publishes). One ms later is still scheduled.
+  const t = "2026-07-19T12:00:00Z";
+  const tMs = Date.parse(t);
+  assert.equal(postState({ publishAt: t }, tMs), "published", "due exactly now -> published");
+  assert.equal(postState({ publishAt: t }, tMs - 1), "scheduled", "1ms before -> scheduled");
+  // isPublishedNow / isPreviewNow are the boolean complements over the same clock.
+  assert.equal(isPublishedNow({ publishAt: future }, now), false);
+  assert.equal(isPreviewNow({ publishAt: future }, now), true);
+  assert.equal(isPublishedNow({ publishAt: past }, now), true);
+  assert.equal(isPreviewNow({ publishAt: past }, now), false);
+});
+
+test("every public blog surface sets ISR revalidate so scheduled posts flip without a deploy (spec 0035)", () => {
+  // The flip mechanism is time-aware getPublishedPosts + ISR: without an
+  // `export const revalidate` a surface stays fully static and a scheduled post
+  // would never appear until a deploy. Guard each surface (a grep the reviewer
+  // asked for), so a dropped revalidate reddens here rather than silently
+  // shipping a static page. The literal must equal the documented window.
+  assert.equal(BLOG_REVALIDATE_SECONDS, 60, "the documented ISR window is 60s");
+  const root = dirname(dirname(fileURLToPath(import.meta.url)));
+  const surfaces = [
+    "src/app/blog/page.tsx",
+    "src/app/page.tsx",
+    "src/app/subscribe/page.tsx",
+    "src/app/sitemap.ts",
+    "src/app/blog/tags/[tag]/page.tsx",
+    "src/app/blog/[slug]/page.tsx",
+    "src/app/blog/[slug]/opengraph-image.tsx",
+    "src/app/blog/feed.xml/route.ts",
+    "src/app/blog/drafts/page.tsx",
+    "src/app/blog/drafts/[slug]/page.tsx",
+    "src/app/blog/drafts/[slug]/opengraph-image.tsx",
+  ];
+  for (const rel of surfaces) {
+    const src = readFileSync(join(root, rel), "utf8");
+    assert.match(
+      src,
+      new RegExp(`export const revalidate = ${BLOG_REVALIDATE_SECONDS}\\b`),
+      `${rel} must set ISR revalidate = ${BLOG_REVALIDATE_SECONDS}`,
+    );
+  }
+  // The feed must no longer be force-static (that would never pick up a scheduled
+  // post at its time - the exact regression this replaces).
+  const feed = readFileSync(join(root, "src/app/blog/feed.xml/route.ts"), "utf8");
+  assert.ok(
+    !feed.includes('dynamic = "force-static"'),
+    "the RSS feed must not be force-static (spec 0035)",
+  );
+});
+
+test("getPublishedPosts is time-aware: a scheduled post appears once its time passes (spec 0035)", () => {
+  const schedSlug = "this-is-a-sample-scheduled-post";
+  const all = getAllPosts();
+  const snapshot = all.map((p) => p.slug);
+  const scheduledPost = all.find((p) => p.slug === schedSlug);
+  assert.ok(scheduledPost?.publishAt, "fixture sanity: the sample scheduled post carries a publishAt");
+  const dueMs = Date.parse(scheduledPost.publishAt);
+
+  // Well before its publishAt: excluded from published, present in preview.
+  const before = getPublishedPosts(dueMs - 1);
+  assert.ok(!before.some((p) => p.slug === schedSlug), "scheduled post is hidden before its time");
+  assert.ok(
+    getPreviewPosts(dueMs - 1).some((p) => p.slug === schedSlug),
+    "scheduled post is previewable before its time",
+  );
+
+  // At/after its publishAt: it flips into published and leaves preview - same
+  // fixture, only the clock advanced.
+  const after = getPublishedPosts(dueMs);
+  assert.ok(after.some((p) => p.slug === schedSlug), "scheduled post is published once due");
+  assert.ok(
+    !getPreviewPosts(dueMs).some((p) => p.slug === schedSlug),
+    "scheduled post leaves preview once due",
+  );
+
+  // Order preserved (subsequence of getAllPosts) and no mutation of the source.
+  const allOrder = snapshot;
+  const idxs = after.map((p) => p.slug).map((s) => allOrder.indexOf(s));
+  assert.deepEqual([...idxs].sort((a, b) => a - b), idxs, "published stays newest-first");
+  assert.deepEqual(getAllPosts().map((p) => p.slug), snapshot, "getPublishedPosts must not mutate the source order");
 });
 
 test("estimateReadingMinutes counts a multi-paragraph body at ~200 wpm", () => {

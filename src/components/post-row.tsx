@@ -61,12 +61,33 @@ export function PostRow({ post }: { post: PostRowData }) {
               New
             </span>
           ) : null}
+          {/* Preview marker on the /blog/drafts index (spec 0035): a draft or a
+              scheduled post, so the two kinds are told apart at a glance. */}
+          {post.previewState === "draft" ? (
+            <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-caption font-medium text-secondary">
+              Draft
+            </span>
+          ) : null}
+          {post.previewState === "scheduled" ? (
+            // text-accent-strong (amber.700), not text-accent (amber.500, a
+            // fill-only token ~2.83:1 on this tint): 12px caption text needs the
+            // AA-safe pairing. (The pre-existing series pill above shares the
+            // fill-token issue; left as a separate cleanup.)
+            <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-caption font-medium text-accent-strong">
+              Scheduled
+            </span>
+          ) : null}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <p className="text-caption text-text-subtle">
             <time dateTime={post.date}>{formatPostDate(post.date)}</time>
           </p>
           <ReadingTimePill minutes={post.minutes} />
+          {post.previewState === "scheduled" && post.publishAtLabel ? (
+            <span className="text-caption text-text-subtle">
+              Publishes {post.publishAtLabel}
+            </span>
+          ) : null}
         </div>
         <p className="mt-3 text-body text-text-muted">{post.excerpt}</p>
         {post.tags.length > 0 ? (

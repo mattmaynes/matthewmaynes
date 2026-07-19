@@ -4,7 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
-import { getPublishedPosts, formatPostDate, readingMinutes } from "@/lib/blog";
+import {
+  getPublishedPosts,
+  formatPostDate,
+  readingMinutes,
+} from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
 
 export const metadata: Metadata = {
@@ -12,6 +16,10 @@ export const metadata: Metadata = {
   description:
     "Subscribe to Matthew Maynes' mailing list for the occasional update when a new blog post or project ships.",
 };
+
+// Re-render every 60s (shared ISR window, spec 0035) so the "Latest post" block
+// picks up a scheduled post on its own once its publishAt passes, with no deploy.
+export const revalidate = 60;
 
 // A focused, shareable landing page for the mailing list (spec 0020). Not in the
 // top nav, but the shared header/footer render via the root layout, so the site

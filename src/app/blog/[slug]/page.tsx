@@ -6,6 +6,7 @@ import {
   getPublishedPosts,
   getPostBySlug,
   getAdjacentPosts,
+  isPublishedNow,
   readingMinutes,
 } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
@@ -13,8 +14,18 @@ import { blogFeedTitle } from "@/lib/site";
 
 type Params = { slug: string };
 
+// Re-check the clock every 60s (the shared ISR window, spec 0035; see
+// BLOG_REVALIDATE_SECONDS - inlined as a literal because Next requires route
+// segment config to be statically analyzable): a post scheduled for a future
+// `publishAt` is not baked into generateStaticParams, so it 404s here until its
+// time; ISR revalidation refreshes that 404 into the real page once it is due,
+// with no deploy.
+export const revalidate = 60;
+
 // Statically generate every PUBLISHED post at build time (no runtime fetching).
-// Drafts are served from /blog/drafts/[slug] instead (spec 0034).
+// Drafts and not-yet-due scheduled posts are served from /blog/drafts/[slug]
+// instead (spec 0034/0035); a scheduled post renders on-demand here once its
+// time passes (dynamicParams defaults to true).
 export function generateStaticParams(): Params[] {
   return getPublishedPosts().map((post) => ({ slug: post.slug }));
 }
@@ -26,9 +37,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = getPostBySlug(slug);
-  // A missing post or a draft (which lives under /blog/drafts) is not a published
-  // post at this URL - the page 404s, so keep the metadata minimal.
-  if (!post || post.draft) return { title: "Blog" };
+  // A missing post, a draft, or a not-yet-due scheduled post (all of which live
+  // under /blog/drafts) is not a published post at this URL - the page 404s, so
+  // keep the metadata minimal (spec 0034/0035).
+  if (!post || !isPublishedNow(post)) return { title: "Blog" };
   // The per-post opengraph-image.tsx in this route segment supplies the og:image
   // automatically; we set the shareable title/description here.
   return {
@@ -63,9 +75,11 @@ export default async function BlogPostPage({
 }) {
   const { slug } = await params;
   const post = getPostBySlug(slug);
-  // A draft is reachable only at /blog/drafts/<slug>; 404 it here so a slug is
-  // served from exactly one route (spec 0034).
-  if (!post || post.draft) notFound();
+  // A draft or a not-yet-due scheduled post is reachable only at
+  // /blog/drafts/<slug>; 404 it here so a slug is served from exactly one route
+  // at any instant (spec 0034/0035). A scheduled post flips to a 200 here once
+  // its publishAt passes (via ISR revalidation).
+  if (!post || !isPublishedNow(post)) notFound();
 
   const minutes = readingMinutes(post);
 
