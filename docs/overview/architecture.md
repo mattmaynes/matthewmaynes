@@ -78,15 +78,22 @@
   refresh token, cached in module scope with **in-flight-mint dedup** and a **401 self-heal** (clear +
   re-mint + retry once); the add hits the create-or-update `sign_up_form` endpoint (idempotent) and
   throws status-only (never the body, which can echo the email).
-- **Preview login gate (spec 0036):** `src/proxy.ts` (the Next "proxy" convention, successor to
-  middleware; Edge) gates the not-yet-public area at
-  `/blog/drafts` (drafts + scheduled previews) - no valid session → redirect to `/login`. The session
-  is a **stateless HMAC** of the shared `PREVIEW_PASSWORD` (pure `preview-auth.ts`, Web Crypto so the
-  one impl runs in both the Edge middleware and the Node `POST /v1/login` verify handler), so nothing
-  is stored server-side and it survives the blue/green rollout. `/v1/login` reuses the `http-guards`
-  per-IP limiter + same-origin check; the cookie is `httpOnly`+`Secure`+`SameSite=Lax`. **Fail-closed**
-  (unset password → gate denies), and the preview `opengraph-image` routes are deliberately left
-  **public** so link-preview unfurling still works (the readable HTML is what's gated).
+- **Preview login gate (spec 0036, refined by feedback 0022):** `src/proxy.ts` (the Next "proxy"
+  convention, successor to middleware; Edge) gates ONLY the `/blog/drafts` INDEX (which enumerates all
+  not-yet-public posts) - no valid session → redirect to `/login`. Each per-post preview PAGE
+  (`/blog/drafts/[slug]`) is DYNAMIC and self-gates: `generateMetadata` serves the post's OG card to
+  everyone (so draft/scheduled links UNFURL), while the page reads the session cookie and shows the full
+  body only when authed, otherwise a teaser + "Log in to read" prompt. The session is a **stateless
+  HMAC** of the shared `PREVIEW_PASSWORD` (pure `preview-auth.ts`, Web Crypto so the one impl runs in
+  both the Edge proxy and the Node `POST /v1/login` verify handler), so nothing is stored server-side
+  and it survives the blue/green rollout. `/v1/login` reuses the `http-guards` per-IP limiter +
+  same-origin check and redirects with a RELATIVE Location (feedback 0021); the cookie is
+  `httpOnly`+`Secure`+`SameSite=Lax`. **Fail-closed** (unset password → gate denies). The accepted
+  tradeoff: a preview's title/excerpt/cover are public in the unfurl; only the writing is protected.
+- **Blog test fixtures (feedback 0022):** the sample draft + scheduled posts live in
+  `tests/fixtures/blog`, NOT `content/blog`, so no placeholder ships on the live site. `blog.ts` reads
+  an extra dir from `BLOG_FIXTURES_DIR` (absolute or cwd-relative) alongside `content/blog`; the
+  `npm test` script sets it, prod never does.
 
 ## Analytics & observability (spec 0014/0016)
 

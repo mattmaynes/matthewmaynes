@@ -33,5 +33,14 @@ jobs:
       # not stamped (npm run privacy:stamp). A pure content-hash compare that
       # ignores the date value, so a stale date can never ship silently.
       - run: npm run privacy:check
+      # BLOG_FIXTURES_DIR is TEST-ONLY (feedback 0022): it injects the sample
+      # draft/scheduled posts (tests/fixtures/blog, kept out of live content) so the
+      # standalone artifact this build produces - which `npm test`'s smoke suite
+      # reuses - contains the fixture previews. The DEPLOYED image is built
+      # separately by the Dockerfile, which never sets this, so no sample post ships.
       - run: npm run build
+        env:
+          BLOG_FIXTURES_DIR: ${{ github.workspace }}/tests/fixtures/blog
       - run: npm test
+        env:
+          BLOG_FIXTURES_DIR: ${{ github.workspace }}/tests/fixtures/blog

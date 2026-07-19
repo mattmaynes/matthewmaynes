@@ -15,18 +15,22 @@ that works, not a user system.
 - **A styled login screen.** `GET /login` renders an on-brand page (Harbor theme, same layout as the
   rest of the site) with a single password field and an "Unlock" button. No usernames, no accounts -
   one shared password.
-- **The preview PAGES are gated.** Any request to the `/blog/drafts` index or a `/blog/drafts/<slug>`
-  preview **page** without a valid session is redirected to `/login?next=<original-path>`. On correct
-  password the user is redirected back to `next` and can browse every preview until the session
-  expires.
-- **The preview OG-image routes stay public.** `/blog/drafts/<slug>/opengraph-image` is deliberately
-  NOT gated, so link-preview unfurling (Slack, iMessage) still renders a preview's share card. The
-  accepted, bounded cost: the card (title, excerpt, cover) is fetchable by URL, but the readable post
-  behind it is not. (The published post's OG card at `/blog/<slug>/opengraph-image` remains gated by
-  `isPublishedNow` from spec 0035, so a scheduled post's card is only reachable via this preview route.)
+- **The drafts INDEX is gated.** A request to `/blog/drafts` (which enumerates every not-yet-public
+  post) without a valid session is redirected to `/login?next=/blog/drafts`. On correct password the
+  user lands back on it and can browse the previews until the session expires.
+- **A preview PAGE serves its metadata publicly and gates only the body** (feedback 0022). A
+  `/blog/drafts/<slug>` page returns its own OG card (title, excerpt, cover) to ANYONE, so a
+  draft/scheduled link UNFURLS with the post's own preview (Slack, iMessage, etc.) - the crawler reads
+  the page head, so a whole-page redirect would have shown the generic site card instead. But the
+  READABLE body is gated: without a valid session the page shows a teaser (title + cover) and a "Log in
+  to read" prompt, not the post text. **Accepted, owner-confirmed tradeoff:** a draft/scheduled title,
+  excerpt, and cover are public in the unfurl; only the writing is protected.
+- **The preview OG-image routes stay public** too, for the same unfurl reason. (The published post's OG
+  card at `/blog/<slug>/opengraph-image` remains gated by `isPublishedNow` from spec 0035, so a
+  scheduled post's real card is only reachable via the preview route.)
 - **Published content is never affected.** `/blog`, `/blog/<published-slug>`, the feed, sitemap, home,
-  and every non-preview route stay completely open and unchanged. The gate is scoped to the
-  `/blog/drafts` prefix only (minus the OG sub-route).
+  and every non-preview route stay completely open and unchanged. The proxy gate is scoped to the
+  exact `/blog/drafts` index; the per-post pages self-gate their body.
 - **A durable session.** A correct password sets a signed, `httpOnly`, `Secure`, `SameSite=Lax`
   cookie that keeps the user in for ~30 days; a wrong password re-renders `/login` with a generic
   error and no session. The cookie is unforgeable without the password (HMAC), so no server-side
@@ -43,12 +47,15 @@ that works, not a user system.
 **In**
 
 - `src/proxy.ts` (the Next "proxy" convention - successor to `middleware.ts` in Next 16; Edge runtime)
-  exporting a `proxy` function with
-  `export const config = { matcher: ["/blog/drafts", "/blog/drafts/:path*"] }`. The function first
-  **bypasses** (`NextResponse.next()`) any path ending in `/opengraph-image` (keep OG cards public -
-  a matcher exclusion regex is brittle, so gate it in code), then reads the session cookie, verifies
-  the HMAC token with Web Crypto (`crypto.subtle`, Edge-compatible), and on failure
-  `NextResponse.redirect` to `/login?next=<pathname>`. Valid token -> `NextResponse.next()`.
+  exporting a `proxy` function with `export const config = { matcher: ["/blog/drafts"] }` - the EXACT
+  index only. It reads the session cookie, verifies the HMAC token with Web Crypto (`crypto.subtle`,
+  Edge-compatible), and on failure `NextResponse.redirect`s to `/login?next=/blog/drafts`; a valid
+  token -> `NextResponse.next()`. The per-post preview pages are NOT matched (they self-gate their body
+  at the page level, below), so their OG metadata stays public and links unfurl (feedback 0022).
+- `src/app/blog/drafts/[slug]/page.tsx` is DYNAMIC and self-gates: `generateMetadata` always returns
+  the post's card (public unfurl), and the page reads the session cookie (`next/headers` `cookies()` +
+  `verifySession`) - authed renders the full `PostArticle`, unauthenticated renders a teaser (title +
+  cover) and a "Log in to read" prompt. No `generateStaticParams`/`revalidate` here (it is per-request).
 - `src/app/login/page.tsx`: an on-brand Server Component form (`method="POST"` to the verify route),
   a password `<input type="password">`, the "Unlock" button, an error slot driven by a `?error=1`
   query param, and a hidden `next` field carried from the query. `robots: noindex`.
@@ -72,12 +79,17 @@ that works, not a user system.
   `PREVIEW_PASSWORD="test-secret"` to exercise the authed path, and a bundle-grep test proves that
   value never reaches the client (learnings 0007/0008).
 - `/logout` handler that clears the cookie.
+- Test fixtures are kept OUT of live content: the sample draft + scheduled posts live in
+  `tests/fixtures/blog`, injected via a `BLOG_FIXTURES_DIR` env the loader reads ALONGSIDE
+  `content/blog` (absolute or cwd-relative). The `npm test` script sets it (absolute) so every test
+  build/server sees the fixtures; prod (env unset) never does, so no sample post ships on the live site.
 - Tests: unit over `preview-auth.js` (sign/verify round-trip, tampered token fails, wrong/empty
   password fails, `safeNext` rejects `//evil.com` and `https://evil.com` and keeps `/blog/drafts/x`);
-  smoke (must be able to fail): the `/blog/drafts` index and a `/blog/drafts/<slug>` page without a
-  cookie 302 to `/login`; with a valid cookie 200; **`/blog/drafts/<slug>/opengraph-image` returns
-  200 (image) with NO cookie** (public); a published post URL is never redirected; `/login` renders
-  the form and is `noindex`.
+  smoke (must be able to fail): the `/blog/drafts` INDEX without a cookie 302s to `/login` (with a
+  cookie, 200 listing the fixtures); a `/blog/drafts/<slug>` PAGE without a cookie returns **200 with
+  the post's own og:title (unfurl works, not the generic site card) + a "Log in to read" prompt** and
+  gates the body (with a cookie, the full post renders); **`/blog/drafts/<slug>/opengraph-image` returns
+  200 (image) with NO cookie**; a published post URL is never redirected; `/login` is `noindex`.
 
 **Out**
 
@@ -98,13 +110,14 @@ that works, not a user system.
   (`crypto.subtle.importKey` + `sign`) - available in middleware, unlike `node:crypto`. The `POST`
   verify handler can run on the Node runtime and share the same pure `preview-auth.js` core (written
   against Web Crypto so both runtimes use one implementation).
-- **OG routes stay public - by code, not matcher.** The middleware matches the whole `/blog/drafts`
-  prefix (so the index and every preview page are covered), then early-returns `next()` for any
-  `.../opengraph-image` path. This keeps link-preview testing working (spec 0034's intent) while the
-  readable HTML is gated. Doing the exclusion in code avoids a brittle negative-lookahead matcher.
-- **Composition with 0035.** Because spec 0035 keeps ALL previews (drafts + scheduled) under the one
-  `/blog/drafts` prefix, a single middleware matcher gates both with no per-kind logic. This is why
-  0035 reused that path instead of a second `/blog/scheduled` tree.
+- **Unfurl works because metadata is public - the gate is at the body, not the route.** An unfurler
+  bot reads the PAGE's `<head>` for `og:*`; a whole-page redirect (the first cut of this spec) sent it
+  to `/login` and it read the generic site card (feedback 0022). So the proxy gates only the index, and
+  the per-post page serves its metadata to everyone and gates just the readable body. The preview
+  OG-image route stays public for the same reason.
+- **Composition with 0035.** Spec 0035 keeps ALL previews (drafts + scheduled) under the one
+  `/blog/drafts` prefix, so the index gate and the per-post page-gate cover both kinds with no per-kind
+  logic. This is why 0035 reused that path instead of a second `/blog/scheduled` tree.
 - **Open-redirect + same-origin.** `safeNext` only returns a path that starts with a single `/` and
   not `//`, else the default `/blog/drafts`; the verify handler also applies the same-origin guard
   from `http-guards.js`. Together they stop `?next=` and cross-site POST abuse.
@@ -118,8 +131,9 @@ that works, not a user system.
 
 ## Acceptance
 
-- [ ] The `/blog/drafts` index and a `/blog/drafts/<slug>` page without a valid cookie redirect
-      (302/307) to `/login?next=<path>`; with a valid cookie they return 200 and render as before.
+- [ ] The `/blog/drafts` INDEX without a valid cookie redirects to `/login`; with a cookie it lists the
+      previews. A `/blog/drafts/<slug>` PAGE without a cookie returns 200 with the post's OWN og:title
+      (unfurl works) + a "Log in to read" prompt and NO post body; with a cookie the full post renders.
 - [ ] `GET /blog/drafts/<slug>/opengraph-image` returns 200 with an image content type and **no
       cookie** (the OG route stays public); the published `/blog/<slug>/opengraph-image` still 404s a
       not-yet-due scheduled post (spec 0035, unchanged).

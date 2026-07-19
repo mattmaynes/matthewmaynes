@@ -41,8 +41,14 @@ export default function DraftsPage() {
       </p>
 
       {rows.length === 0 ? (
-        <div className="mt-10 rounded-lg border border-dashed border-border bg-surface p-8 text-center">
-          <p className="text-body text-text-muted">Nothing here right now.</p>
+        <div className="mt-10 rounded-lg border border-dashed border-border bg-surface px-6 py-14 text-center">
+          <h2 className="text-h3 font-semibold text-text">
+            No drafts or scheduled posts
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-body text-text-muted">
+            Posts you are working on or have scheduled will appear here. Nothing is
+            waiting to go live right now.
+          </p>
         </div>
       ) : (
         <ul className="mt-10 flex flex-col gap-10">

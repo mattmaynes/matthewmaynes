@@ -38,6 +38,17 @@ import {
   tagFromSlug,
 } from "../src/lib/blog-view.ts";
 
+// The sample draft + scheduled posts are test fixtures, kept OUT of live content
+// (content/blog) so they never appear on the real site. Point the loader at them
+// via BLOG_FIXTURES_DIR so the fs-backed partition/boundary tests below still run
+// against a mixed draft/scheduled/published set. blogDirs() reads this at call
+// time, so setting it here (before any test runs) is enough.
+process.env.BLOG_FIXTURES_DIR ??= join(
+  dirname(fileURLToPath(import.meta.url)),
+  "fixtures",
+  "blog",
+);
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const at = (dateStr) => Date.parse(`${dateStr}T00:00:00Z`);
 
@@ -274,7 +285,9 @@ test("every public blog surface sets ISR revalidate so scheduled posts flip with
     "src/app/blog/[slug]/opengraph-image.tsx",
     "src/app/blog/feed.xml/route.ts",
     "src/app/blog/drafts/page.tsx",
-    "src/app/blog/drafts/[slug]/page.tsx",
+    // NOTE: src/app/blog/drafts/[slug]/page.tsx is deliberately NOT here - it is
+    // DYNAMIC (reads the session cookie to gate its body while serving OG metadata
+    // publicly, feedback 0022), so it has no `export const revalidate`.
     "src/app/blog/drafts/[slug]/opengraph-image.tsx",
   ];
   for (const rel of surfaces) {

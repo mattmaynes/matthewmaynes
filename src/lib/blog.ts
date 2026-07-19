@@ -11,7 +11,7 @@
  */
 
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { formatPostDate, slugify } from "./blog-view.ts";
 
 // Re-export the shared slugifier so existing `@/lib/blog` importers (and the
@@ -71,6 +71,18 @@ export { formatPostDate };
 // content/blog lives at the repo root; resolve relative to process.cwd() (the
 // project root at build time, where `next build` runs and enumerates posts).
 const BLOG_DIR = join(process.cwd(), "content", "blog");
+
+/**
+ * The content directories to read posts from. Production reads only content/blog.
+ * Tests inject an EXTRA dir via `BLOG_FIXTURES_DIR` (absolute, or cwd-relative) so
+ * the preview/gate behaviour can be exercised against real .mdx WITHOUT shipping
+ * sample posts on the live site. Unset in prod, so behaviour there is unchanged.
+ */
+function blogDirs(): string[] {
+  const extra = process.env.BLOG_FIXTURES_DIR;
+  if (!extra) return [BLOG_DIR];
+  return [BLOG_DIR, isAbsolute(extra) ? extra : join(process.cwd(), extra)];
+}
 
 // Frontmatter fields that must be present, or the build fails loudly.
 const REQUIRED_FIELDS = ["title", "date", "tags", "excerpt"] as const;
@@ -241,10 +253,13 @@ export function newPostSlug<T extends { slug: string; date: string }>(
   return isRecent(newest.date, nowMs, days) ? newest.slug : null;
 }
 
+/** A post source file: the directory it lives in and its `.mdx` filename. */
+type PostFile = { dir: string; file: string };
+
 /** Read + parse one .mdx file into a post record (frontmatter only, plus body). */
-function readPost(filename: string): Post {
-  const slug = filename.replace(/\.mdx$/, "");
-  const raw = readFileSync(join(BLOG_DIR, filename), "utf8");
+function readPost({ dir, file }: PostFile): Post {
+  const slug = file.replace(/\.mdx$/, "");
+  const raw = readFileSync(join(dir, file), "utf8");
   const { data, content } = parseFrontmatter(raw);
   // The slug is the filename; enforce that it matches the slugified title so a
   // filename/title drift fails the build loudly instead of shipping a URL that
@@ -270,13 +285,28 @@ function readPost(filename: string): Post {
   };
 }
 
-/** List the .mdx filenames under content/blog (empty if the dir is absent). */
-function listPostFiles(): string[] {
-  try {
-    return readdirSync(BLOG_DIR).filter((f) => f.endsWith(".mdx"));
-  } catch {
-    return [];
+/** List the .mdx source files across the content dirs (empty if a dir is absent),
+ *  each tagged with the directory it came from so `readPost` reads the right file. */
+function listPostFiles(): PostFile[] {
+  const out: PostFile[] = [];
+  const seen = new Set<string>();
+  for (const dir of blogDirs()) {
+    try {
+      for (const file of readdirSync(dir)) {
+        if (!file.endsWith(".mdx")) continue;
+        // De-dupe by slug (filename basename): content/blog (the first dir) wins, so
+        // a same-named fixture never yields a duplicate post - which would otherwise
+        // double up on /blog, the feed, sitemap, and generateStaticParams.
+        const slug = file.replace(/\.mdx$/, "");
+        if (seen.has(slug)) continue;
+        seen.add(slug);
+        out.push({ dir, file });
+      }
+    } catch {
+      // dir absent - skip
+    }
   }
+  return out;
 }
 
 /**
@@ -390,9 +420,9 @@ export function getPreviewPosts(nowMs: number = Date.now()): Post[] {
  * Returns null if no matching file exists.
  */
 export function getPostBySlug(slug: string): Post | null {
-  const file = listPostFiles().find((f) => f.replace(/\.mdx$/, "") === slug);
-  if (!file) return null;
-  return readPost(file);
+  const match = listPostFiles().find((f) => f.file.replace(/\.mdx$/, "") === slug);
+  if (!match) return null;
+  return readPost(match);
 }
 
 /** The chronological neighbours of a post: the older (`previous`) and newer

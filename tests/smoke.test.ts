@@ -27,6 +27,15 @@ import { signSession, COOKIE_NAME } from "../src/lib/preview-auth.ts";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
 const BASE = `http://127.0.0.1:${PORT}`;
+
+// The sample draft + scheduled posts are test fixtures kept OUT of live content
+// (content/blog) so they never appear on the real site (feedback 0022). Point the
+// loader at tests/fixtures/blog via BLOG_FIXTURES_DIR so: (1) the in-process
+// getDraftPosts()/getScheduledPosts() lookups below resolve them, (2) `next build`
+// (which inherits this env) bakes the fixture previews + OG cards, and (3) the
+// spawned server (env: {...process.env}) serves them from the dynamic preview page.
+const FIXTURES_DIR = join(root, "tests", "fixtures", "blog");
+process.env.BLOG_FIXTURES_DIR ??= FIXTURES_DIR;
 // The shared preview password the test server is booted with (see the before hook)
 // and the cookie the tests mint from it to reach the gated /blog/drafts area.
 const PREVIEW_PASSWORD = "test-secret";
@@ -331,7 +340,8 @@ const routes = [
   {
     // The drafts index (spec 0034): unlinked, noindex, lists unpublished posts and
     // links each row to its /blog/drafts/<slug> page (not the public /blog URL).
-    // The sample-draft fixture (content/blog/this-is-a-sample-draft.mdx) keeps this
+    // The sample-draft fixture (tests/fixtures/blog/this-is-a-sample-draft.mdx,
+    // injected via BLOG_FIXTURES_DIR and kept OUT of live content) keeps this
     // surface - and the public draft-leak guards below - exercised with a real draft.
     path: "/blog/drafts",
     title: "Drafts - Matthew Maynes",
@@ -380,6 +390,9 @@ before(async () => {
     const build = spawnSync("npx", ["next", "build"], {
       cwd: root,
       stdio: "inherit",
+      // Bake the fixture previews + their OG cards (BLOG_FIXTURES_DIR is set at the
+      // top of this file, so it is inherited here too - explicit for clarity).
+      env: { ...process.env, BLOG_FIXTURES_DIR: FIXTURES_DIR },
     });
     if (build.status !== 0) throw new Error("next build failed");
     serverJs = findServerJs(standaloneDir);
@@ -419,6 +432,9 @@ before(async () => {
       // password so the tests can mint a valid session cookie and exercise both
       // the gated (no cookie -> redirect) and authed (valid cookie -> 200) paths.
       PREVIEW_PASSWORD: PREVIEW_PASSWORD,
+      // Serve the draft/scheduled fixtures (kept out of live content) so the
+      // dynamic preview pages resolve them at runtime (feedback 0022).
+      BLOG_FIXTURES_DIR: FIXTURES_DIR,
     },
   });
   await waitForReady();
@@ -929,6 +945,10 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
   const published = getPublishedPosts()[0];
   const headers = await previewCookie(); // preview area is gated (spec 0036)
 
+  // A body-only sentence from tests/fixtures/blog/this-is-a-sample-draft.mdx - it
+  // is NOT in the title/excerpt, so it renders only when the FULL body renders.
+  const BODY_ONLY = "keeps the drafts view working";
+
   const draftRes = await fetch(BASE + `/blog/drafts/${draft.slug}`, { headers });
   assert.equal(draftRes.status, 200, "expected 200 for the draft page");
   const draftHtml = await draftRes.text();
@@ -938,6 +958,25 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
     "expected the 'Draft' marker on the draft page",
   );
   assert.ok(draftHtml.includes("noindex"), "expected the draft page to be noindex");
+  // With a valid session the FULL body renders (not just the teaser chrome, which
+  // also carries the title + "Draft preview"). Keys on a body-only sentence so a
+  // regression that shows only the teaser to an authed user reddens (spec 0036).
+  assert.ok(
+    draftHtml.includes(BODY_ONLY),
+    "expected the full draft body to render with a valid session",
+  );
+
+  // Without a session the body is WITHHELD: the teaser + login prompt render, but
+  // the body-only sentence must NOT leak (feedback 0022). This is the failable
+  // guard against a future body-leak on the public teaser.
+  const teaser = await fetch(BASE + `/blog/drafts/${draft.slug}`);
+  assert.equal(teaser.status, 200, "expected the teaser to render (200) without a session");
+  const teaserHtml = await teaser.text();
+  assert.ok(teaserHtml.includes("Log in to read"), "expected the login prompt on the teaser");
+  assert.ok(
+    !teaserHtml.includes(BODY_ONLY),
+    "the draft body must NOT be served on the public teaser (no session)",
+  );
 
   // The published route refuses a draft slug (the draft lives at /blog/drafts/<slug>).
   const wrongPublished = await fetch(BASE + `/blog/${draft.slug}`);
@@ -997,10 +1036,12 @@ test("a scheduled post is hidden from /blog, previewable + marked + noindex unde
   );
 });
 
-// Preview login gate (spec 0036): the /blog/drafts area is gated - no cookie ->
-// redirect to /login; a valid cookie -> 200. The OG-image sub-route stays public
-// (so link-preview unfurling works), and no published route is ever redirected.
-test("the /blog/drafts area redirects to /login without a session, and renders with one", async () => {
+// Preview login gate (spec 0036): the /blog/drafts INDEX is gated - no cookie ->
+// redirect to /login; a valid cookie -> 200. A preview PAGE is NOT redirected: it
+// serves the post's OG metadata publicly (unfurl) and gates only the body
+// (feedback 0022). The OG-image sub-route stays public. No published route is
+// ever redirected.
+test("the /blog/drafts index is gated, a preview page unfurls but gates its body", async () => {
   // Index: no cookie -> redirect to /login?next=/blog/drafts.
   const noCookie = await fetch(BASE + "/blog/drafts", { redirect: "manual" });
   assert.ok(
@@ -1013,23 +1054,38 @@ test("the /blog/drafts area redirects to /login without a session, and renders w
     "expected the redirect to point at /login with a next param",
   );
 
-  // A preview slug: no cookie -> redirect too.
+  // A preview PAGE (unlike the index) is NOT redirected: it serves the post's own
+  // OG metadata publicly so links unfurl, and gates only the readable body
+  // (feedback 0022). No cookie -> 200 + teaser + login prompt, NOT the full post.
   const preview = getDraftPosts()[0] ?? getScheduledPosts()[0];
   if (preview) {
     const slugNoCookie = await fetch(BASE + `/blog/drafts/${preview.slug}`, {
       redirect: "manual",
     });
-    assert.ok(
-      slugNoCookie.status === 307 || slugNoCookie.status === 302,
-      `expected a redirect from a preview slug without a session, got ${slugNoCookie.status}`,
+    assert.equal(
+      slugNoCookie.status,
+      200,
+      `expected a preview page to render (200) without a session, got ${slugNoCookie.status}`,
     );
+    const teaserHtml = await slugNoCookie.text();
+    // Unfurl works: the page carries the POST'S own OG title, not the generic site
+    // card - so a crawler that only reads the page head gets the draft's preview.
     assert.match(
-      slugNoCookie.headers.get("location") ?? "",
-      /\/login\?next=/,
-      "expected the preview-slug redirect to point at /login with a next param",
+      teaserHtml,
+      new RegExp(`property="og:title"\\s+content="${preview.title}"`),
+      "expected the preview page to expose the post's own og:title (unfurl works)",
+    );
+    assert.ok(
+      !teaserHtml.includes("Matthew Maynes - Engineering Director"),
+      "the preview must not fall back to the generic site card",
+    );
+    // Body is gated: the login prompt is shown, and the full post body is NOT.
+    assert.ok(
+      teaserHtml.includes("Log in to read"),
+      "expected the login prompt on a preview page without a session",
     );
 
-    // But the preview OG card stays PUBLIC (no cookie) so unfurling still works.
+    // The preview OG card stays PUBLIC (no cookie) so unfurling still works.
     const og = await fetch(BASE + `/blog/drafts/${preview.slug}/opengraph-image`);
     assert.equal(og.status, 200, "the preview OG card must be public (no login)");
     assert.match(

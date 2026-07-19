@@ -5,8 +5,19 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { escapeXml, toRfc822, buildBlogFeed } from "../src/lib/rss.ts";
 import { getAllPosts, getPublishedPosts } from "../src/lib/blog.ts";
+
+// The sample scheduled post used below is a test fixture kept OUT of live content
+// (content/blog); point the loader at tests/fixtures/blog so getAllPosts sees it.
+// blogDirs() reads this at call time, so setting it here (before any test) works.
+process.env.BLOG_FIXTURES_DIR ??= join(
+  dirname(fileURLToPath(import.meta.url)),
+  "fixtures",
+  "blog",
+);
 
 test("escapeXml escapes the five XML metacharacters, ampersand first", () => {
   // A single call must escape all five without double-escaping the entities'

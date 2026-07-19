@@ -61,6 +61,14 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   `notFound()`), kept in lockstep with it - a hidden post excluded from the page but served by its OG
   route leaks. Each exclusion needs a failable per-surface smoke assertion (the OG-route 404 was
   untested). (0019, generalising 0017/0034)
+- **Gating a whole route at the proxy also hides its OG metadata from unfurlers.** A link preview is
+  built from the PAGE's `<head>`, so if a route is both access-controlled AND meant to unfurl, serve the
+  metadata publicly and gate only the BODY (a page-level cookie check) - a public OG-image route alone
+  is useless if the page that references it is redirected. (0022)
+- **Keep test fixtures out of live content.** When a loader reads one content dir shared by prod and
+  tests, sample fixtures leak onto the live site. Inject an extra dir via an env the loader reads only
+  under test (set absolute by the test script), so removing samples from live content does not gut
+  coverage. (0022)
 - **Make illegal states unrepresentable:** encode "a kind + its correlated treatment" as ONE
   discriminator prop (`variant: "published" | "draft"`), not two flags that can contradict. (0034)
 
