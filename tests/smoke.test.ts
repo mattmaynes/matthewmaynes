@@ -990,6 +990,29 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
   }
 });
 
+// The gated preview index must render FRESH, not cached (feedback 0023): ISR's
+// stale-while-revalidate let the author's browser hold a stale listing (a
+// published/removed post appearing to linger). force-dynamic sends `no-store`.
+test("the gated /blog/drafts index is dynamic (no-store), not stale-while-revalidate", async () => {
+  const headers = await previewCookie();
+  const res = await fetch(BASE + "/blog/drafts", { headers });
+  assert.equal(res.status, 200, "expected 200 for the authenticated drafts index");
+  const cc = res.headers.get("cache-control") ?? "";
+  assert.ok(cc.includes("no-store"), `expected a no-store index, got: ${cc}`);
+  assert.ok(
+    !cc.includes("stale-while-revalidate"),
+    `the gated index must not be ISR-cached (stale-while-revalidate), got: ${cc}`,
+  );
+});
+
+// The preview OG route must 404 for a slug that is not a current preview
+// (feedback 0023): a removed/nonexistent slug used to render a blank card with a
+// 200 (no null guard), so a stale unfurl could show a mismatched image.
+test("the preview OG route 404s for a slug that is not a current preview", async () => {
+  const res = await fetch(BASE + "/blog/drafts/this-slug-does-not-exist-xyz/opengraph-image");
+  assert.equal(res.status, 404, "a nonexistent preview slug's OG route must 404, not 200");
+});
+
 // Scheduled posts (spec 0035): a not-yet-due post is hidden from the public
 // /blog/<slug> (404) but previewable under /blog/drafts/<slug> with a "Scheduled"
 // marker + noindex, exactly like a draft. It flips onto /blog on its own at its
