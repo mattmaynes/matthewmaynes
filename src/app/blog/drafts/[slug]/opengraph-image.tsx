@@ -1,4 +1,5 @@
-import { getPreviewPosts, getPostBySlug } from "@/lib/blog";
+import { notFound } from "next/navigation";
+import { getPreviewPosts, getPostBySlug, isPreviewNow } from "@/lib/blog";
 import { renderPostOgCard, alt, size, contentType } from "../../og-card";
 
 // Needs the Node runtime to read the cover + font files off disk.
@@ -24,5 +25,10 @@ export default async function DraftOpengraphImage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return renderPostOgCard(getPostBySlug(slug));
+  const post = getPostBySlug(slug);
+  // Only a current preview (draft or still-scheduled) has a card here. A slug that
+  // no longer exists (a removed sample) or has already published would otherwise
+  // render a blank/mismatched card with a 200; 404 it instead (feedback 0023).
+  if (!post || !isPreviewNow(post)) notFound();
+  return renderPostOgCard(post);
 }
