@@ -55,7 +55,7 @@ export default function BlogPage() {
         </Button>
       </div>
       <p className="mt-3 max-w-2xl text-body text-text-muted">
-        Notes on engineering, leadership, nature, and life - written down as I go.
+        Notes on engineering, leadership, nature, and life, written down as I go.
       </p>
 
       {listPosts.length === 0 ? (
