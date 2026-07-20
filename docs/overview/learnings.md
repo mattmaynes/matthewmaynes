@@ -69,6 +69,13 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   tests, sample fixtures leak onto the live site. Inject an extra dir via an env the loader reads only
   under test (set absolute by the test script), so removing samples from live content does not gut
   coverage. (0022)
+- **ISR / `stale-while-revalidate` is for PUBLIC pages; a gated must-be-current view should be
+  `force-dynamic`.** ISR makes Next emit a long `stale-while-revalidate`, so a browser holds a stale
+  copy - fine for a public listing, wrong for a gated, low-traffic author tool (a drafts index, a
+  dashboard) that must reflect reality the instant it loads. Use `force-dynamic` (`no-store`) there;
+  per-request rendering behind a login is free. And when a user reports "stale content", curl the
+  ORIGIN first - it is often a client/reader cache, which points at the cache-control policy, not a
+  data bug. (0023)
 - **Make illegal states unrepresentable:** encode "a kind + its correlated treatment" as ONE
   discriminator prop (`variant: "published" | "draft"`), not two flags that can contradict. (0034)
 

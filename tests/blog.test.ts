@@ -284,7 +284,9 @@ test("every public blog surface sets ISR revalidate so scheduled posts flip with
     "src/app/blog/[slug]/page.tsx",
     "src/app/blog/[slug]/opengraph-image.tsx",
     "src/app/blog/feed.xml/route.ts",
-    "src/app/blog/drafts/page.tsx",
+    // NOTE: src/app/blog/drafts/page.tsx is deliberately NOT here - the gated,
+    // author-only preview INDEX is force-dynamic so it never serves a stale
+    // listing (feedback 0023); asserted separately below.
     // NOTE: src/app/blog/drafts/[slug]/page.tsx is deliberately NOT here - it is
     // DYNAMIC (reads the session cookie to gate its body while serving OG metadata
     // publicly, feedback 0022), so it has no `export const revalidate`.
@@ -298,6 +300,14 @@ test("every public blog surface sets ISR revalidate so scheduled posts flip with
       `${rel} must set ISR revalidate = ${BLOG_REVALIDATE_SECONDS}`,
     );
   }
+  // The gated preview index is force-dynamic (no-store), NOT ISR - so the author
+  // never sees a stale draft/scheduled listing via stale-while-revalidate (0023).
+  const draftsIndex = readFileSync(join(root, "src/app/blog/drafts/page.tsx"), "utf8");
+  assert.match(
+    draftsIndex,
+    /export const dynamic = "force-dynamic"/,
+    "the gated /blog/drafts index must be force-dynamic (feedback 0023)",
+  );
   // The feed must no longer be force-static (that would never pick up a scheduled
   // post at its time - the exact regression this replaces).
   const feed = readFileSync(join(root, "src/app/blog/feed.xml/route.ts"), "utf8");

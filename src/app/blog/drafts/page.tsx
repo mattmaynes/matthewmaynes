@@ -5,9 +5,14 @@ import { toPostRows } from "@/lib/post-summaries";
 import { PostRow } from "@/components/post-row";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
 
-// Re-render every 60s (shared ISR window, spec 0035) so a scheduled post leaves
-// this preview list on its own once its publishAt passes (it moves to /blog).
-export const revalidate = 60;
+// Always render fresh - this gated, author-only preview index must reflect the
+// CURRENT preview set (drafts + still-scheduled) the instant it is loaded, so a
+// post that just published drops off immediately and removed content never
+// lingers. ISR here emitted a ~1yr `stale-while-revalidate`, which let the
+// author's browser hold a stale listing (a published/removed post appearing to
+// linger); force-dynamic sends `no-store` instead. The page is low-traffic and
+// behind the login, so per-request rendering is free (feedback 0023).
+export const dynamic = "force-dynamic";
 
 // The preview index (spec 0034/0035): lists every not-yet-public post - drafts
 // AND scheduled posts - linking to /blog/drafts/<slug>. Deliberately noindex and
