@@ -91,6 +91,11 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 - **A page that renders its own `<html>` must run the theme script**, and it only runs in SERVER-
   rendered HTML - a client-mounted boundary (`global-error`, the error shell) must re-apply the theme
   in its effect. (0014/0018)
+- **`suppressHydrationWarning` on `<html>` protects the pre-paint `.dark` only through the FIRST
+  hydration, not later re-renders.** A `notFound()` from a dynamic route (`/blog/[slug]`) re-renders
+  the persistent root layout, reconciling `<html>`'s `className` back to its JSX value and stripping
+  the script-added class - so that 404 painted light while a static 404 stayed dark. `not-found.tsx`
+  needs the same `applyStoredTheme()` effect the error boundaries use (`ThemeReapply`). (0011)
 - **A `ChunkLoadError` is a signal to reload, not a crash to display**: a tab open across a deploy
   requests chunks the new build renamed. Detect it in the error boundary and force one guarded full
   reload onto the current build. (0018)
