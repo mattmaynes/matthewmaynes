@@ -20,6 +20,7 @@ import redMazda3 from "../../public/images/blog/red-mazda-3.png";
 import sheaAndSasha from "../../public/images/blog/shea-and-sasha.jpg";
 import sheaPlayGym from "../../public/images/blog/shea-play-gym.jpg";
 import sashaRunning from "../../public/images/blog/sasha-running.jpg";
+import aiIdentityDesk from "../../public/images/blog/ai-identity-desk.png";
 
 import type { SiteImage } from "./site";
 
@@ -80,6 +81,10 @@ export const blogImages = {
   "sasha-running.jpg": {
     ...sashaRunning,
     alt: "A white curly-coated dog running across a sunny green lawn toward the camera, tongue out, a treeline behind.",
+  },
+  "ai-identity-desk.png": {
+    ...aiIdentityDesk,
+    alt: "An open laptop on a wooden desk by a sunlit window, its screen filled with code in a dark editor, a quiet home office with bookshelves behind it.",
   },
 } satisfies Record<string, BlogImage>;
 
