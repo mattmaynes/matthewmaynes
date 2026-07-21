@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui";
+import { ThemeReapply } from "@/components/theme-reapply";
 
 // Browser tab and share cards read "Page Not Found" (parity with the other
 // footer utility titles). Rendered inside the root layout, so the Header and
@@ -10,6 +11,9 @@ export const metadata: Metadata = { title: "Page Not Found" };
 export default function NotFound() {
   return (
     <section className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-6 py-24 text-center sm:py-32">
+      {/* Re-apply the stored theme: a notFound() from a dynamic route re-renders
+          the layout and strips the pre-paint .dark class off <html>. */}
+      <ThemeReapply />
       <p className="text-caption font-medium uppercase tracking-wide text-text-muted">
         404
       </p>
