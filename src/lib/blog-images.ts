@@ -21,6 +21,11 @@ import sheaAndSasha from "../../public/images/blog/shea-and-sasha.jpg";
 import sheaPlayGym from "../../public/images/blog/shea-play-gym.jpg";
 import sashaRunning from "../../public/images/blog/sasha-running.jpg";
 import aiIdentityDesk from "../../public/images/blog/ai-identity-desk.png";
+import memoryKeeperIdeaBrowser from "../../public/images/blog/memory-keeper-idea-browser.png";
+import memoryKeeperLogin from "../../public/images/blog/memory-keeper-login.png";
+import memoryKeeperHome from "../../public/images/blog/memory-keeper-home.png";
+import memoryKeeperSettings from "../../public/images/blog/memory-keeper-settings.png";
+import memoryKeeper404 from "../../public/images/blog/memory-keeper-404.png";
 
 import type { SiteImage } from "./site";
 
@@ -85,6 +90,26 @@ export const blogImages = {
   "ai-identity-desk.png": {
     ...aiIdentityDesk,
     alt: "An open laptop on a wooden desk by a sunlit window, its screen filled with code in a dark editor, a quiet home office with bookshelves behind it.",
+  },
+  "memory-keeper-idea-browser.png": {
+    ...memoryKeeperIdeaBrowser,
+    alt: "An idea-tracker page titled 'Daily story recorder for families facing dementia', tagged 'Perfect Timing' and '10x Better', with a search-volume chart spiking to 165K and +12592% growth and opportunity, problem, feasibility and business-fit scores.",
+  },
+  "memory-keeper-login.png": {
+    ...memoryKeeperLogin,
+    alt: "The MemoryKeeper app's 'Get Started now' login screen with Log In and Sign Up tabs, an email field pre-filled with a blurred-out address, an empty password field, and a blue Log In button.",
+  },
+  "memory-keeper-home.png": {
+    ...memoryKeeperHome,
+    alt: "The MemoryKeeper home screen: a 'Get Started' heading, a 'Create Memory' button, a generic story prompt about family traditions with a voice-recording control, and a Memory Bank list, all in a default untouched theme.",
+  },
+  "memory-keeper-settings.png": {
+    ...memoryKeeperSettings,
+    alt: "The MemoryKeeper settings screen with toggles for push notifications, daily reminders and haptic feedback, overlaid by a placeholder dialog reading 'Time Picker - Time picker would open here' with an OK button.",
+  },
+  "memory-keeper-404.png": {
+    ...memoryKeeper404,
+    alt: "A mobile Safari window at memorykeeper.app showing a bare '404 - Page not found.' error with a single Home link, reached by tapping the app's data policy button.",
   },
 } satisfies Record<string, BlogImage>;
 
