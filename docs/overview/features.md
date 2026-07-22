@@ -6,7 +6,7 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
 
 | Route | Status | Purpose |
 |---|---|---|
-| `/` | ✅ | Home. Hero (name, title, tagline, nature photo) with primary **About me** + secondary **Blog** CTAs, a short bio, an "Around the site" card grid, and a **Latest post** highlight via the shared `PostRow` (omitted when there are no posts). |
+| `/` | ✅ | Home. Hero (name, title, tagline, nature photo) with primary **About me** + secondary **Blog** CTAs, a short bio, a **Latest post** highlight via the shared `PostRow` (omitted when there are no posts), then an "Around the site" card grid. |
 | `/about` | ✅ | First-person "whole person" story: how Matthew works, a leadership belief, and a personal "Beyond the Code" section (acreage + reforestation, family, dog, hobbies). |
 | `/resume` | ✅ | Professional resume rendered from structured, scrubbed data, with a **download PDF** button serving an in-sync, contact-free PDF. |
 | `/projects` | ✅ | Curated showcase (spec 0031) in three fixed sections - **Work → Tinkering → Making** - each a responsive grid of uniform cards (cover, title, tagline, tag badges). Sourced from `content/projects/*.mdx`; in the nav + sitemap. |
