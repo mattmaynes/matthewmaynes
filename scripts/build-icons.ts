@@ -1,6 +1,9 @@
 // Regenerate the favicon / app-icon set from the brand master.
 //
-// Source of truth: public/brand/logo-m.png (600x600, transparent corners).
+// Vector source of truth: public/brand/logo-m.svg (the node-graph "M", Harbor
+// palette). Raster master: public/brand/logo-m.png (1024x1024, full-bleed dark),
+// rendered from the SVG on macOS with `qlmanage -t -s 1024 -o <dir> logo-m.svg`.
+// After editing the SVG, re-render the PNG master, then run this script.
 // Dependency-free: macOS `sips` resizes, Node stdlib packs the multi-res ICO
 // (PNG-payload ICO, supported by every modern browser). No ImageMagick, no npm
 // dependency, so the icons are reproducible from one command:
