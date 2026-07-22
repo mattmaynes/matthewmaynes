@@ -105,7 +105,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Intro: who I am and what this site is, then quick links to each area. */}
+      {/* Intro: who I am and what this site is. */}
       <section className="mx-auto max-w-[1200px] px-6 py-16">
         <p className="text-h4 font-normal text-text">
           I&apos;m Matthew Maynes, an engineering director who never stopped
@@ -119,8 +119,29 @@ export default function HomePage() {
           leadership, nature, and the occasional detour. Have a look around, and
           if something resonates, say hello.
         </p>
+      </section>
 
-        <h2 className="mt-16 text-h2 font-semibold text-text">Around the site</h2>
+      {/* Latest post: highlight the single newest post so the home page gives a
+          taste of the blog and a direct path in (spec 0029). Sits directly under
+          the intro - above "Around the site" - so the site's most active surface
+          leads. Omitted cleanly when there are no posts. */}
+      {latest ? (
+        <section className="mx-auto max-w-[1200px] border-t border-border px-6 py-16">
+          <h2 className="text-h2 font-semibold text-text">Latest post</h2>
+          <ul className="mt-8 flex flex-col">
+            <PostRow post={latest} />
+          </ul>
+          <div className="mt-8">
+            <Button asChild variant="outline">
+              <Link href="/blog">See all posts</Link>
+            </Button>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Around the site: quick links to each area. */}
+      <section className="mx-auto max-w-[1200px] border-t border-border px-6 py-16">
+        <h2 className="text-h2 font-semibold text-text">Around the site</h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {/* Order mirrors the nav (About, Resume, Projects, Blog, Contact); Home is omitted. */}
           {[
@@ -146,23 +167,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* Latest post: highlight the single newest post so the home page gives a
-          taste of the blog and a direct path in (spec 0029). Omitted cleanly
-          when there are no posts. */}
-      {latest ? (
-        <section className="mx-auto max-w-[1200px] border-t border-border px-6 py-16">
-          <h2 className="text-h2 font-semibold text-text">Latest post</h2>
-          <ul className="mt-8 flex flex-col">
-            <PostRow post={latest} />
-          </ul>
-          <div className="mt-8">
-            <Button asChild variant="outline">
-              <Link href="/blog">See all posts</Link>
-            </Button>
-          </div>
-        </section>
-      ) : null}
     </>
   );
 }

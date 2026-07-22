@@ -19,18 +19,20 @@ Observable when done:
    **About me**, and a new secondary **Blog** button linking to `/blog`. The secondary
    button reads clearly against the dark hero photo overlay and is visually subordinate to
    the primary.
-2. Below the "Around the site" cards, a new **Latest post** section highlights the single
-   most recent post, rendered with the same row treatment as the `/blog` listing (cover
-   thumbnail, title link, date, reading-time pill, excerpt, tags, and the "New" badge when
-   applicable), followed by a link to the full listing (`/blog`).
+2. Directly under the intro copy - **above** the "Around the site" cards - a **Latest post**
+   section highlights the single most recent post, rendered with the same row treatment as the
+   `/blog` listing (cover thumbnail, title link, date, reading-time pill, excerpt, tags, and
+   the "New" badge when applicable), followed by a link to the full listing (`/blog`). Leading
+   with the blog (the site's most active surface) over the navigation grid keeps the visitor's
+   path to fresh content first.
 3. If there are no posts, the section is omitted cleanly (no empty heading).
 
 ## Scope
 
 **In:**
 - Add the secondary "Blog" button to the hero in `src/app/page.tsx`.
-- Add a "Latest post" section below the cards, reusing the shared `PostRow` component and
-  the `toPostRows` server mapper.
+- Add a "Latest post" section above the "Around the site" cards, reusing the shared `PostRow`
+  component and the `toPostRows` server mapper.
 - A smoke-test assertion proving the latest post surfaces on `/` (a unit-unique marker, not
   shared chrome).
 
@@ -66,7 +68,7 @@ const rows = toPostRows(posts, newPostSlug(posts, NOW_MS, 30));
 const latest = rows[0] ?? null;
 ```
 
-Render `latest` through the shared `PostRow` inside a new `<section>` under the cards, with
+Render `latest` through the shared `PostRow` inside a new `<section>` above the cards, with
 an `<h2>Latest post</h2>` and a "Read the blog" / "See all posts" link (`Button
 variant="outline"` to `/blog`, matching the `/subscribe` precedent). `PostRow` is a
 hook-free presentational component already shared by a Server page (the tag archive) and the
@@ -82,7 +84,7 @@ third bespoke copy of post-card markup. `newPostSlug` is computed over the **ful
 
 - [ ] Hero renders two CTAs: primary "About me" (unchanged) and a secondary "Blog" -> `/blog`.
 - [ ] The secondary button reads legibly on the hero overlay (verified on a screenshot).
-- [ ] A "Latest post" section appears below the cards showing the newest post via `PostRow`
+- [ ] A "Latest post" section appears above the cards showing the newest post via `PostRow`
       (cover, title link to `/blog/<slug>`, date, reading-time pill, excerpt, tags; "New"
       badge when the post is within the recency window).
 - [ ] A "see all posts" link to `/blog` sits below the highlight.
