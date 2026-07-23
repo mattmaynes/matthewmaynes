@@ -88,6 +88,14 @@ the title row (distinct from the accent series pill and the muted tag pills - a 
 chip) linking to `/blog/categories/<slug>`; the post header does the same. Tag pills render
 unchanged beneath.
 
+**Analytics + typing (review follow-ups).** The chip filter fires a PII-free
+`blog_category_filtered` event (`{ category }`, the fixed enum or `"all"`), gated by
+`clientAnalyticsEnabled()` like the subscribe/contact events - the raw `history.replaceState`
+is invisible to the `$pageview` tracker, so this is the only way to see which themes readers
+narrow to. The `category` field is typed as the `Category` union (not a bare `string`) on
+`Post`/`Frontmatter`/`PostRowData`/`ArticlePost`, so the loader's `isCategory` guard buys
+compile-time exhaustiveness downstream.
+
 **Archive pages.** `/blog/categories/[slug]/page.tsx` is a near-copy of the tag archive:
 `generateStaticParams` over `deriveCategories(getPublishedPosts())`, `dynamicParams = false`,
 `revalidate = 60`, a route-unique `<title>` ("Posts in \"<Category>\" - Blog"), `filterByCategory`
