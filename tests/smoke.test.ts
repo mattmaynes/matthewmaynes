@@ -21,7 +21,13 @@ import {
   getScheduledPosts,
   getAdjacentPosts,
 } from "../src/lib/blog.ts";
-import { deriveTags, tagSlug } from "../src/lib/blog-view.ts";
+import {
+  deriveTags,
+  tagSlug,
+  deriveCategories,
+  categorySlug,
+  filterByCategory,
+} from "../src/lib/blog-view.ts";
 import { signSession, COOKIE_NAME } from "../src/lib/preview-auth.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -136,13 +142,21 @@ const routes = [
       // covered by the deterministic isRecent/newPostSlug unit tests instead so the
       // smoke test does not become a time-bomb (the seed post is dated 2026-06-28).
       "Search posts",
-      // The tag filter is a Canopy Combobox (spec 0030); its default selection is
-      // the "All posts" clear-entry, whose label renders in the closed trigger
-      // (the tag options live in the popover, revealed on open - client-only).
+      // The category filter is a chip row (spec 0038, replacing the tag Combobox):
+      // the group's aria-label is unique to this control, and the leading "All
+      // posts" chip clears the filter. Both are in the SSG HTML (chips are plain
+      // buttons, not a portalled popover), so they can actually fail if dropped.
+      'aria-label="Filter posts by category"',
       "All posts",
-      // A seed post's tag renders in its listing row's tag pills (the Combobox
-      // options are portalled/closed, so this marker rides on the post row, not
-      // the filter). Uses the niche, SEO-oriented tag set (content, editable in
+      // The active chip is FILLED (spec 0038 Outcome 2): at build the default "All
+      // posts" chip is the active one, so its filled treatment + aria-pressed are in
+      // the SSG HTML. Guarding the fill class combo (nothing else on /blog emits it)
+      // means dropping the active-state styling reddens, not just relabelling.
+      'aria-pressed="true"',
+      "border-primary bg-primary text-primary-foreground",
+      // A seed post's tag still renders in its listing row's tag pills (tags are
+      // unchanged by spec 0038 - kept for keyword search and the /blog/tags
+      // archives). Uses the niche, SEO-oriented tag set (content, editable in
       // frontmatter).
       "Career Reflection",
       // RSS subscribe link (spec 0013) must render, pointing at the feed.
@@ -1394,6 +1408,73 @@ test("a tag archive lists its posts with a route-unique title; unknown tag 404s"
   assert.equal(missing.status, 404, "expected 404 for an unknown tag slug");
 });
 
+// Category archive pages (spec 0038): a real, indexable page per category, and the
+// category badge on a post links to it. Derive the category and slug from the SAME
+// source the route renders from (getPublishedPosts + deriveCategories + categorySlug),
+// so this never time-bombs as posts/categories change.
+test("a category archive lists its posts with a route-unique title; badge links to it; unknown 404s", async () => {
+  const posts = getPublishedPosts();
+  const categories = deriveCategories(posts);
+  assert.ok(categories.length > 0, "fixture sanity: at least one category exists");
+  const category = categories[0];
+  const slug = categorySlug(category);
+
+  const res = await fetch(BASE + `/blog/categories/${slug}`);
+  assert.equal(res.status, 200, `expected 200 for /blog/categories/${slug}`);
+  const html = await res.text();
+
+  // Route-unique title marker ("Posts in" appears on no other route) plus the site
+  // title suffix - a real <title>, not just the H1, proves generateMetadata ran.
+  // Assert the stable prefix, not the quoted category (a <title> may escape the
+  // quotes), mirroring the tag-archive test's "Posts tagged" check.
+  assert.ok(
+    html.includes("Posts in ") && html.includes("- Blog - Matthew Maynes"),
+    "expected the category page's route-unique <title>",
+  );
+
+  // The list actually rendered: a post in this category appears by title.
+  const inCategory = posts.find((p) => p.category === category);
+  assert.ok(inCategory, "fixture sanity: some post is in the first category");
+  assert.ok(
+    html.includes(inCategory.title),
+    `expected the "${category}" archive to list "${inCategory.title}"`,
+  );
+
+  // The category badge on a post LINKS to its archive (spec 0038): reverting the
+  // badge to inert text would otherwise ship green (the recurring "a behaviour
+  // change needs a guard that can fail" lesson). Fetch a post in this category and
+  // assert the link - it rides on both the post row and the post header.
+  const postHtml = await (await fetch(BASE + `/blog/${inCategory.slug}`)).text();
+  assert.ok(
+    postHtml.includes(`href="/blog/categories/${slug}"`),
+    `expected "${inCategory.slug}" to link its "${category}" badge to /blog/categories/${slug}`,
+  );
+
+  // If any category carries 2+ posts, its archive lists them newest-first (the page
+  // renders filterByCategory over the newest-first getPublishedPosts, which
+  // preserves order). The pure ordering itself is covered by the blog-view tests.
+  const multi = categories.find(
+    (c) => filterByCategory(posts, c, "").length >= 2,
+  );
+  if (multi) {
+    const multiHtml = await (
+      await fetch(BASE + `/blog/categories/${categorySlug(multi)}`)
+    ).text();
+    const inMulti = filterByCategory(posts, multi, ""); // newest-first
+    const positions = inMulti.map((p) => multiHtml.indexOf(p.title));
+    for (let i = 1; i < positions.length; i++) {
+      assert.ok(
+        positions[i - 1] >= 0 && positions[i - 1] < positions[i],
+        `expected "${multi}" archive newest-first: "${inMulti[i - 1].title}" before "${inMulti[i].title}"`,
+      );
+    }
+  }
+
+  // An unknown category slug is a clean 404 (dynamicParams=false).
+  const missingCat = await fetch(BASE + "/blog/categories/definitely-not-a-category");
+  assert.equal(missingCat.status, 404, "expected 404 for an unknown category slug");
+});
+
 test("robots, sitemap, and manifest are served", async () => {
   const robots = await fetch(BASE + "/robots.txt");
   assert.equal(robots.status, 200, "expected /robots.txt to 200");
@@ -1434,6 +1515,14 @@ test("robots, sitemap, and manifest are served", async () => {
     sitemapXml,
     /\/blog\/tags\/[a-z0-9-]+<\/loc>/,
     "expected per-tag archive URLs in the sitemap",
+  );
+  // spec 0038: per-category archives are crawlable too. Assert a real category
+  // archive URL is listed (dropping the sitemap's categoryEntries would otherwise
+  // ship green - acceptance #5).
+  assert.match(
+    sitemapXml,
+    /\/blog\/categories\/[a-z0-9-]+<\/loc>/,
+    "expected per-category archive URLs in the sitemap",
   );
   // A draft is absent from the sitemap (spec 0034): both its post URL and the tag
   // archive for any tag UNIQUE to the draft (a tag it shares with a published post

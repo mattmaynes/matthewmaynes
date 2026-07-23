@@ -15,7 +15,7 @@ import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { PostNav, type PostNavItem } from "@/components/post-nav";
 import { formatPostDate } from "@/lib/blog";
-import { tagSlug, formatPublishAt } from "@/lib/blog-view";
+import { categorySlug, tagSlug, formatPublishAt } from "@/lib/blog-view";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site } from "@/lib/site";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
@@ -41,6 +41,8 @@ export type ArticlePost = {
   title: string;
   date: string;
   tags: string[];
+  /** The post's single category (spec 0038); drives the header category badge. */
+  category: string;
   coverKey?: string;
   coverCaption?: string;
   /** Series this post belongs to (e.g. "Life Log"); drives the corner sash on
@@ -61,7 +63,7 @@ function HeroMeta({
   minutes,
   overlay,
 }: {
-  post: { title: string; date: string; tags: string[] };
+  post: { title: string; date: string; tags: string[]; category: string };
   minutes: number;
   overlay: boolean;
 }) {
@@ -99,6 +101,19 @@ function HeroMeta({
           overlay ? "text-white/90" : "text-text-subtle"
         }`}
       >
+        {/* Category badge (spec 0038): the post's single theme, leading the meta
+            row and linking to its archive. A light chip over the dark cover
+            overlay, a primary-tinted chip on the plain page. */}
+        <Link
+          href={`/blog/categories/${categorySlug(post.category)}`}
+          className={
+            overlay
+              ? `inline-flex items-center rounded-full border border-white/40 bg-white/15 px-3 py-1 text-caption font-medium text-white hover:bg-white/25 ${RING}`
+              : `inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-caption font-medium text-primary hover:bg-primary/20 ${RING}`
+          }
+        >
+          {post.category}
+        </Link>
         <time dateTime={post.date} className="text-caption">
           {formatPostDate(post.date)}
         </time>
@@ -263,6 +278,13 @@ export function PostArticle({
           ) : null}
           <h1 className="text-h1 font-bold text-text">{post.title}</h1>
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            {/* Category badge (spec 0038), leading the meta row on the no-cover header. */}
+            <Link
+              href={`/blog/categories/${categorySlug(post.category)}`}
+              className={`inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-caption font-medium text-primary hover:bg-primary/20 ${RING}`}
+            >
+              {post.category}
+            </Link>
             <p className="text-caption text-text-subtle">
               <time dateTime={post.date}>{formatPostDate(post.date)}</time>
             </p>
