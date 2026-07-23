@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { usePostHog } from "posthog-js/react";
 import { SearchIcon } from "@/components/blog-icons";
 import { PostRow, type PostRowData } from "@/components/post-row";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
+import { clientAnalyticsEnabled } from "@/lib/posthog-browser";
 import {
   deriveCategories,
   resolveActiveCategory,
@@ -52,6 +54,7 @@ function readUrlCategory() {
  */
 export function BlogList({ posts }: { posts: BlogListPost[] }) {
   const [query, setQuery] = useState("");
+  const posthog = usePostHog();
 
   // Category set + active-category resolution + filtering all live in the pure,
   // fs-free `blog-view` core so they are unit-tested against a multi-post fixture
@@ -80,6 +83,14 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
       : "";
     window.history.replaceState(null, "", `${window.location.pathname}${qs}`);
     notifyUrlCategory();
+    // Capture which theme a reader narrows to (or clears) - the signal the whole
+    // feature exists for, and one the raw `history.replaceState` above does NOT
+    // give the pageview tracker (it doesn't touch `useSearchParams`). The value is
+    // the fixed category enum or "all", so it stays a PII-free dimension. Gated by
+    // `clientAnalyticsEnabled()` like the subscribe/contact events.
+    if (clientAnalyticsEnabled()) {
+      posthog?.capture("blog_category_filtered", { category: category ?? "all" });
+    }
   }
 
   // Filter by the active category first, then narrow by the search query over

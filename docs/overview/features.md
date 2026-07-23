@@ -38,7 +38,8 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
 - **Analytics** (spec 0014): PostHog (US Cloud) for analytics, masked-input session replay, and error
   tracking (client boundaries self-heal a stale-deploy `ChunkLoadError`; server via
   `instrumentation.ts`). Proxied same-origin through `/ingest/*`. No consent banner (cookieless). The
-  contact/subscribe forms fire PII-free conversion events. **Only the deployed production host
+  contact/subscribe forms fire PII-free conversion events, and the blog category chip filter fires
+  a PII-free `blog_category_filtered` event (spec 0038). **Only the deployed production host
   captures** (spec 0016) - local runs send nothing.
 
 ## Blog

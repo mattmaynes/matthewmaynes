@@ -12,7 +12,13 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import { CATEGORIES, formatPostDate, isCategory, slugify } from "./blog-view.ts";
+import {
+  CATEGORIES,
+  type Category,
+  formatPostDate,
+  isCategory,
+  slugify,
+} from "./blog-view.ts";
 
 // Re-export the shared slugifier so existing `@/lib/blog` importers (and the
 // unit tests) keep resolving `slugify` here, while there is a single
@@ -27,7 +33,7 @@ export type Post = {
   tags: string[];
   /** The post's single theme (spec 0038), one of `CATEGORIES`. Drives the
    *  category filter, the category badge, and the /blog/categories archive. */
-  category: string;
+  category: Category;
   excerpt: string;
   /** Cover image filename (a key into src/lib/blog-images.ts), if any. */
   coverKey?: string;
@@ -56,7 +62,7 @@ export type Frontmatter = {
   date: string;
   tags: string[];
   /** One of `CATEGORIES` (spec 0038); enum-validated at parse time. */
-  category: string;
+  category: Category;
   excerpt: string;
   cover?: string;
   coverCaption?: string;

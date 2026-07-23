@@ -57,7 +57,7 @@ export type PostRowData = {
   date: string;
   tags: string[];
   /** The post's single category (spec 0038); drives the row's category badge. */
-  category: string;
+  category: Category;
   cover?: Cover;
   pixelated: boolean;
   /** Focal point for the ratio-cropped thumbnail; `"top"` keeps a tall portrait's
@@ -237,7 +237,7 @@ export function filterByCategory<T extends CategorizedPost>(
  * categories are omitted so the listing never shows a chip that filters to
  * nothing. Does not mutate its input.
  */
-export function deriveCategories(posts: { category: string }[]): string[] {
+export function deriveCategories(posts: { category: string }[]): Category[] {
   const present = new Set(posts.map((p) => p.category.toLowerCase()));
   return CATEGORIES.filter((c) => present.has(c.toLowerCase()));
 }
