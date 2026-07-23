@@ -44,6 +44,7 @@ export function toPostRows(
       excerpt: post.excerpt,
       date: post.date,
       tags: post.tags,
+      category: post.category,
       cover: cover ? { ...cover, alt: cover.alt } : undefined,
       pixelated: cover?.pixelated === true,
       coverFocus: cover?.focus,

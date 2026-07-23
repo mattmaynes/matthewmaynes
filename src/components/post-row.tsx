@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
-import { formatPostDate, type PostRowData } from "@/lib/blog-view";
+import { categorySlug, formatPostDate, type PostRowData } from "@/lib/blog-view";
 
 // The row's data contract lives in the fs-free `blog-view` core; re-exported
 // here so component-side callers can keep importing it from the component.
@@ -79,6 +79,15 @@ export function PostRow({ post }: { post: PostRowData }) {
           ) : null}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-3">
+          {/* Category badge (spec 0038): the post's single theme, leading the meta
+              row and styled distinctly from the muted tag pills below - a primary-
+              tinted chip linking to the category archive. */}
+          <Link
+            href={`/blog/categories/${categorySlug(post.category)}`}
+            className={`inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-caption font-medium text-primary hover:bg-primary/20 ${RING}`}
+          >
+            {post.category}
+          </Link>
           <p className="text-caption text-text-subtle">
             <time dateTime={post.date}>{formatPostDate(post.date)}</time>
           </p>

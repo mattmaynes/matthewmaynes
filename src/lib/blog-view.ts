@@ -10,6 +10,35 @@ import type { StaticImageData } from "next/image";
 /** The post shape `filterPosts` narrows over: only the searchable fields. */
 export type FilterablePost = { title: string; excerpt: string; tags: string[] };
 
+/** The searchable fields plus the single category `filterByCategory` narrows on. */
+export type CategorizedPost = FilterablePost & { category: string };
+
+/**
+ * The fixed set of post categories (spec 0038), in canonical order. One category
+ * per post, unlike free-form `tags` - this is the controlled taxonomy the `/blog`
+ * filter and the category archives operate on. Array order is the chip order on
+ * the listing and the order categories appear in the sitemap. Adding a category
+ * here (and to a post) is all it takes to introduce one; the build rejects any
+ * post whose category is not in this list, so the set cannot silently drift.
+ */
+export const CATEGORIES = [
+  "Engineering",
+  "Leadership",
+  "Career",
+  "AI",
+  "Projects",
+  "Life",
+] as const;
+
+/** One of the fixed post categories. */
+export type Category = (typeof CATEGORIES)[number];
+
+/** Whether a raw string is one of the fixed categories (case-sensitive - the
+ *  frontmatter must use the canonical casing, which the build enforces). */
+export function isCategory(value: string): value is Category {
+  return (CATEGORIES as readonly string[]).includes(value);
+}
+
 /** A cover image passed down from the server: a static import (carrying its
  * blurDataURL) plus alt text. Resolved server-side via `getBlogImage` so a
  * client caller never imports `blog-images.ts` (learnings 0005). */
@@ -27,6 +56,8 @@ export type PostRowData = {
   excerpt: string;
   date: string;
   tags: string[];
+  /** The post's single category (spec 0038); drives the row's category badge. */
+  category: string;
   cover?: Cover;
   pixelated: boolean;
   /** Focal point for the ratio-cropped thumbnail; `"top"` keeps a tall portrait's
@@ -146,28 +177,24 @@ export function resolveActiveTag(
 }
 
 /**
- * The tag-filter Combobox value that means "no filter" (the "All posts" entry).
- * An empty string mirrors the URL/server-snapshot convention (`readUrlTag`
- * returns "" for an absent `?tag=`), so the widget and the URL agree on "all".
+ * Whether a post matches a search query over title + excerpt + tags,
+ * case-insensitively. An empty query matches everything. The single search
+ * predicate shared by `filterPosts` (tag archives) and `filterByCategory` (the
+ * listing), so the searchable-field set is defined once. `q` is expected already
+ * trimmed + lowercased by the caller.
  */
-export const ALL_TAGS_FILTER_VALUE = "";
-
-/**
- * Map a tag-filter Combobox value back to an active tag: the "all" sentinel
- * (empty string) becomes null (no filter); any other value is the tag itself.
- * The single seam between the single-select widget's always-string value and the
- * nullable tag the rest of the blog core speaks - kept pure so it is unit-tested
- * rather than trapped in the client island.
- */
-export function tagFromFilterValue(value: string): string | null {
-  return value === ALL_TAGS_FILTER_VALUE ? null : value;
+function matchesQuery(post: FilterablePost, q: string): boolean {
+  if (!q) return true;
+  const haystack =
+    `${post.title} ${post.excerpt} ${post.tags.join(" ")}`.toLowerCase();
+  return haystack.includes(q);
 }
 
 /**
  * Filter posts by an active tag (or null for all) and then narrow by a search
  * query over title + excerpt + tags. Both matches are case-insensitive; the two
  * conditions compose (a post must pass both). Returns a new array - the input is
- * never mutated.
+ * never mutated. Drives the `/blog/tags/*` archives.
  */
 export function filterPosts<T extends FilterablePost>(
   posts: T[],
@@ -180,13 +207,71 @@ export function filterPosts<T extends FilterablePost>(
     if (tag && !post.tags.some((t) => t.toLowerCase() === tag)) {
       return false;
     }
-    if (q) {
-      const haystack =
-        `${post.title} ${post.excerpt} ${post.tags.join(" ")}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    return true;
+    return matchesQuery(post, q);
   });
+}
+
+/**
+ * Filter posts by an active category (or null for all) and then narrow by the
+ * same title + excerpt + tags search. This is the `/blog` listing filter (spec
+ * 0038) and the category archive filter: a post has exactly one category, so the
+ * match is an exact (case-insensitive) equality, not tag-style membership. Both
+ * conditions compose; the input is never mutated.
+ */
+export function filterByCategory<T extends CategorizedPost>(
+  posts: T[],
+  activeCategory: string | null,
+  query: string,
+): T[] {
+  const q = (query ?? "").trim().toLowerCase();
+  const cat = activeCategory ? activeCategory.toLowerCase() : null;
+  return posts.filter((post) => {
+    if (cat && post.category.toLowerCase() !== cat) return false;
+    return matchesQuery(post, q);
+  });
+}
+
+/**
+ * The categories that actually have posts, in canonical `CATEGORIES` order (not
+ * first-appearance order like `deriveTags`, since the taxonomy is fixed). Empty
+ * categories are omitted so the listing never shows a chip that filters to
+ * nothing. Does not mutate its input.
+ */
+export function deriveCategories(posts: { category: string }[]): string[] {
+  const present = new Set(posts.map((p) => p.category.toLowerCase()));
+  return CATEGORIES.filter((c) => present.has(c.toLowerCase()));
+}
+
+/**
+ * Resolve a raw `?category=` value back to a known present category,
+ * case-insensitively. Returns the canonical-cased category from `allCategories`
+ * or null for an unknown or empty value - i.e. "All posts".
+ */
+export function resolveActiveCategory(
+  rawCategory: string,
+  allCategories: string[],
+): string | null {
+  if (!rawCategory) return null;
+  const lower = rawCategory.toLowerCase();
+  return allCategories.find((c) => c.toLowerCase() === lower) ?? null;
+}
+
+/** The URL slug for a category (same rules as a post/tag slug). */
+export function categorySlug(category: string): string {
+  return slugify(category);
+}
+
+/**
+ * Resolve a category slug back to its canonical-cased category, or null if no
+ * known category slugifies to it. Mirrors `tagFromSlug`; `slug` is re-slugified
+ * first so an odd-cased inbound value still matches.
+ */
+export function categoryFromSlug(
+  slug: string,
+  categories: string[],
+): string | null {
+  const s = slugify(slug);
+  return categories.find((c) => categorySlug(c) === s) ?? null;
 }
 
 /**
