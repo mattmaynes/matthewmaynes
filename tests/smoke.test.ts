@@ -1643,6 +1643,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   let scanned = 0;
   let sawConversionEvent = false;
   let sawSubscribeEvent = false;
+  let sawCategoryFilterEvent = false;
   let sawSuccessBadge = false;
   while (stack.length) {
     const cur = stack.pop();
@@ -1666,6 +1667,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
         );
         if (js.includes("contact_form_submitted")) sawConversionEvent = true;
         if (js.includes("blog_subscribe_submitted")) sawSubscribeEvent = true;
+        if (js.includes("blog_category_filtered")) sawCategoryFilterEvent = true;
         if (js.includes("You are on the list")) sawSuccessBadge = true;
       }
     }
@@ -1681,6 +1683,13 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   assert.ok(
     sawSubscribeEvent,
     "expected a client chunk to fire the blog_subscribe_submitted event (spec 0018)",
+  );
+  // The category chip filter fires a PII-free event so we can see which themes
+  // readers narrow to (the raw history.replaceState is invisible to the pageview
+  // tracker); its name must ship in the listing island chunk (spec 0038).
+  assert.ok(
+    sawCategoryFilterEvent,
+    "expected a client chunk to fire the blog_category_filtered event (spec 0038)",
   );
   // The success confirmation is client-only (shown after a successful POST, which the
   // smoke server can't reach with creds forced empty), so its copy is not in the SSR

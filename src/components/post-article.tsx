@@ -15,7 +15,7 @@ import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { PostNav, type PostNavItem } from "@/components/post-nav";
 import { formatPostDate } from "@/lib/blog";
-import { categorySlug, tagSlug, formatPublishAt } from "@/lib/blog-view";
+import { categorySlug, tagSlug, formatPublishAt, type Category } from "@/lib/blog-view";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site } from "@/lib/site";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
@@ -42,7 +42,7 @@ export type ArticlePost = {
   date: string;
   tags: string[];
   /** The post's single category (spec 0038); drives the header category badge. */
-  category: string;
+  category: Category;
   coverKey?: string;
   coverCaption?: string;
   /** Series this post belongs to (e.g. "Life Log"); drives the corner sash on
