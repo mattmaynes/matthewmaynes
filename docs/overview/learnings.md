@@ -45,16 +45,10 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   a typo. (0009)
 - **`next/image` needs a static import to kill flicker** (so `placeholder="blur"` gets a
   `blurDataURL`), but SOURCE size dominates first paint - right-size sources first. (0005/0006)
-- **`next/og` (satori) cannot read woff2** - use woff/ttf/otf, loaded via `new URL(.., import.meta.url)`
-  so fonts are traced into the `output: standalone` build (`src/` is not deployed; `public/` is). (0004)
-- **A per-post metadata route (`opengraph-image`) needs `generateStaticParams` too**, or it goes
-  dynamic and reads `content/` per request. (0009)
-- **Never build a redirect/absolute link from `req.url` in a Route Handler.** Behind the Caddy proxy
-  `req.url` is the container's internal host (`0.0.0.0:3000`), so `new URL(path, req.url)` sends the
-  browser somewhere unreachable. Emit a RELATIVE `Location` (or use the forwarded host); the browser
-  resolves it against the origin it connected to. Middleware's `nextUrl` honours `x-forwarded-host`,
-  but Route Handlers' `req.url` does not. A smoke test run WITHOUT the proxy only catches this if it
-  asserts the Location is relative/host-correct, not just that it ends with the right path. (0021)
+- **Never build a redirect/absolute link from a Route Handler's `req.url`.** Behind a proxy `req.url`
+  is the container's internal host, so `new URL(path, req.url)` sends the browser somewhere
+  unreachable - emit a RELATIVE `Location` and let the browser resolve it against the origin it
+  connected to. (Middleware's `nextUrl` honours `x-forwarded-host`; `req.url` does not.) (0021)
 - **`generateStaticParams` scoping is NOT access control.** `dynamicParams` defaults to true, so an
   un-baked slug still renders on demand (more so once the route is dynamic/ISR). A per-slug
   metadata/OG route must carry the SAME runtime state guard as its page (`isPublishedNow` +
@@ -88,29 +82,20 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   drops the seed's error (`aria-invalid`), disabled, placeholder, and iOS-zoom-safe treatment, so the
   error state can look identical to the resting state. Hand-rolling a component the design system
   already ships is a review red flag. (0020, relating to 0017)
-- **A page that renders its own `<html>` must run the theme script**, and it only runs in SERVER-
-  rendered HTML - a client-mounted boundary (`global-error`, the error shell) must re-apply the theme
-  in its effect. (0014/0018)
-- **`suppressHydrationWarning` on `<html>` protects the pre-paint `.dark` only through the FIRST
-  hydration, not later re-renders.** A `notFound()` from a dynamic route (`/blog/[slug]`) re-renders
-  the persistent root layout, reconciling `<html>`'s `className` back to its JSX value and stripping
-  the script-added class - so that 404 painted light while a static 404 stayed dark. `not-found.tsx`
-  needs the same `applyStoredTheme()` effect the error boundaries use (`ThemeReapply`). (0011)
 - **A `ChunkLoadError` is a signal to reload, not a crash to display**: a tab open across a deploy
   requests chunks the new build renamed. Detect it in the error boundary and force one guarded full
   reload onto the current build. (0018)
-- **A package whose barrel evaluates React context at module scope needs a `"use client"` re-export
-  boundary** (`src/components/ui.ts`), or importing it into a Server Component fails the build.
-  Applies to Canopy and `@rogueoak/icons`. (0001/0007)
+- **A third-party barrel that evaluates React context at module scope needs a `"use client"`
+  re-export boundary**, or importing it into a Server Component fails the build. (0001/0007)
 
 ## Media & assets
 
-- **Bake in what a client can't apply.** iPhone photos are portrait-via-EXIF-Orientation and Display
-  P3; strip metadata for privacy AND you drop the orientation flag (image renders sideways) and the
-  colour profile (P3 read as sRGB looks dull). Rotate pixels upright and convert to sRGB first, then
-  strip. Email clients drop CSS `transform`, so a CSS "sash"/ribbon must be baked into the image.
-- **Always scan video for embedded GPS** (`exiftool`): phone `.mov` clips carry precise coordinates
-  even when the sibling photos don't. Transcode HEVC to H.264/yuv420p or non-Safari browsers won't play it.
+- **Bake in what the client can't apply, and scrub what it shouldn't see.** A viewer can't undo what
+  isn't in the pixels: rotate to upright and convert to sRGB *before* stripping metadata (stripping
+  drops the EXIF orientation + colour-profile flags), and bake any CSS-effect an email client will
+  discard (a `transform` ribbon) into the image itself. Conversely, scrub what travels invisibly -
+  scan media for embedded GPS/location before publishing (phone video carries coordinates the sibling
+  photos may not), and transcode to a broadly-supported codec.
 
 ## Build, CI & deploy safety
 
@@ -126,11 +111,9 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 - **A deploy that changes runtime topology (container count, memory) is a CAPACITY change** - a zero-
   downtime rollout doubles the footprint during the swap; size the host (and cohosted neighbours) for
   the peak, cap each stack's memory, and bound the deploy job so a wedged host fails fast. (0015)
-- **`node --test` runs files in PARALLEL** - two that each lazily `next build` into one `.next`
-  corrupt it; serialize with `--test-concurrency=1`. Test on the runtime's pinned Node. (0003/0006)
-- **Separate the browser cache from the server optimizer cache before "fixing" image caching.**
-  Content-hashed assets are already immutably browser-cached; the post-deploy wait is the COLD on-
-  demand optimizer, fixed by a prewarm that crawls the rendered pages. (0006)
+- **Tests that build into a shared output dir must be serialized** - a parallel runner (`node --test`)
+  lets two lazy builds corrupt one `.next`; pin `--test-concurrency=1`, and test on the runtime's
+  pinned toolchain version. (0003/0006)
 
 ## Architecture & seams
 
@@ -143,9 +126,6 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   the old path (no re-export shim as a second canonical import). (0016/0018)
 - **A whole-corpus "global" fact must be computed ONCE over the full set by the caller and passed
   down**, never recomputed inside a mapper from whatever subset it was handed. (0016)
-- **A JS-core / TS-wrapper pair sharing a basename** (`blog.js` + `blog.ts`) resolves `./blog.js` to
-  the sibling `.ts` at type-check - so a new pure-core export needs a matching typed wrapper export,
-  or `next build` fails while `node --test` passes. (0011)
 
 ## Credentials, security & ops
 
@@ -163,8 +143,9 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 - **A bind-mounted config is NOT applied by `compose up -d`** - hash it across the deploy and
   explicitly `reload`/restart, and verify it reached the running config. A reverse proxy also caches a
   static upstream's resolved IP - use dynamic re-resolution to follow a container swap. (0019)
-- **Pin `known_hosts` by the SAME identifier the deploy connects to** (hostname vs IP), or a DNS
-  cutover breaks on a host-key mismatch. Pin Actions and host scripts to commit SHAs. (0002/0019)
+- **Pin supply-chain inputs to immutable identifiers** - CI Actions and host scripts to commit SHAs,
+  and a pinned host key to the SAME identifier the deploy connects to (hostname vs IP), or a DNS
+  cutover breaks on a key mismatch. (0002/0019)
 
 ## Worktree
 
