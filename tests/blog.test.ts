@@ -32,10 +32,15 @@ import {
   deriveTags,
   resolveActiveTag,
   filterPosts,
-  tagFromFilterValue,
-  ALL_TAGS_FILTER_VALUE,
   tagSlug,
   tagFromSlug,
+  CATEGORIES,
+  isCategory,
+  deriveCategories,
+  resolveActiveCategory,
+  filterByCategory,
+  categorySlug,
+  categoryFromSlug,
 } from "../src/lib/blog-view.ts";
 
 // The sample draft + scheduled posts are test fixtures, kept OUT of live content
@@ -56,6 +61,7 @@ const GOOD = `---
 title: A Sample Post
 date: 2026-06-30
 tags: [Life, Technical]
+category: Career
 excerpt: A short teaser.
 cover: sample.png
 ---
@@ -70,6 +76,7 @@ test("parseFrontmatter reads known fields and returns the body", () => {
   assert.equal(data.title, "A Sample Post");
   assert.equal(data.date, "2026-06-30");
   assert.deepEqual(data.tags, ["Life", "Technical"]);
+  assert.equal(data.category, "Career");
   assert.equal(data.excerpt, "A short teaser.");
   assert.equal(data.cover, "sample.png");
   assert.match(content, /Body paragraph one\./);
@@ -79,17 +86,18 @@ test("parseFrontmatter reads known fields and returns the body", () => {
 
 test("parseFrontmatter parses a single-element tag array", () => {
   const { data } = parseFrontmatter(
-    "---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\n---\nbody\n",
+    "---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\ncategory: Life\nexcerpt: E\n---\nbody\n",
   );
   assert.deepEqual(data.tags, ["Life"]);
 });
 
 test("parseFrontmatter throws when a required field is missing", () => {
-  for (const field of ["title", "date", "tags", "excerpt"]) {
+  for (const field of ["title", "date", "tags", "category", "excerpt"]) {
     const lines = {
       title: "title: T",
       date: "date: 2026-01-01",
       tags: "tags: [Life]",
+      category: "category: Life",
       excerpt: "excerpt: E",
     };
     delete lines[field];
@@ -102,10 +110,28 @@ test("parseFrontmatter throws when a required field is missing", () => {
   }
 });
 
+test("parseFrontmatter enum-validates category (spec 0038)", () => {
+  const withCategory = (val) =>
+    parseFrontmatter(
+      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\ncategory: ${val}\nexcerpt: E\n---\nbody\n`,
+    ).data;
+  // Each canonical category passes through verbatim.
+  for (const c of ["Engineering", "Leadership", "Career", "AI", "Projects", "Life"]) {
+    assert.equal(withCategory(c).category, c, `expected "${c}" to be accepted`);
+  }
+  // An off-list value fails the build loudly, naming the allowed set.
+  assert.throws(
+    () => withCategory("Nonsense"),
+    /invalid category "Nonsense".*Engineering, Leadership, Career, AI, Projects, Life/i,
+  );
+  // Casing is canonical: a lowercased category is rejected, not silently accepted.
+  assert.throws(() => withCategory("engineering"), /invalid category/i);
+});
+
 test("parseFrontmatter reads the draft flag; absent or non-true is published (spec 0034)", () => {
   const draftFm = (val) =>
     parseFrontmatter(
-      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\ndraft: ${val}\n---\nbody\n`,
+      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\ncategory: Life\nexcerpt: E\ndraft: ${val}\n---\nbody\n`,
     ).data;
   assert.equal(draftFm("true").draft, true);
   // Any non-`true` value is published.
@@ -118,7 +144,7 @@ test("parseFrontmatter reads the draft flag; absent or non-true is published (sp
 test("parseFrontmatter reads publishAt and throws on an unparseable value (spec 0035)", () => {
   const withPublishAt = (val) =>
     parseFrontmatter(
-      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\npublishAt: ${val}\n---\nbody\n`,
+      `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\ncategory: Life\nexcerpt: E\npublishAt: ${val}\n---\nbody\n`,
     ).data;
   // A valid ISO 8601 value is carried through verbatim.
   assert.equal(withPublishAt("2026-07-19T19:00:00-04:00").publishAt, "2026-07-19T19:00:00-04:00");
@@ -128,7 +154,7 @@ test("parseFrontmatter reads publishAt and throws on an unparseable value (spec 
   assert.throws(
     () =>
       parseFrontmatter(
-        "---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\nexcerpt: E\npublishAt: not-a-time\n---\nbody\n",
+        "---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\ncategory: Life\nexcerpt: E\npublishAt: not-a-time\n---\nbody\n",
       ),
     /unparseable publishAt/i,
   );
@@ -136,7 +162,7 @@ test("parseFrontmatter reads publishAt and throws on an unparseable value (spec 
 
 test("parseFrontmatter reads the series field and a quoted title containing a colon", () => {
   const raw =
-    '---\ntitle: "Life Log #1: A Toothless Dog"\ndate: 2026-07-18\ntags: [Life]\nexcerpt: E\nseries: Life Log\n---\nbody\n';
+    '---\ntitle: "Life Log #1: A Toothless Dog"\ndate: 2026-07-18\ntags: [Life]\ncategory: Life\nexcerpt: E\nseries: Life Log\n---\nbody\n';
   const { data } = parseFrontmatter(raw);
   // The greedy value capture keeps the colon inside the quoted title intact.
   assert.equal(data.title, "Life Log #1: A Toothless Dog");
@@ -517,17 +543,6 @@ test("resolveActiveTag maps ?tag= to a known tag case-insensitively, else null",
   assert.equal(resolveActiveTag("nope", tags), null); // unknown -> All
 });
 
-test("tagFromFilterValue maps the Combobox 'all' sentinel to null, a tag to itself", () => {
-  // The single-select tag Combobox's value is always a string; the "All posts"
-  // entry carries the empty-string sentinel that must clear the filter (null).
-  assert.equal(tagFromFilterValue(ALL_TAGS_FILTER_VALUE), null);
-  assert.equal(tagFromFilterValue(""), null);
-  assert.equal(tagFromFilterValue("Career Reflection"), "Career Reflection");
-  // Symmetric with resolveActiveTag/filterPosts: a real tag passes through
-  // untouched (original casing preserved), only "" means "all".
-  assert.equal(tagFromFilterValue("life"), "life");
-});
-
 test("tagSlug slugifies a tag with the same rules as a post slug", () => {
   assert.equal(tagSlug("Imposter Syndrome"), "imposter-syndrome");
   assert.equal(tagSlug("Objective-C"), "objective-c");
@@ -585,5 +600,86 @@ test("filterPosts filters by tag and search, composed, non-mutating", () => {
     posts.map((p) => p.title),
     snapshot,
     "filterPosts must not mutate its input",
+  );
+});
+
+test("isCategory recognizes only the canonical, correctly-cased categories (spec 0038)", () => {
+  for (const c of CATEGORIES) assert.ok(isCategory(c), `${c} should be valid`);
+  assert.ok(!isCategory("engineering"), "wrong casing is not a category");
+  assert.ok(!isCategory("Product"), "an off-list value is not a category");
+  assert.ok(!isCategory(""), "empty is not a category");
+});
+
+test("deriveCategories returns present categories in canonical order, non-mutating (spec 0038)", () => {
+  // Given out of order and with a repeat, the result is in CATEGORIES order and deduped.
+  const posts = [
+    { category: "Life" },
+    { category: "Engineering" },
+    { category: "Life" },
+    { category: "Career" },
+  ];
+  const snapshot = posts.map((p) => p.category);
+  assert.deepEqual(deriveCategories(posts), ["Engineering", "Career", "Life"]);
+  // A category with no posts is omitted (no empty chip).
+  assert.ok(!deriveCategories(posts).includes("AI"));
+  assert.deepEqual(deriveCategories([]), []);
+  assert.deepEqual(
+    posts.map((p) => p.category),
+    snapshot,
+    "deriveCategories must not mutate its input",
+  );
+});
+
+test("resolveActiveCategory maps ?category= to a present category case-insensitively, else null (spec 0038)", () => {
+  const cats = ["Engineering", "Leadership", "Life"];
+  assert.equal(resolveActiveCategory("leadership", cats), "Leadership"); // canonical casing
+  assert.equal(resolveActiveCategory("Life", cats), "Life");
+  assert.equal(resolveActiveCategory("", cats), null); // absent -> All posts
+  assert.equal(resolveActiveCategory("ai", cats), null); // valid enum but not present -> All
+  assert.equal(resolveActiveCategory("nope", cats), null); // unknown -> All
+});
+
+test("categorySlug / categoryFromSlug round-trip every category (spec 0038)", () => {
+  assert.equal(categorySlug("Engineering"), "engineering");
+  assert.equal(categorySlug("AI"), "ai");
+  // Same rules as a post/tag slug.
+  assert.equal(categorySlug("Projects"), slugify("Projects"));
+  const cats = [...CATEGORIES];
+  for (const c of cats) {
+    assert.equal(categoryFromSlug(categorySlug(c), cats), c, `expected "${c}" to round-trip`);
+  }
+  // Re-slugifies an odd-cased inbound value; unknown or empty -> null.
+  assert.equal(categoryFromSlug("Engineering", cats), "Engineering");
+  assert.equal(categoryFromSlug("nope", cats), null);
+  assert.equal(categoryFromSlug("", cats), null);
+});
+
+test("filterByCategory filters by the single category and search, composed, non-mutating (spec 0038)", () => {
+  const posts = [
+    { title: "Leading Teams", excerpt: "on management", tags: ["Leadership"], category: "Leadership" },
+    { title: "Planting Trees", excerpt: "five acres", tags: ["Nature"], category: "Life" },
+    { title: "Wrong Elective", excerpt: "a Reflection on choices", tags: ["Life"], category: "Career" },
+  ];
+  const snapshot = posts.map((p) => p.title);
+  const titles = (r) => r.map((p) => p.title);
+
+  // No filter -> everything.
+  assert.equal(filterByCategory(posts, null, "").length, 3);
+  // Category filter is an EXACT match on the single category (case-insensitive),
+  // not tag-style membership: "Life" the category matches only the Life post, even
+  // though another post carries "Life" as a TAG.
+  assert.deepEqual(titles(filterByCategory(posts, "life", "")), ["Planting Trees"]);
+  assert.deepEqual(titles(filterByCategory(posts, "Career", "")), ["Wrong Elective"]);
+  // Search still spans title + excerpt + tags.
+  assert.deepEqual(titles(filterByCategory(posts, null, "five acres")), ["Planting Trees"]);
+  assert.deepEqual(titles(filterByCategory(posts, null, "leadership")), ["Leading Teams"]);
+  // Composition: category AND query must both match.
+  assert.deepEqual(titles(filterByCategory(posts, "Career", "reflection")), ["Wrong Elective"]);
+  assert.deepEqual(filterByCategory(posts, "Career", "management"), []);
+
+  assert.deepEqual(
+    posts.map((p) => p.title),
+    snapshot,
+    "filterByCategory must not mutate its input",
   );
 });

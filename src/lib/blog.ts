@@ -12,7 +12,7 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import { formatPostDate, slugify } from "./blog-view.ts";
+import { CATEGORIES, formatPostDate, isCategory, slugify } from "./blog-view.ts";
 
 // Re-export the shared slugifier so existing `@/lib/blog` importers (and the
 // unit tests) keep resolving `slugify` here, while there is a single
@@ -25,6 +25,9 @@ export type Post = {
   title: string;
   date: string;
   tags: string[];
+  /** The post's single theme (spec 0038), one of `CATEGORIES`. Drives the
+   *  category filter, the category badge, and the /blog/categories archive. */
+  category: string;
   excerpt: string;
   /** Cover image filename (a key into src/lib/blog-images.ts), if any. */
   coverKey?: string;
@@ -52,6 +55,8 @@ export type Frontmatter = {
   title: string;
   date: string;
   tags: string[];
+  /** One of `CATEGORIES` (spec 0038); enum-validated at parse time. */
+  category: string;
   excerpt: string;
   cover?: string;
   coverCaption?: string;
@@ -85,7 +90,7 @@ function blogDirs(): string[] {
 }
 
 // Frontmatter fields that must be present, or the build fails loudly.
-const REQUIRED_FIELDS = ["title", "date", "tags", "excerpt"] as const;
+const REQUIRED_FIELDS = ["title", "date", "tags", "category", "excerpt"] as const;
 
 /**
  * Parse a leading `---\n ... \n---` frontmatter block plus the MDX body.
@@ -127,6 +132,7 @@ export function parseFrontmatter(raw: string): {
       [
         "title",
         "date",
+        "category",
         "excerpt",
         "cover",
         "coverCaption",
@@ -147,6 +153,15 @@ export function parseFrontmatter(raw: string): {
     if (missing) {
       throw new Error(`Frontmatter is missing required field: ${field}`);
     }
+  }
+
+  // The category is a controlled taxonomy (spec 0038): reject anything outside the
+  // fixed set loudly at build, so a typo or an off-list theme never ships and the
+  // set cannot drift the way free-form tags did.
+  if (typeof data.category !== "string" || !isCategory(data.category)) {
+    throw new Error(
+      `Frontmatter has an invalid category "${String(data.category)}" - must be one of: ${CATEGORIES.join(", ")}`,
+    );
   }
 
   // A scheduling time (spec 0035) must be a real timestamp, or the build fails
@@ -275,6 +290,7 @@ function readPost({ dir, file }: PostFile): Post {
     title: data.title,
     date: data.date,
     tags: data.tags,
+    category: data.category,
     excerpt: data.excerpt,
     coverKey: data.cover,
     coverCaption: data.coverCaption,

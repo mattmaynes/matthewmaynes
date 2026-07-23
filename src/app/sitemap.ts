@@ -1,7 +1,12 @@
 import type { MetadataRoute } from "next";
 import { nav, site } from "@/lib/site";
 import { getPublishedPosts } from "@/lib/blog";
-import { deriveTags, tagSlug } from "@/lib/blog-view";
+import {
+  deriveTags,
+  tagSlug,
+  deriveCategories,
+  categorySlug,
+} from "@/lib/blog-view";
 
 // Re-generate every 60s (shared ISR window, spec 0035) so a scheduled post enters
 // the sitemap on its own once its publishAt passes, with no deploy.
@@ -53,5 +58,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...postEntries, ...tagEntries];
+  // One archive per category with posts (spec 0038); like tag archives, its
+  // content shifts as posts are categorized, so a weekly change frequency.
+  const categoryEntries: SitemapEntry[] = deriveCategories(posts).map(
+    (category) => ({
+      url: new URL(`/blog/categories/${categorySlug(category)}`, site.url).toString(),
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    }),
+  );
+
+  return [...staticEntries, ...postEntries, ...tagEntries, ...categoryEntries];
 }

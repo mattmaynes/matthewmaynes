@@ -3,14 +3,11 @@
 import { useState, useSyncExternalStore } from "react";
 import { SearchIcon } from "@/components/blog-icons";
 import { PostRow, type PostRowData } from "@/components/post-row";
-import { Combobox, type ComboboxOption } from "@/components/ui";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
 import {
-  deriveTags,
-  resolveActiveTag,
-  filterPosts,
-  tagFromFilterValue,
-  ALL_TAGS_FILTER_VALUE,
+  deriveCategories,
+  resolveActiveCategory,
+  filterByCategory,
 } from "@/lib/blog-view";
 
 /** A serializable post summary. The server page resolves the cover and computes
@@ -18,89 +15,116 @@ import {
  * The row shape lives in `post-row.tsx`, shared with the tag archive page. */
 export type BlogListPost = PostRowData;
 
-// A tiny store over the URL's `?tag=` value, so the chips read the active filter
-// WITHOUT `useSearchParams` - that hook forces this statically-generated page to
-// bail out to client-only rendering, which would drop the whole post list from
-// the SSG HTML (bad for SEO and the smoke test). `history.replaceState` does not
-// emit `popstate`, so `selectTag` pokes the subscribers directly. The server
-// snapshot is "" (no query at build), so SSR renders the unfiltered list and the
-// client re-syncs after hydration via useSyncExternalStore (no set-state-in-
-// effect, no hydration-mismatch hacks - the same pattern as the theme toggle,
+// A tiny store over the URL's `?category=` value, so the chips read the active
+// filter WITHOUT `useSearchParams` - that hook forces this statically-generated
+// page to bail out to client-only rendering, which would drop the whole post list
+// from the SSG HTML (bad for SEO and the smoke test). `history.replaceState` does
+// not emit `popstate`, so `selectCategory` pokes the subscribers directly. The
+// server snapshot is "" (no query at build), so SSR renders the unfiltered list
+// and the client re-syncs after hydration via useSyncExternalStore (no set-state-
+// in-effect, no hydration-mismatch hacks - the same pattern as the theme toggle,
 // learnings 0001).
-const urlTagListeners = new Set<() => void>();
+const urlCategoryListeners = new Set<() => void>();
 
-function notifyUrlTag() {
-  for (const listener of urlTagListeners) listener();
+function notifyUrlCategory() {
+  for (const listener of urlCategoryListeners) listener();
 }
 
-function subscribeUrlTag(callback: () => void) {
-  urlTagListeners.add(callback);
+function subscribeUrlCategory(callback: () => void) {
+  urlCategoryListeners.add(callback);
   window.addEventListener("popstate", callback);
   return () => {
-    urlTagListeners.delete(callback);
+    urlCategoryListeners.delete(callback);
     window.removeEventListener("popstate", callback);
   };
 }
 
-function readUrlTag() {
-  return new URLSearchParams(window.location.search).get("tag") ?? "";
+function readUrlCategory() {
+  return new URLSearchParams(window.location.search).get("category") ?? "";
 }
 
 /**
- * The blog listing's filter/search island. Owns the tag-chip + search UI and
- * renders the (moved-over, un-restyled) post rows. The active tag lives in the
- * URL (`?tag=`) so a filtered view is shareable; search is local input state.
+ * The blog listing's filter/search island. Owns the category-chip + search UI and
+ * renders the (moved-over, un-restyled) post rows. The active category lives in
+ * the URL (`?category=`) so a filtered view is shareable; search is local input
+ * state (spec 0038 - categories replace the old tag filter here; tags remain the
+ * keyword search and the /blog/tags archives).
  */
 export function BlogList({ posts }: { posts: BlogListPost[] }) {
   const [query, setQuery] = useState("");
 
-  // Tag set + active-tag resolution + filtering all live in the pure, fs-free
-  // `blog-view` core so they are unit-tested against a multi-post fixture
-  // (learnings 0009) rather than trapped in this island.
-  const allTags = deriveTags(posts);
+  // Category set + active-category resolution + filtering all live in the pure,
+  // fs-free `blog-view` core so they are unit-tested against a multi-post fixture
+  // (learnings 0009) rather than trapped in this island. `deriveCategories`
+  // returns only categories that have posts, in canonical order.
+  const allCategories = deriveCategories(posts);
 
-  // The URL is the source of truth for the tag filter (shareable/bookmarkable);
-  // it restores the active tag on load. `resolveActiveTag` maps `?tag=` back to
-  // a known tag case-insensitively; an unknown/absent value means "All".
-  const tagParam = useSyncExternalStore(subscribeUrlTag, readUrlTag, () => "");
-  const activeTag = resolveActiveTag(tagParam, allTags);
+  // The URL is the source of truth for the category filter (shareable/bookmarkable);
+  // it restores the active category on load. `resolveActiveCategory` maps
+  // `?category=` back to a known category case-insensitively; an unknown/absent
+  // value means "All posts".
+  const categoryParam = useSyncExternalStore(
+    subscribeUrlCategory,
+    readUrlCategory,
+    () => "",
+  );
+  const activeCategory = resolveActiveCategory(categoryParam, allCategories);
 
-  function selectTag(tag: string | null) {
-    // Reflect the filter in the URL without a scroll jump or a back-history
-    // entry. `history.replaceState` is synchronous (so the store reads the fresh
-    // value on notify) and keeps this a pure client-side filter - no server
-    // round trip, which router.replace would incur.
-    const qs = tag ? `?tag=${encodeURIComponent(tag.toLowerCase())}` : "";
+  function selectCategory(category: string | null) {
+    // Reflect the filter in the URL without a scroll jump or a back-history entry.
+    // `history.replaceState` is synchronous (so the store reads the fresh value on
+    // notify) and keeps this a pure client-side filter - no server round trip,
+    // which router.replace would incur.
+    const qs = category
+      ? `?category=${encodeURIComponent(category.toLowerCase())}`
+      : "";
     window.history.replaceState(null, "", `${window.location.pathname}${qs}`);
-    notifyUrlTag();
+    notifyUrlCategory();
   }
 
-  // Filter by the active tag first, then narrow by the search query over
+  // Filter by the active category first, then narrow by the search query over
   // title + excerpt + tags (both case-insensitive, composed) - in the pure core.
-  const filtered = filterPosts(posts, activeTag, query);
+  const filtered = filterByCategory(posts, activeCategory, query);
 
-  // The tag filter is a single-select Canopy Combobox: a leading "All posts"
-  // entry clears the filter, then one option per derived tag. Selection drives
-  // the same URL-backed `selectTag` the chips used, so the filter stays
-  // shareable and the pure `filterPosts` core is unchanged.
-  const tagOptions: ComboboxOption[] = [
-    { label: "All posts", value: ALL_TAGS_FILTER_VALUE },
-    ...allTags.map((tag) => ({ label: tag, value: tag })),
+  // The category filter is a chip row: a leading "All posts" chip clears the
+  // filter, then one chip per present category. With a small fixed taxonomy this
+  // makes every theme visible at a glance and one tap to filter. The active chip
+  // is filled; the rest are outlined. Selection drives the URL-backed
+  // `selectCategory`, so the filter stays shareable and the pure core is unchanged.
+  const chips: { label: string; value: string | null }[] = [
+    { label: "All posts", value: null },
+    ...allCategories.map((category) => ({ label: category, value: category })),
   ];
 
   return (
     <div className="mt-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {allTags.length > 0 ? (
-          <div className="sm:w-56">
-            <Combobox
-              aria-label="Filter posts by tag"
-              options={tagOptions}
-              value={activeTag ?? ALL_TAGS_FILTER_VALUE}
-              onValueChange={(value) => selectTag(tagFromFilterValue(value))}
-              searchPlaceholder="Search tags"
-              emptyMessage="No matching tags"
-            />
+        {allCategories.length > 0 ? (
+          <div
+            role="group"
+            aria-label="Filter posts by category"
+            className="flex flex-wrap gap-2"
+          >
+            {chips.map((chip) => {
+              const isActive =
+                (chip.value?.toLowerCase() ?? null) ===
+                (activeCategory?.toLowerCase() ?? null);
+              return (
+                <button
+                  key={chip.label}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => selectCategory(chip.value)}
+                  className={`rounded-full border px-3 py-1 text-caption font-medium transition-colors ${RING} ${
+                    isActive
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-surface text-secondary hover:border-border-strong hover:text-text"
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
           </div>
         ) : null}
 
