@@ -115,7 +115,7 @@ export function BlogList({ posts }: { posts: BlogListPost[] }) {
                   type="button"
                   aria-pressed={isActive}
                   onClick={() => selectCategory(chip.value)}
-                  className={`rounded-full border px-3 py-1 text-caption font-medium transition-colors ${RING} ${
+                  className={`rounded-full border px-3 py-1.5 text-caption font-medium transition-colors ${RING} ${
                     isActive
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-surface text-secondary hover:border-border-strong hover:text-text"

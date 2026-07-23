@@ -84,7 +84,7 @@ export function PostRow({ post }: { post: PostRowData }) {
               tinted chip linking to the category archive. */}
           <Link
             href={`/blog/categories/${categorySlug(post.category)}`}
-            className={`inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-caption font-medium text-primary hover:bg-primary/20 ${RING}`}
+            className={`inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-caption font-medium text-primary hover:bg-primary/20 ${RING}`}
           >
             {post.category}
           </Link>

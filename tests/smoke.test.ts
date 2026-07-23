@@ -148,6 +148,12 @@ const routes = [
       // buttons, not a portalled popover), so they can actually fail if dropped.
       'aria-label="Filter posts by category"',
       "All posts",
+      // The active chip is FILLED (spec 0038 Outcome 2): at build the default "All
+      // posts" chip is the active one, so its filled treatment + aria-pressed are in
+      // the SSG HTML. Guarding the fill class combo (nothing else on /blog emits it)
+      // means dropping the active-state styling reddens, not just relabelling.
+      'aria-pressed="true"',
+      "border-primary bg-primary text-primary-foreground",
       // A seed post's tag still renders in its listing row's tag pills (tags are
       // unchanged by spec 0038 - kept for keyword search and the /blog/tags
       // archives). Uses the niche, SEO-oriented tag set (content, editable in
@@ -1509,6 +1515,14 @@ test("robots, sitemap, and manifest are served", async () => {
     sitemapXml,
     /\/blog\/tags\/[a-z0-9-]+<\/loc>/,
     "expected per-tag archive URLs in the sitemap",
+  );
+  // spec 0038: per-category archives are crawlable too. Assert a real category
+  // archive URL is listed (dropping the sitemap's categoryEntries would otherwise
+  // ship green - acceptance #5).
+  assert.match(
+    sitemapXml,
+    /\/blog\/categories\/[a-z0-9-]+<\/loc>/,
+    "expected per-category archive URLs in the sitemap",
   );
   // A draft is absent from the sitemap (spec 0034): both its post URL and the tag
   // archive for any tag UNIQUE to the draft (a tag it shares with a published post
