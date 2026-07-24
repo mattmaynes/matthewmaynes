@@ -88,3 +88,10 @@
   flex-direction: column;
   align-items: stretch;
 }
+
+/* Neutralize each field's row-layout width cap (e.g. the name field's `sm:max-w-md`)
+   so the stacked email, name, and Subscribe button all run edge to edge - and stay
+   aligned even if this column is ever widened past 448px. */
+.links-subscribe [class*="sm:flex-row"] > * {
+  max-width: 100%;
+}
