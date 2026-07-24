@@ -41,6 +41,8 @@ import {
   filterByCategory,
   categorySlug,
   categoryFromSlug,
+  POST_MEDIA_MAX_HEIGHT,
+  postMediaMaxWidth,
 } from "../src/lib/blog-view.ts";
 
 // The sample draft + scheduled posts are test fixtures, kept OUT of live content
@@ -682,4 +684,29 @@ test("filterByCategory filters by the single category and search, composed, non-
     snapshot,
     "filterByCategory must not mutate its input",
   );
+});
+
+// Post-media size standard (the "images cap at about an iPhone height" rule). The
+// cap is expressed as a max-width bounding the WIDTH to `height-cap * aspect`, so
+// the rendered HEIGHT lands on the cap. Assert the failable behaviour, not just the
+// string: a PORTRAIT image's width is bounded well under the column (the point of
+// the cap), a LANDSCAPE image resolves to a width that would exceed the column so
+// the outer min(100%, ...) keeps it full width, and the value always references the
+// shared height cap so the two callers (PostImage + cover) can never silently drift.
+test("postMediaMaxWidth caps portrait media and leaves landscape full-width", () => {
+  // Always wrapped in min(100%, ...) against the shared height cap.
+  const portrait = postMediaMaxWidth(895, 1194); // taller than wide (a phone photo)
+  assert.ok(
+    portrait.startsWith("min(100%, calc(") && portrait.includes(POST_MEDIA_MAX_HEIGHT),
+    `expected the cap to reference ${POST_MEDIA_MAX_HEIGHT}, got: ${portrait}`,
+  );
+  // The width factor is the aspect ratio w/h, so a portrait image (< 1) is bounded
+  // to a fraction of the height cap, and a landscape image (> 1) to a multiple.
+  assert.ok(portrait.includes("* 895 / 1194"), `portrait aspect missing: ${portrait}`);
+  const landscape = postMediaMaxWidth(1600, 900); // wider than tall (a 16:9 diagram)
+  assert.ok(landscape.includes("* 1600 / 900"), `landscape aspect missing: ${landscape}`);
+  // The height cap itself is viewport-aware AND absolutely bounded (so it is neither
+  // a fixed pixel value that ignores small screens, nor an unbounded vh that grows
+  // huge on a tall monitor).
+  assert.match(POST_MEDIA_MAX_HEIGHT, /min\(\s*\d+vh\s*,\s*\d+px\s*\)/);
 });

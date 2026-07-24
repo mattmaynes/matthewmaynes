@@ -304,3 +304,24 @@ export function tagFromSlug(slug: string, tags: string[]): string | null {
   const s = slugify(slug);
   return tags.find((t) => tagSlug(t) === s) ?? null;
 }
+
+/**
+ * The site standard for post-media display size: a rendered image or cover is
+ * capped to about an iPhone's height, viewport-aware, so a tall portrait photo or
+ * phone screenshot never dominates the reading column on desktop - matching the
+ * 75vh cap the in-body <PostVideo> already uses. Landscape media is unaffected:
+ * `cap * aspect` exceeds the column, so the `min(100%, ...)` below keeps it full
+ * width. Shared by the in-body <PostImage> and the cover hero.
+ */
+export const POST_MEDIA_MAX_HEIGHT = "min(75vh, 720px)";
+
+/**
+ * The `max-width` that caps a piece of post media (of the given intrinsic pixel
+ * dimensions) at POST_MEDIA_MAX_HEIGHT. Bounding the WIDTH to `height-cap * aspect`
+ * lands the rendered height on the cap with the aspect ratio preserved, and never
+ * wider than the column. Portrait media shrinks toward phone size; landscape stays
+ * full width.
+ */
+export function postMediaMaxWidth(width: number, height: number): string {
+  return `min(100%, calc(${POST_MEDIA_MAX_HEIGHT} * ${width} / ${height}))`;
+}

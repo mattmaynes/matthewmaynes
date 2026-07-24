@@ -4,6 +4,7 @@ import { compileMDX } from "next-mdx-remote/rsc";
 import { Video } from "@/components/ui";
 import { getBlogImage } from "@/lib/blog-images";
 import { getBlogVideo } from "@/lib/blog-videos";
+import { postMediaMaxWidth } from "@/lib/blog-view";
 
 /**
  * Renders a compiled MDX post body with a Harbor-token prose style. This is a
@@ -38,16 +39,24 @@ function PostImage({
   const pixelated = image.pixelated === true;
   return (
     <figure className="my-8 flex flex-col items-center">
-      <span className="inline-flex max-w-full overflow-hidden rounded-lg border-[0.5px] border-border">
+      {/* Cap the rendered box to about an iPhone's height (postMediaMaxWidth bounds
+          the width to `height-cap * aspect`), centred, so a tall portrait photo or
+          phone screenshot lands around phone-sized instead of dominating the page on
+          desktop. Landscape images are unaffected (they stay full column width).
+          This is the shared site standard, matching the cover hero and PostVideo. */}
+      <div
+        className="mx-auto max-w-full overflow-hidden rounded-lg border-[0.5px] border-border"
+        style={{ maxWidth: postMediaMaxWidth(image.width, image.height) }}
+      >
         <Image
           src={image}
           alt={image.alt}
           sizes="(max-width: 640px) 90vw, 640px"
           placeholder={pixelated ? "empty" : "blur"}
-          className="h-auto max-w-full"
+          className="h-auto w-full"
           style={pixelated ? { imageRendering: "pixelated" } : undefined}
         />
-      </span>
+      </div>
       {children ? (
         // The caption is authored as MDX children so it can carry inline markdown
         // (a link). MDX wraps that text in a paragraph, which would otherwise pick

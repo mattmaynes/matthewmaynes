@@ -258,6 +258,12 @@ const routes = [
       // see the /blog entry above).
       "Name (optional)",
       "sm:max-w-0",
+      // Post media (the in-body Zombie Horde <PostImage> AND the cover hero) is
+      // capped to about an iPhone's height so a tall photo/screenshot never
+      // dominates the page on desktop (the shared site standard,
+      // POST_MEDIA_MAX_HEIGHT). The cap ships as an inline max-width; the height-cap
+      // token is unique to it, so dropping the cap reddens this.
+      "min(75vh, 720px)",
     ],
     absent: ["Placeholder", "sm:max-w-md"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur

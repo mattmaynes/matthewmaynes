@@ -29,6 +29,11 @@
   the island, the tag archive, and the category archive; a server-only `post-summaries.ts` maps posts to row data (resolving
   covers + the **global** "New" badge, computed once over all posts). A `series` frontmatter field
   drives the hero **sash** (`post-article.tsx`) and the row pill - see `docs/rules/blog-series.md`.
+  Post media size is one shared standard (`POST_MEDIA_MAX_HEIGHT` + `postMediaMaxWidth` in
+  `blog-view`, feedback 0024): the in-body `<PostImage>` and the cover hero both cap the rendered
+  box at about an iPhone's height (`min(75vh, 720px)`) by bounding the width to `height-cap * aspect`,
+  matching the `75vh` cap `<PostVideo>` already used, so a portrait photo/screenshot never dominates
+  the reading column on desktop while landscape media stays full width.
 - **Drafts + scheduling:** a `draft: true` flag and an optional `publishAt` timestamp give each post
   one derived `postState` - `draft` | `scheduled` | `published` (`draft` wins). `getPublishedPosts(now)`
   is time-aware; `getPreviewPosts(now)` = drafts + scheduled. Every public enumeration (listing, home,
