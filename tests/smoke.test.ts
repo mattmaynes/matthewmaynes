@@ -258,12 +258,6 @@ const routes = [
       // see the /blog entry above).
       "Name (optional)",
       "sm:max-w-0",
-      // Post media (the in-body Zombie Horde <PostImage> AND the cover hero) is
-      // capped to about an iPhone's height so a tall photo/screenshot never
-      // dominates the page on desktop (the shared site standard,
-      // POST_MEDIA_MAX_HEIGHT). The cap ships as an inline max-width; the height-cap
-      // token is unique to it, so dropping the cap reddens this.
-      "min(75vh, 720px)",
     ],
     absent: ["Placeholder", "sm:max-w-md"],
     // The in-body Zombie Horde image is a static-imported next/image with a blur
@@ -1003,6 +997,33 @@ test("blog post exposes a per-post og:image that renders as image/png", async ()
     res.headers.get("content-type"),
     "image/png",
     "expected the post og:image to be image/png",
+  );
+});
+
+// Post media size cap (feedback 0024): BOTH the cover hero AND in-body <PostImage>
+// carry the shared iPhone-height cap (min(75vh, 720px)) so a tall photo/screenshot
+// never dominates the page on desktop. A bare `contains: "min(75vh, 720px)"` would
+// NOT fail if only the COVER cap were reverted (the in-body image still ships the
+// token), so guard each surface separately, anchored to its own container: the
+// cover's container is the only `relative mx-auto ...` block, the in-body image's is
+// the only bare `mx-auto overflow-hidden rounded-lg ...` block, and each must carry
+// the cap as its inline max-width. Reverting either cap alone reddens.
+test("both the cover hero and in-body images carry the iPhone-height media cap", async () => {
+  const html = await (
+    await fetch(BASE + "/blog/i-picked-the-wrong-elective")
+  ).text();
+  // Cover hero: `relative mx-auto ...` container + the cap as its max-width.
+  assert.match(
+    html,
+    /class="relative mx-auto[^"]*"\s+style="max-width:min\(100%, ?calc\(min\(75vh, ?720px\)/,
+    "expected the cover hero container to carry the media height cap (min(75vh, 720px))",
+  );
+  // In-body <PostImage>: the bare `mx-auto overflow-hidden rounded-lg` container
+  // (no `relative`, distinguishing it from the cover) + the same cap.
+  assert.match(
+    html,
+    /class="mx-auto overflow-hidden rounded-lg[^"]*"\s+style="max-width:min\(100%, ?calc\(min\(75vh, ?720px\)/,
+    "expected the in-body image container to carry the media height cap (min(75vh, 720px))",
   );
 });
 

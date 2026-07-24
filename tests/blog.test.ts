@@ -696,17 +696,41 @@ test("filterByCategory filters by the single category and search, composed, non-
 test("postMediaMaxWidth caps portrait media and leaves landscape full-width", () => {
   // Always wrapped in min(100%, ...) against the shared height cap.
   const portrait = postMediaMaxWidth(895, 1194); // taller than wide (a phone photo)
+  const landscape = postMediaMaxWidth(1600, 900); // wider than tall (a 16:9 diagram)
   assert.ok(
     portrait.startsWith("min(100%, calc(") && portrait.includes(POST_MEDIA_MAX_HEIGHT),
     `expected the cap to reference ${POST_MEDIA_MAX_HEIGHT}, got: ${portrait}`,
   );
-  // The width factor is the aspect ratio w/h, so a portrait image (< 1) is bounded
-  // to a fraction of the height cap, and a landscape image (> 1) to a multiple.
-  assert.ok(portrait.includes("* 895 / 1194"), `portrait aspect missing: ${portrait}`);
-  const landscape = postMediaMaxWidth(1600, 900); // wider than tall (a 16:9 diagram)
-  assert.ok(landscape.includes("* 1600 / 900"), `landscape aspect missing: ${landscape}`);
-  // The height cap itself is viewport-aware AND absolutely bounded (so it is neither
-  // a fixed pixel value that ignores small screens, nor an unbounded vh that grows
-  // huge on a tall monitor).
+
+  // Resolve the CSS the formula yields to a concrete pixel WIDTH at a given height
+  // cap, so the portrait-vs-landscape DIVERGENCE is asserted numerically (a marker
+  // that can fail): the width is `capPx * w / h`. This catches an inverted ratio
+  // (h/w) - the exact bug that would make a portrait image WIDER than a landscape
+  // one - which the old substring check could not.
+  const widthAtCap = (css: string, capPx = 720): number => {
+    const m = css.match(/\*\s*(\d+)\s*\/\s*(\d+)\)/);
+    assert.ok(m, `could not parse the aspect factor from: ${css}`);
+    return (capPx * Number(m[1])) / Number(m[2]);
+  };
+  const COLUMN = 848; // ~ the max-w-4xl reading column at desktop
+
+  // A portrait image is bounded WELL UNDER the column (the whole point of the cap):
+  // 720 * 895/1194 = ~540px.
+  assert.ok(
+    widthAtCap(portrait) < COLUMN,
+    `portrait media must be bounded under the column, got ${widthAtCap(portrait)}px`,
+  );
+  // A landscape image's uncapped width EXCEEDS the column, so the outer min(100%, ...)
+  // keeps it full width: 720 * 1600/900 = 1280px.
+  assert.ok(
+    widthAtCap(landscape) > COLUMN,
+    `landscape media must exceed the column so it stays full width, got ${widthAtCap(landscape)}px`,
+  );
+  // And they genuinely diverge (portrait strictly narrower than landscape).
+  assert.ok(widthAtCap(portrait) < widthAtCap(landscape));
+
+  // The height cap itself is viewport-aware AND absolutely bounded (neither a fixed
+  // pixel value that ignores small screens, nor an unbounded vh that grows huge on a
+  // tall monitor).
   assert.match(POST_MEDIA_MAX_HEIGHT, /min\(\s*\d+vh\s*,\s*\d+px\s*\)/);
 });

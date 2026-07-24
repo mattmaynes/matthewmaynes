@@ -28,10 +28,12 @@ land on the cap while preserving the aspect ratio, and never exceeds the column:
   title/byline still sit over the (narrower, centred) cover; a landscape cover is unaffected because
   `cap * aspect` exceeds the column, so `min(100%, ...)` resolves to full width.
 
+`<PostVideo>` (which already had a bare `75vh` cap) is folded onto the same helper too, so all three
+media types share one constant and cannot drift apart.
+
 Result: a portrait cover/photo shrinks toward phone size (Life Log cover 847x1129 -> 505x674),
 landscape/near-square media stays as wide as the column but is height-bounded, and everything
-adapts down on a shorter laptop via the `75vh` term. The `75vh` image cap now matches the existing
-`75vh` video cap.
+adapts down on a shorter laptop via the `75vh` term.
 
 ## Learning
 
