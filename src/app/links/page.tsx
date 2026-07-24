@@ -99,8 +99,10 @@ export default function LinksPage() {
       </div>
 
       {/* Then the subscribe ask - the shared subscribe form (spec 0018), attributed
-          to this surface via the links_page analytics source. */}
-      <div className="mt-6 border-t border-border pt-6">
+          to this surface via the links_page analytics source. `links-subscribe`
+          keeps the form's fields STACKED in this narrow column (globals.css) instead
+          of squeezing email + name + button into one row and smooshing the name. */}
+      <div className="links-subscribe mt-6 border-t border-border pt-6">
         <SubscribeForm source="links_page" alwaysShowName />
       </div>
 

@@ -76,3 +76,15 @@
     font-size: 16px;
   }
 }
+
+/* On the narrow /links "link in bio" column, keep the shared subscribe form's
+   fields STACKED rather than letting it switch to a row at >= sm and squeeze
+   email + name + button into ~448px (which smooshed the name field). This targets
+   the form's row container - the only descendant carrying the `sm:flex-row` class -
+   scoped to the `.links-subscribe` wrapper on that page. The selector's specificity
+   (0,2,0) outranks Tailwind's `.sm:flex-row` (0,1,0), so it wins with no
+   `!important`; on mobile the form is already `flex-col`, so this is a no-op there. */
+.links-subscribe [class*="sm:flex-row"] {
+  flex-direction: column;
+  align-items: stretch;
+}

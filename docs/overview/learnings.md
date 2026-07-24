@@ -80,6 +80,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 
 ## Design system & tokens
 
+- **A component whose layout switches on a VIEWPORT breakpoint (`sm:`) breaks when embedded in a
+  fixed narrow column** - the breakpoint reads the window, not the container, so a `sm:flex-row` form
+  in a `max-w-md` column goes to a row it has no room for and smooshes its fields. Override to the
+  stacked layout with a container-scoped rule: target the internal layout class by attribute selector
+  (`.wrapper [class*="sm:flex-row"]`) at higher specificity (0,2,0 beats Tailwind's 0,1,0, so no
+  `!important`), scoped to a wrapper so only that embedding changes. (0025)
 - **Verify a token class name against the actual theme before using it** (`text-text-muted`, not
   `text-muted`) - grep the generated CSS. A wrong token renders unreadable, silently. Reach for a
   semantic role, not a raw Tailwind step; add a `@theme` role if missing and confirm it emitted. (0011/0014)

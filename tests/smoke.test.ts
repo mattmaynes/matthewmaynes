@@ -380,6 +380,11 @@ const routes = [
       "min read",
       // The path back into the rest of the site.
       "Explore the whole site",
+      // The subscribe form is wrapped in `links-subscribe` so the globals.css rule
+      // can keep its fields STACKED in this narrow column (not squeezed into a row
+      // that smooshes the name field). Dropping the wrapper breaks the stack, so
+      // this class marker - unique to /links - reddens if it is removed.
+      "links-subscribe",
     ],
     // The Latest-post card must use the PUBLISHED set: a draft or not-yet-due
     // scheduled sample post must never surface here (spec 0034/0035). The sample
