@@ -627,6 +627,33 @@ for (const route of routes) {
   });
 }
 
+// The /links stack renders in INTENT ORDER (spec 0039 acceptance): the primary
+// links (the "Read the blog" button, then the social row) sit ABOVE the subscribe
+// ask, which sits above the Latest-post card. The route `contains` markers only
+// prove presence, so a reordered stack (e.g. the latest post floated to the top)
+// would pass them green - this asserts SOURCE ORDER so that regression reddens.
+// The LinkedIn href's FIRST occurrence is the page's social row (the footer's is
+// later), which is what we want to anchor between the blog button and subscribe.
+test("the /links stack renders in intent order: links -> subscribe -> latest post", async () => {
+  const html = await (await fetch(BASE + "/links")).text();
+  const order = [
+    "Read the blog",
+    'href="https://www.linkedin.com/in/matthew-maynes/"',
+    "Subscribe for updates",
+    "Latest post",
+  ];
+  let prev = -1;
+  for (const marker of order) {
+    const at = html.indexOf(marker);
+    assert.ok(at !== -1, `expected /links to contain "${marker}"`);
+    assert.ok(
+      at > prev,
+      `expected "${marker}" to appear after the previous marker in source order (intent order)`,
+    );
+    prev = at;
+  }
+});
+
 // The footer surfaces the /links page (spec 0039) on larger screens only - the
 // mobile footer is already crammed. The link + its separator live in a
 // `hidden sm:inline` span (present in the SSR HTML, CSS-hidden below `sm`). Assert

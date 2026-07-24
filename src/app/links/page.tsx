@@ -68,7 +68,10 @@ export default function LinksPage() {
         />
         <h1 className="mt-3 text-h3 font-bold text-text">{site.name}</h1>
         <p className="mt-0.5 text-caption text-text-muted">
-          {site.title} &middot; {site.location}
+          {site.title}{" "}
+          {/* Keep the separator glued to the region so it never orphans onto its
+              own line on a very narrow phone (the pair wraps as one unit). */}
+          <span className="whitespace-nowrap">&middot; {site.location}</span>
         </p>
       </div>
 
@@ -104,9 +107,12 @@ export default function LinksPage() {
       {/* Finally a taste of the latest post, linking straight into it. */}
       {latest ? (
         <div className="mt-6 border-t border-border pt-6">
-          <span className="text-caption font-semibold tracking-wide text-text-subtle uppercase">
+          {/* A real section heading (not a styled span) so the Latest-post section
+              is labelled for assistive tech consistently with the subscribe
+              section's h2 above it. h1 name -> h2 sections -> h3 post title. */}
+          <h2 className="text-caption font-semibold tracking-wide text-text-subtle uppercase">
             Latest post
-          </span>
+          </h2>
           <Link
             href={`/blog/${latest.slug}`}
             className="group mt-3 block overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset focus-visible:outline-none"
@@ -122,9 +128,9 @@ export default function LinksPage() {
               />
             ) : null}
             <div className="p-4">
-              <h2 className="text-body-lg font-semibold text-text group-hover:text-primary">
+              <h3 className="text-body-lg font-semibold text-text group-hover:text-primary">
                 {latest.title}
-              </h2>
+              </h3>
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <p className="text-caption text-text-subtle">
                   <time dateTime={latest.date}>{formatPostDate(latest.date)}</time>
