@@ -15,7 +15,13 @@ import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { PostNav, type PostNavItem } from "@/components/post-nav";
 import { formatPostDate } from "@/lib/blog";
-import { categorySlug, tagSlug, formatPublishAt, type Category } from "@/lib/blog-view";
+import {
+  categorySlug,
+  tagSlug,
+  formatPublishAt,
+  postMediaMaxWidth,
+  type Category,
+} from "@/lib/blog-view";
 import { getBlogImage } from "@/lib/blog-images";
 import { images, site } from "@/lib/site";
 import { FOCUS_RING as RING } from "@/lib/focus-ring";
@@ -230,7 +236,15 @@ export function PostArticle({
         // overlay, so the image renders clean and the header stacks below it. The
         // pixel-art cover fills the width and upscales crisply.
         <figure>
-          <div className="relative overflow-hidden rounded-lg border-[0.5px] border-border">
+          {/* Cap a tall/portrait cover to about an iPhone's height (the shared
+              post-media standard), centred, so it does not dominate the screen on
+              desktop. A landscape cover is unaffected: postMediaMaxWidth resolves to
+              100%, so it stays full column width and the overlaid header still has
+              room. */}
+          <div
+            className="relative mx-auto overflow-hidden rounded-lg border-[0.5px] border-border"
+            style={{ maxWidth: postMediaMaxWidth(cover.width, cover.height) }}
+          >
             <Image
               src={cover}
               alt={cover.alt}

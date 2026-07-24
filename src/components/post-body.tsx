@@ -4,6 +4,7 @@ import { compileMDX } from "next-mdx-remote/rsc";
 import { Video } from "@/components/ui";
 import { getBlogImage } from "@/lib/blog-images";
 import { getBlogVideo } from "@/lib/blog-videos";
+import { postMediaMaxWidth } from "@/lib/blog-view";
 
 /**
  * Renders a compiled MDX post body with a Harbor-token prose style. This is a
@@ -38,16 +39,24 @@ function PostImage({
   const pixelated = image.pixelated === true;
   return (
     <figure className="my-8 flex flex-col items-center">
-      <span className="inline-flex max-w-full overflow-hidden rounded-lg border-[0.5px] border-border">
+      {/* Cap the rendered box to about an iPhone's height (postMediaMaxWidth bounds
+          the width to `height-cap * aspect`), centred, so a tall portrait photo or
+          phone screenshot lands around phone-sized instead of dominating the page on
+          desktop. Landscape images are unaffected (they stay full column width).
+          This is the shared site standard, matching the cover hero and PostVideo. */}
+      <div
+        className="mx-auto overflow-hidden rounded-lg border-[0.5px] border-border"
+        style={{ maxWidth: postMediaMaxWidth(image.width, image.height) }}
+      >
         <Image
           src={image}
           alt={image.alt}
           sizes="(max-width: 640px) 90vw, 640px"
           placeholder={pixelated ? "empty" : "blur"}
-          className="h-auto max-w-full"
+          className="h-auto w-full"
           style={pixelated ? { imageRendering: "pixelated" } : undefined}
         />
-      </span>
+      </div>
       {children ? (
         // The caption is authored as MDX children so it can carry inline markdown
         // (a link). MDX wraps that text in a paragraph, which would otherwise pick
@@ -67,8 +76,9 @@ function PostImage({
  * the build loudly on an unknown name (compiled over our own tracked content
  * only). The player is fluid (fills its column and keeps the clip's aspect
  * ratio); `aspectRatio` reserves that ratio up front so there is no layout shift
- * while video.js lazy-loads. A tall portrait clip is capped at 75vh by bounding
- * the wrapper width to `75vh * (w/h)` (never wider than the column), so it never
+ * while video.js lazy-loads. A tall portrait clip is capped to the same shared
+ * post-media height (`postMediaMaxWidth`) as images and the cover, by bounding the
+ * wrapper width to `cap * (w/h)` (never wider than the column), so it never
  * dominates the reading column. The controls are skinned by Canopy's token
  * `video.css` (wired in globals.css) and pick up the Harbor brand automatically.
  * The clips are transcoded to browser-safe H.264 with location metadata stripped
@@ -89,11 +99,10 @@ function PostVideo({
     <figure className="my-8 flex flex-col items-center">
       <div
         className="w-full overflow-hidden rounded-lg border-[0.5px] border-border"
-        // Cap a portrait clip at 75vh of height (width = 75vh * aspect), but never
-        // wider than the reading column - `min()` takes whichever is smaller.
-        style={{
-          maxWidth: `min(100%, calc(75vh * ${video.width} / ${video.height}))`,
-        }}
+        // Cap a portrait clip to the shared post-media height (bounds the width to
+        // `cap * aspect`), never wider than the column - the one standard shared with
+        // <PostImage> and the cover, so the three media types can't drift apart.
+        style={{ maxWidth: postMediaMaxWidth(video.width, video.height) }}
       >
         <Video
           src={video.src}
