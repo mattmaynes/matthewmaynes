@@ -352,6 +352,50 @@ const routes = [
     // treatment is guarded on the stable image-bearing routes instead (feedback 0005).
   },
   {
+    // The link-in-bio landing page (spec 0039): a hand-out URL, out of the top nav
+    // but in the sitemap. Funnels a visitor into the blog + mailing list with the
+    // social channels one tap away.
+    path: "/links",
+    title: "Links - Matthew Maynes",
+    contains: [
+      // Identity header: the title + region line under the name proves the real
+      // page body rendered (the bare name is shared nav/footer chrome).
+      "Ontario, Canada",
+      // Primary link (top of the stack): the "Read the blog" button links the
+      // listing. The label is unique to this page on this route.
+      "Read the blog",
+      'href="/blog"',
+      // Social row: keyed on the LinkedIn profile URL, a durable page-real value.
+      // The five buttons open in a new tab.
+      'href="https://www.linkedin.com/in/matthew-maynes/"',
+      // The subscribe ask - the shared form rendered (its heading is on here). The
+      // subtext is unique to the form body, so a dropped/broken form reddens this.
+      "Subscribe for updates",
+      "No spam; unsubscribe anytime.",
+      // The Latest-post card (last): its section label + the reading-time pill
+      // ("min read" is unique to the card on this route). DURABLE - we do NOT pin
+      // the newest post's title/slug (that changes with every post); newest-first
+      // ordering is covered by the sortPostsNewestFirst unit test.
+      "Latest post",
+      "min read",
+      // The path back into the rest of the site.
+      "Explore the whole site",
+    ],
+    // The Latest-post card must use the PUBLISHED set: a draft or not-yet-due
+    // scheduled sample post must never surface here (spec 0034/0035). The sample
+    // draft is dated to be the newest post, so a regression to getAllPosts() would
+    // reveal it - its title absent proves the filter holds.
+    absent: [
+      "Placeholder",
+      "This Is a Sample Draft",
+      "This Is a Sample Scheduled Post",
+    ],
+    // The identity header renders the static-imported headshot with a blur
+    // placeholder, so its data-URL must appear (feedback 0005). The headshot is a
+    // stable, non-pixelated asset, so unlike /subscribe this route can assert blur.
+    hasBlur: true,
+  },
+  {
     // The drafts index (spec 0034): unlinked, noindex, lists unpublished posts and
     // links each row to its /blog/drafts/<slug> page (not the public /blog URL).
     // The sample-draft fixture (tests/fixtures/blog/this-is-a-sample-draft.mdx,
@@ -582,6 +626,49 @@ for (const route of routes) {
     }
   });
 }
+
+// The /links stack renders in INTENT ORDER (spec 0039 acceptance): the primary
+// links (the "Read the blog" button, then the social row) sit ABOVE the subscribe
+// ask, which sits above the Latest-post card. The route `contains` markers only
+// prove presence, so a reordered stack (e.g. the latest post floated to the top)
+// would pass them green - this asserts SOURCE ORDER so that regression reddens.
+// The LinkedIn href's FIRST occurrence is the page's social row (the footer's is
+// later), which is what we want to anchor between the blog button and subscribe.
+test("the /links stack renders in intent order: links -> subscribe -> latest post", async () => {
+  const html = await (await fetch(BASE + "/links")).text();
+  const order = [
+    "Read the blog",
+    'href="https://www.linkedin.com/in/matthew-maynes/"',
+    "Subscribe for updates",
+    "Latest post",
+  ];
+  let prev = -1;
+  for (const marker of order) {
+    const at = html.indexOf(marker);
+    assert.ok(at !== -1, `expected /links to contain "${marker}"`);
+    assert.ok(
+      at > prev,
+      `expected "${marker}" to appear after the previous marker in source order (intent order)`,
+    );
+    prev = at;
+  }
+});
+
+// The footer surfaces the /links page (spec 0039) on larger screens only - the
+// mobile footer is already crammed. The link + its separator live in a
+// `hidden sm:inline` span (present in the SSR HTML, CSS-hidden below `sm`). Assert
+// the /links anchor sits inside that class combo so a regression that drops the
+// link OR shows it on mobile (drops the `hidden sm:inline` wrapper) reddens. Keyed
+// on `/` but the footer is shared, so this guards every page.
+test("the footer links /links, shown on desktop only (hidden sm:inline)", async () => {
+  const html = await (await fetch(BASE + "/")).text();
+  assert.ok(html.includes('href="/links"'), "expected a footer link to /links");
+  assert.match(
+    html,
+    /class="hidden sm:inline"[\s\S]{0,160}href="\/links"/,
+    "expected the /links footer link to sit inside a `hidden sm:inline` wrapper (desktop-only)",
+  );
+});
 
 // Contact endpoint guards (spec 0008). We exercise every path that does NOT send
 // email - cross-origin, honeypot, invalid body, wrong method - so the suite needs

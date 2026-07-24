@@ -17,7 +17,7 @@ export const revalidate = 60;
 // belongs in the sitemap even though it is deliberately kept out of `nav`. (An
 // in-progress stub like `/projects` or a footer utility like `/privacy` stays out
 // of both by simply not appearing here.)
-const EXTRA_ROUTES: readonly string[] = ["/subscribe"];
+const EXTRA_ROUTES: readonly string[] = ["/subscribe", "/links"];
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 

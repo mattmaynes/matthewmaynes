@@ -44,6 +44,19 @@ export function Footer() {
           >
             Subscribe
           </Link>
+          {/* The link-in-bio page (spec 0039) is a hand-out URL. Surface it in the
+              footer on larger screens only - the mobile footer is already crammed,
+              so this separator + link stay hidden below `sm` (CSS, still in the SSR
+              HTML). */}
+          <span className="hidden sm:inline">
+            {" "}&middot;{" "}
+            <Link
+              href="/links"
+              className="underline-offset-4 hover:text-text hover:underline"
+            >
+              Links
+            </Link>
+          </span>
         </p>
         <div className="flex items-center gap-1">
           {socials.map(({ label, href, Icon }) => (
