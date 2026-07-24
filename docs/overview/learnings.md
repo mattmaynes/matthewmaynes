@@ -95,6 +95,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 
 ## Media & assets
 
+- **Media in a fixed-width column needs a viewport-aware HEIGHT cap, not just a width cap.** A
+  portrait or near-square image/cover at full column width is unbounded in height and takes over the
+  screen on desktop. Bound the WIDTH to `height-cap * aspect` (wrapped in `min(100%, ...)`) so the
+  rendered height lands on the cap with the ratio preserved and landscape media stays full width.
+  Apply the SAME rule across every media type on the surface (image, cover, video) from ONE shared
+  constant - the video already had a `75vh` cap the images silently lacked, so they had drifted. (0024)
 - **Bake in what the client can't apply, and scrub what it shouldn't see.** A viewer can't undo what
   isn't in the pixels: rotate to upright and convert to sRGB *before* stripping metadata (stripping
   drops the EXIF orientation + colour-profile flags), and bake any CSS-effect an email client will
