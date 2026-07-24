@@ -34,7 +34,8 @@ export function SubscribeForm({
     | "blog_post"
     | "blog_tag"
     | "blog_category"
-    | "subscribe_page";
+    | "subscribe_page"
+    | "links_page";
   /** Show the optional Name field from first paint instead of on email focus -
    *  used by the dedicated `/subscribe` page, which leads with the full ask. */
   alwaysShowName?: boolean;

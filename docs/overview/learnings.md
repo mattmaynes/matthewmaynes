@@ -12,6 +12,11 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   class *combination* nothing else emits, or the exact behaviour on the surface that carries it.
   Every visible/behavioural acceptance criterion needs its own failable guard in the same PR. This is
   the single most-repeated lesson here.
+- **An "in this order" acceptance criterion needs a source-order assertion, not presence markers.**
+  `html.includes(a) && html.includes(b)` stays green when a stack is reshuffled (a section floated to
+  the top) - it only proves both rendered. Assert that each marker's byte offset increases down the
+  page so a reorder reddens; anchor on the FIRST occurrence when a marker (e.g. a social URL) also
+  appears later in shared chrome like the footer. (0039)
 - **Test collection logic against a MULTI-ITEM fixture via a pure exported function**, not production
   data or a single item - a one-item fixture never runs the sort/filter/dedup loop, so an inverted
   comparator passes green. Assert order *and* non-mutation. (0009)

@@ -19,15 +19,17 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
 | `/login` + `/v1/login` + `/v1/logout` | ✅ | Preview gate (spec 0036): a styled password screen; `POST /v1/login` verifies the shared `PREVIEW_PASSWORD` (reusing the shared spam guards), sets a stateless HMAC session cookie, and redirects back; `/v1/logout` clears it. `noindex`. |
 | `/contact` | ✅ | Working contact form (spec 0008/0032): emails an on-brand HTML notification via `POST /v1/contact` and records the sender in Constant Contact (unsubscribed by default; an opt-in checkbox adds them to the list). A column of icon + URL-path social links. No email/phone shown. |
 | `/subscribe` | ✅ | Shareable mailing-list landing page (spec 0018): heading + invitation, the full subscribe form, a latest-post card, and a link to `/blog`. Not in the nav, but in the sitemap. |
+| `/links` | ✅ | Tight, mobile-first "link in bio" landing page (spec 0039) for a social-media bio: a compact identity header (small avatar, name, title/region), then the primary **links** (a `Read the blog` button + a social-channel icon row, new-tab), a subscribe block, and a **Latest post** card last. Out of the nav, in the sitemap; subscribes carry a `links_page` analytics source. |
 | `/privacy` | ✅ | Plain-language privacy policy (spec 0017): PostHog analytics with masked replay, the Resend contact form, transient IP use, no cookies/ads/database. Cookieless legitimate-interest basis. Lists the only email on the site (`privacy@`). Footer link. |
 | `/ai-policy` | ✅ | Plain-language AI transparency page (spec 0030): AI is used only as an editor/sounding board; ideas and opinions stay the author's. Names no tools. Footer link. |
 
 ## Navigation & global behavior
 
 - **Top nav:** Home · About · Resume · Projects · Blog · Contact (Canopy `TopNav`; hamburger on
-  mobile). `/subscribe`, `/privacy`, `/ai-policy` are footer/shared-only. **Footer:** the five social
-  links as icon-only ghost buttons + `Privacy` / `AI Policy`. All icons come from `@rogueoak/icons`
-  (no hand-rolled SVGs, spec 0007).
+  mobile). `/subscribe`, `/privacy`, `/ai-policy`, `/links` are footer/shared-only. **Footer:** the
+  five social links as icon-only ghost buttons + `Privacy` / `AI Policy` / `Subscribe`, plus a
+  `Links` entry shown on `sm`+ only (hidden on mobile, spec 0039). All icons come from
+  `@rogueoak/icons` (no hand-rolled SVGs, spec 0007).
 - **Responsive** from small phones up; **theme** (light/dark on Harbor) defaults to OS preference with
   a header toggle persisted in `localStorage`, applied before first paint (no flash).
 - **SEO & sharing** (spec 0004): generated favicon set, OG + Twitter `summary_large_image` cards from
