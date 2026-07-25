@@ -24,9 +24,6 @@ export type CategorizedPost = FilterablePost & { category: string };
 export const CATEGORIES = [
   "Engineering",
   "Leadership",
-  "Career",
-  "AI",
-  "Projects",
   "Life",
 ] as const;
 
