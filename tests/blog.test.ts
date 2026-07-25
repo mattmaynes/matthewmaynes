@@ -63,7 +63,7 @@ const GOOD = `---
 title: A Sample Post
 date: 2026-06-30
 tags: [Life, Technical]
-category: Career
+category: Engineering
 excerpt: A short teaser.
 cover: sample.png
 ---
@@ -78,7 +78,7 @@ test("parseFrontmatter reads known fields and returns the body", () => {
   assert.equal(data.title, "A Sample Post");
   assert.equal(data.date, "2026-06-30");
   assert.deepEqual(data.tags, ["Life", "Technical"]);
-  assert.equal(data.category, "Career");
+  assert.equal(data.category, "Engineering");
   assert.equal(data.excerpt, "A short teaser.");
   assert.equal(data.cover, "sample.png");
   assert.match(content, /Body paragraph one\./);
@@ -118,13 +118,13 @@ test("parseFrontmatter enum-validates category (spec 0038)", () => {
       `---\ntitle: T\ndate: 2026-01-01\ntags: [Life]\ncategory: ${val}\nexcerpt: E\n---\nbody\n`,
     ).data;
   // Each canonical category passes through verbatim.
-  for (const c of ["Engineering", "Leadership", "Career", "AI", "Projects", "Life"]) {
+  for (const c of ["Engineering", "Leadership", "Life"]) {
     assert.equal(withCategory(c).category, c, `expected "${c}" to be accepted`);
   }
   // An off-list value fails the build loudly, naming the allowed set.
   assert.throws(
     () => withCategory("Nonsense"),
-    /invalid category "Nonsense".*Engineering, Leadership, Career, AI, Projects, Life/i,
+    /invalid category "Nonsense".*Engineering, Leadership, Life/i,
   );
   // Casing is canonical: a lowercased category is rejected, not silently accepted.
   assert.throws(() => withCategory("engineering"), /invalid category/i);
@@ -618,12 +618,11 @@ test("deriveCategories returns present categories in canonical order, non-mutati
     { category: "Life" },
     { category: "Engineering" },
     { category: "Life" },
-    { category: "Career" },
   ];
   const snapshot = posts.map((p) => p.category);
-  assert.deepEqual(deriveCategories(posts), ["Engineering", "Career", "Life"]);
+  assert.deepEqual(deriveCategories(posts), ["Engineering", "Life"]);
   // A category with no posts is omitted (no empty chip).
-  assert.ok(!deriveCategories(posts).includes("AI"));
+  assert.ok(!deriveCategories(posts).includes("Leadership"));
   assert.deepEqual(deriveCategories([]), []);
   assert.deepEqual(
     posts.map((p) => p.category),
@@ -633,19 +632,19 @@ test("deriveCategories returns present categories in canonical order, non-mutati
 });
 
 test("resolveActiveCategory maps ?category= to a present category case-insensitively, else null (spec 0038)", () => {
-  const cats = ["Engineering", "Leadership", "Life"];
-  assert.equal(resolveActiveCategory("leadership", cats), "Leadership"); // canonical casing
+  const cats = ["Engineering", "Life"];
+  assert.equal(resolveActiveCategory("engineering", cats), "Engineering"); // canonical casing
   assert.equal(resolveActiveCategory("Life", cats), "Life");
   assert.equal(resolveActiveCategory("", cats), null); // absent -> All posts
-  assert.equal(resolveActiveCategory("ai", cats), null); // valid enum but not present -> All
+  assert.equal(resolveActiveCategory("leadership", cats), null); // valid category but not present -> All
   assert.equal(resolveActiveCategory("nope", cats), null); // unknown -> All
 });
 
 test("categorySlug / categoryFromSlug round-trip every category (spec 0038)", () => {
   assert.equal(categorySlug("Engineering"), "engineering");
-  assert.equal(categorySlug("AI"), "ai");
+  assert.equal(categorySlug("Leadership"), "leadership");
   // Same rules as a post/tag slug.
-  assert.equal(categorySlug("Projects"), slugify("Projects"));
+  assert.equal(categorySlug("Life"), slugify("Life"));
   const cats = [...CATEGORIES];
   for (const c of cats) {
     assert.equal(categoryFromSlug(categorySlug(c), cats), c, `expected "${c}" to round-trip`);
@@ -660,7 +659,7 @@ test("filterByCategory filters by the single category and search, composed, non-
   const posts = [
     { title: "Leading Teams", excerpt: "on management", tags: ["Leadership"], category: "Leadership" },
     { title: "Planting Trees", excerpt: "five acres", tags: ["Nature"], category: "Life" },
-    { title: "Wrong Elective", excerpt: "a Reflection on choices", tags: ["Life"], category: "Career" },
+    { title: "Wrong Elective", excerpt: "a Reflection on choices", tags: ["Life"], category: "Engineering" },
   ];
   const snapshot = posts.map((p) => p.title);
   const titles = (r) => r.map((p) => p.title);
@@ -671,13 +670,13 @@ test("filterByCategory filters by the single category and search, composed, non-
   // not tag-style membership: "Life" the category matches only the Life post, even
   // though another post carries "Life" as a TAG.
   assert.deepEqual(titles(filterByCategory(posts, "life", "")), ["Planting Trees"]);
-  assert.deepEqual(titles(filterByCategory(posts, "Career", "")), ["Wrong Elective"]);
+  assert.deepEqual(titles(filterByCategory(posts, "Engineering", "")), ["Wrong Elective"]);
   // Search still spans title + excerpt + tags.
   assert.deepEqual(titles(filterByCategory(posts, null, "five acres")), ["Planting Trees"]);
   assert.deepEqual(titles(filterByCategory(posts, null, "leadership")), ["Leading Teams"]);
   // Composition: category AND query must both match.
-  assert.deepEqual(titles(filterByCategory(posts, "Career", "reflection")), ["Wrong Elective"]);
-  assert.deepEqual(filterByCategory(posts, "Career", "management"), []);
+  assert.deepEqual(titles(filterByCategory(posts, "Engineering", "reflection")), ["Wrong Elective"]);
+  assert.deepEqual(filterByCategory(posts, "Engineering", "management"), []);
 
   assert.deepEqual(
     posts.map((p) => p.title),
