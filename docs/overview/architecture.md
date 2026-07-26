@@ -142,7 +142,9 @@
   standalone output, built off-host and pulled from GHCR (`ghcr.io/mattmaynes/matthewmaynes`), tagged
   `latest` + `sha-<commit>`. **Host:** a small Linux VM running Compose stacks on a shared `edge`
   network; **Caddy** (owned by this repo) terminates 80/443 with Let's Encrypt and reverse-proxies by
-  hostname to the site (and the cohosted rogueoak.com). Both deploy pipelines are kept symmetric.
+  hostname to the site and the cohosted rogueoak.com - plus **thoughtbuffer.app**, which the same
+  `rogueoak` container host-routes internally (rogueoak spec 0012), so it needs a Caddy route but no
+  extra container. Both deploy pipelines are kept symmetric.
 - **CI/CD** (`deploy.yml`): push to `main` → verify (lint/build/test) → build+push to GHCR → SSH deploy
   (ensure `edge` + Caddy, `compose pull`, **zero-downtime blue/green rollout** via pinned `docker-rollout`)
   → **prewarm**. The rollout scales the site to two instances, waits for the new HEALTHCHECK, then removes
