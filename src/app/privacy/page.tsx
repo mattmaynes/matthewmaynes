@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Privacy",
-  alternates: { canonical: "/privacy" },
-};
+export const metadata: Metadata = { title: "Privacy" };
 
 // The one public address for privacy requests. Rendered only here, never in the
 // shared footer, so it does not leak onto other routes (keeps the /resume and

@@ -57,9 +57,11 @@ full Spectra protocol (not the lightweight content carve-out).
   OG route already use, so nothing leaks before `publishAt`.
 - Add `alternates.canonical` to every indexable page's metadata: `/`, `/about`, `/resume`,
   `/projects`, `/projects/[slug]`, `/blog`, `/blog/[slug]`, `/blog/tags/[tag]`,
-  `/blog/categories/[slug]`, `/contact`, `/subscribe`, `/links`, `/privacy`, `/ai-policy`. Canonicals
+  `/blog/categories/[slug]`, `/contact`, `/subscribe`, `/links`, `/ai-policy`. Canonicals
   are path-relative (resolved against the existing `metadataBase`). The `noindex` preview routes
   (`/blog/drafts*`, `/login`) get **no** canonical (they must not be indexed at all).
+  **`/privacy` is the one indexable page deliberately left without an explicit canonical** - see
+  Approach; it relies on the browser / search-engine default self-canonical instead.
 - Tests: unit tests for `llms.ts` (multi-post fixture: every published post present, drafts absent,
   absolute URLs) and `structured-data.ts` (required fields, draft post omitted at the route);
   a smoke assertion that `/llms.txt` returns `200` + `text/plain` and names a known post; per-surface
@@ -89,6 +91,14 @@ exports (`metadataBase` is set, so a path string suffices). The post-level nodes
 existing `isPublishedNow` guard, so the "never leak a draft" invariant (learning 0019/0034) is
 enforced by the same check, not a parallel one.
 
+Key decision - **`/privacy` gets no explicit canonical**: `/privacy` sits behind a content-freshness
+gate (`scripts/check-privacy-date.ts`) that hashes the whole page source with only the "Last updated"
+date normalized out. Adding a canonical to its metadata would move that hash, and the only sanctioned
+way to clear the gate is `npm run privacy:stamp`, which bumps the user-facing "Last updated" date -
+a false signal that the policy text changed when only a head link was added. Since `/privacy` is a
+footer utility not in the sitemap, it is left to the default self-canonical rather than corrupting
+that date. (`/ai-policy`, also a footer utility, has no such gate, so it keeps its canonical.)
+
 Key decision - **`worksFor` sourced from `resume.ts`, not a new constant**: the current employer is
 already public there (`resume.work[0]`), so reusing it avoids both new PII and a second place to
 update. It is *not* added to `identity.ts`, whose hash gates the resume-PDF freshness check - a field
@@ -98,8 +108,8 @@ the PDF doesn't render would flag the PDF stale for no reason.
 
 - [ ] `/llms.txt` returns `200` + `text/plain`, lists every published post with an absolute URL, and
       omits drafts / not-yet-due scheduled posts.
-- [ ] Every indexable page emits exactly one self-referential `<link rel="canonical">`; the
-      `noindex` preview routes emit none.
+- [ ] Every indexable page (except `/privacy`, see Approach) emits exactly one self-referential
+      `<link rel="canonical">`; the `noindex` preview routes emit none.
 - [ ] A published post's HTML contains `BlogPosting` + `BreadcrumbList` JSON-LD with the required
       fields; a draft/scheduled post's page contains neither.
 - [ ] `/` emits `WebSite` JSON-LD and `/blog` emits `Blog` JSON-LD; the `Person` node carries

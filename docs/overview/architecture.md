@@ -70,6 +70,9 @@
   `Person`. Every indexable page sets a self-referential `alternates.canonical` (path-relative,
   resolved against `metadataBase`) so a post reachable from `/blog` + its tag + its category archive
   consolidates onto one URL; the `noindex` preview routes (`/blog/drafts*`, `/login`) set none.
+  `/privacy` is the lone deliberate exception (spec 0040): its content-freshness gate hashes the page
+  source, so an added canonical would force a misleading "Last updated" stamp - it relies on the
+  default self-canonical instead.
 - **Structured data + AEO (spec 0040):** JSON-LD is built by pure, fs-free functions in
   `src/lib/structured-data.ts` (`personJsonLd`/`websiteJsonLd`/`blogJsonLd`/`blogPostingJsonLd`/
   `breadcrumbListJsonLd`, unit-tested like `rss.ts`) and rendered by one shared `<JsonLd>` component

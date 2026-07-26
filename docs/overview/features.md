@@ -38,7 +38,9 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
   from the brand mark: a node-graph "M" in the Harbor palette (spec 0037; vector source
   `public/brand/logo-m.svg`, raster master `logo-m.png`).
 - **SEO & AEO structured data** (spec 0040): a self-referential `<link rel="canonical">` on every
-  indexable page (none on the `noindex` preview routes); `BlogPosting` + `BreadcrumbList` JSON-LD on
+  indexable page (none on the `noindex` preview routes; `/privacy` excepted - its content-freshness
+  gate would force a misleading date stamp, so it uses the default self-canonical); `BlogPosting` +
+  `BreadcrumbList` JSON-LD on
   each published post (behind the `isPublishedNow` gate, so drafts never leak article schema), a
   `WebSite` node on `/`, a `Blog` node on `/blog`, and an enriched `Person` (`worksFor` from the
   current resume role, `description`, `knowsAbout`). A build-generated **`/llms.txt`** gives answer
