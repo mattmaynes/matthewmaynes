@@ -63,8 +63,10 @@ to go deeper.
   its `blurDataURL`), rendered circular. The Latest-post card is a compact **cover-on-top** variant
   (the narrow column favours a vertical card over the side-by-side `/subscribe` treatment); it
   resolves the cover server-side exactly like `/subscribe` and honours the `pixelated` flag. The
-  subscribe block is the shared `SubscribeForm` with `alwaysShowName` and its own heading off, under
-  a short page-level lead-in. The social row maps `site.social` through the existing icon wrappers as
+  subscribe block is the shared `SubscribeForm` with `alwaysShowName`, its fields kept **stacked** in
+  this narrow column via a scoped `.links-subscribe` override (feedback 0025; the form's `sm:flex-row`
+  viewport breakpoint would otherwise smoosh the name field at ~448px). The social row maps
+  `site.social` through the existing icon wrappers as
   large icon buttons (each an `<a target="_blank" rel="noopener noreferrer">` with an
   `aria-label`), the same treatment the footer already uses, sized up for touch.
 - **Footer link, desktop-only.** Add a `Links` item to the footer's copyright line wrapped so the
