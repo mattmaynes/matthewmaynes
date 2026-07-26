@@ -8,7 +8,7 @@
  */
 import type { StaticImageData } from "next/image";
 import { identity, socialPath, twitterHandle } from "./identity.ts";
-import { tagline, description, ogImageAlt } from "./site-text.ts";
+import { tagline, description, ogImageAlt, blogFeedTitle } from "./site-text.ts";
 // Photos are JPEG (smaller than PNG for photographic content); the eagle-snap
 // banner is a flat graphic and stays PNG (smaller than JPEG for that).
 import areaILive from "../../public/images/area-i-live.jpg";
@@ -22,6 +22,12 @@ import eagleSnapImg from "../../public/images/eagle-snap.png";
 // while the data lives in the single, hash-keyed ./identity module.
 export { socialPath, twitterHandle };
 
+// blogFeedTitle lives in ./site-text (asset-free) so the pure JSON-LD builder can
+// read the SAME title under `node --test`; re-export it here so existing
+// `@/lib/site` importers (the feed, the blog surfaces) keep resolving it. One
+// source, no drift (spec 0013).
+export { blogFeedTitle };
+
 // The tagline, description, and share-card alt live in ./site-text (asset-free)
 // so a pure builder like structured-data.ts can read the SAME strings under
 // `node --test` without loading the staged images below. One source, no drift.
@@ -31,11 +37,6 @@ export const site = {
   description,
   ogImageAlt,
 } as const;
-
-/** One title for the RSS feed, shared by the feed channel and the `<link
- *  rel="alternate">` autodiscovery on the blog surfaces, so the three never
- *  drift (spec 0013). */
-export const blogFeedTitle = `${site.name} - Blog`;
 
 export type NavItem = { href: string; label: string };
 

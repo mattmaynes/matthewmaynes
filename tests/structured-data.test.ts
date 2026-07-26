@@ -40,9 +40,14 @@ test("personJsonLd carries the enriched fields (worksFor, description, knowsAbou
   assert.equal(p["@type"], "Person");
   assert.equal(p.name, identity.name);
   // worksFor comes from the CURRENT role in the resume, not a hardcoded string.
+  // Compute the expected company the SAME way the builder does (the entry whose
+  // period reads "Current", falling back to the newest) so the test guards the
+  // derivation rather than the index.
+  const currentRole =
+    resume.work.find((w) => /current/i.test(w.period)) ?? resume.work[0];
   assert.deepEqual(p.worksFor, {
     "@type": "Organization",
-    name: resume.work[0].company,
+    name: currentRole.company,
   });
   assert.equal(p.description, description, "expected the shared site description");
   // knowsAbout is a non-empty array of expertise (drawn from resume.skills).

@@ -7,9 +7,10 @@
  *
  * One source of truth: the facts come from `site` / `identity` / `resume`, not
  * hardcoded strings, so the machine-readable identity can never drift from the
- * human-facing constants. `worksFor` reads `resume.work[0].company` (the current
- * role) rather than a new constant, so there is no second place to update and no
- * new field on the hash-gated `identity.ts`.
+ * human-facing constants. `worksFor` derives the CURRENT employer from the resume
+ * (the work entry whose period reads "Current") rather than a new constant, so
+ * there is no second place to update and no new field on the hash-gated
+ * `identity.ts`.
  *
  * No fs, no React: unit-testable in isolation.
  */
@@ -19,13 +20,10 @@
 // runner cannot load, so importing it would make this module un-unit-testable.
 // These carry the same single-source values (site.ts re-exports them).
 import { identity } from "./identity.ts";
-import { description, headshotPath } from "./site-text.ts";
+import { description, headshotPath, blogFeedTitle } from "./site-text.ts";
 import { resume } from "./resume.ts";
+import { stripToProse } from "./blog-view.ts";
 import type { Post } from "./blog.ts";
-
-// The blog title mirrors blogFeedTitle in site.ts (name + " - Blog"); derived
-// from identity so the two never drift without importing the image-laden site.ts.
-const blogTitle = `${identity.name} - Blog`;
 
 /** A JSON-LD object: `@context` / `@type` plus arbitrary schema.org fields. */
 export type JsonLdObject = Record<string, unknown>;
@@ -37,9 +35,9 @@ export function absoluteUrl(path: string): string {
   return new URL(path, identity.url).toString();
 }
 
-/** The areas of expertise advertised to answer engines (`knowsAbout`). A small,
- *  curated slice of the public resume skills - not PII, and the same facts the
- *  /resume page already renders. */
+/** The areas of expertise advertised to answer engines (`knowsAbout`): the
+ *  public resume skills - not PII, and the same facts the /resume page already
+ *  renders. */
 const KNOWS_ABOUT: readonly string[] = resume.skills;
 
 /**
@@ -48,6 +46,11 @@ const KNOWS_ABOUT: readonly string[] = resume.skills;
  * `knowsAbout`. Keeps the original `jobTitle`, `image`, and `sameAs`.
  */
 export function personJsonLd(): JsonLdObject {
+  // The current employer: the work entry whose period reads "Current" (falling
+  // back to the newest, index 0), so a reorder or a new most-recent role can never
+  // point worksFor at a past employer.
+  const currentRole =
+    resume.work.find((w) => /current/i.test(w.period)) ?? resume.work[0];
   return {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -58,7 +61,7 @@ export function personJsonLd(): JsonLdObject {
     image: absoluteUrl(headshotPath),
     worksFor: {
       "@type": "Organization",
-      name: resume.work[0].company,
+      name: currentRole.company,
     },
     knowsAbout: [...KNOWS_ABOUT],
     sameAs: [identity.social.linkedin, identity.social.github, identity.social.x],
@@ -101,26 +104,19 @@ export function blogJsonLd(): JsonLdObject {
     "@context": "https://schema.org",
     "@type": "Blog",
     url: absoluteUrl("/blog"),
-    name: blogTitle,
+    name: blogFeedTitle,
     description,
     author: personRef(),
     publisher: personRef(),
   };
 }
 
-/** Count the words in an MDX body for `wordCount`. Pure and deterministic:
- *  strips the same non-prose markup `estimateReadingMinutes` does (fenced code,
- *  inline code, JSX/HTML tags, markdown link URLs, emphasis markers) then counts
- *  whitespace-separated tokens - so the count reflects the prose a reader sees,
- *  not the raw markup. */
+/** Count the words in an MDX body for `wordCount`. Pure and deterministic: runs
+ *  the shared `stripToProse` pipeline (the same one `estimateReadingMinutes`
+ *  uses) then counts whitespace-separated tokens - so the count reflects the prose
+ *  a reader sees, not the raw markup. */
 export function countWords(content: string): number {
-  const prose = String(content ?? "")
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`[^`]*`/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[#>*_~`|-]+/g, " ");
-  return prose.split(/\s+/).filter(Boolean).length;
+  return stripToProse(content).split(/\s+/).filter(Boolean).length;
 }
 
 /** A YYYY-MM-DD post date as an ISO 8601 date-time at UTC midnight (e.g.

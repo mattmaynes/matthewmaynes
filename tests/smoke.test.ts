@@ -1975,21 +1975,37 @@ test("a published post emits BlogPosting + BreadcrumbList JSON-LD with real fiel
   );
 });
 
-// A DRAFT preview page must emit NO BlogPosting node (the JSON-LD sits behind the
-// same isPublishedNow guard as the published render). This is the failable guard
-// against a future draft-leak of article structured data (spec 0040 + learning
-// 0019/0034). The preview page is public (unfurl), so no cookie is needed.
-test("a draft preview page emits no BlogPosting JSON-LD and no canonical", async () => {
+// A draft must not leak article structured data at its PUBLISHED URL: the
+// BlogPosting JSON-LD sits behind the same isPublishedNow gate as the published
+// render, so the published route 404s for a draft slug and emits no BlogPosting.
+// Targeting the published route (not the preview route, which never emits a
+// BlogPosting by design) makes this a FAILABLE guard: if the gate regressed, the
+// draft would render at /blog/<slug> WITH a BlogPosting node and redden this
+// (spec 0040 + learning 0019/0034). The separate check below asserts the public
+// preview route is noindex (no canonical).
+test("a draft emits no BlogPosting JSON-LD at its published URL and no canonical in preview", async () => {
   const draft = getDraftPosts()[0];
   if (!draft) return; // no drafts to exercise
-  const html = await (await fetch(BASE + `/blog/drafts/${draft.slug}`)).text();
-  assert.ok(
-    !html.includes('"@type":"BlogPosting"'),
-    "a draft preview must NOT emit a BlogPosting node (no draft article schema leak)",
+
+  // The published route is gated: a draft slug 404s and carries no BlogPosting.
+  const published = await fetch(BASE + `/blog/${draft.slug}`);
+  const publishedHtml = await published.text();
+  assert.equal(
+    published.status,
+    404,
+    "a draft must NOT be reachable at its published /blog/<slug> URL",
   );
-  // Drafts are noindex: no canonical either (spec 0040 - preview routes get none).
   assert.ok(
-    !/<link\s+rel="canonical"/.test(html),
+    !publishedHtml.includes('"@type":"BlogPosting"'),
+    "the published route for a draft slug must NOT emit a BlogPosting node (no article schema leak)",
+  );
+
+  // The preview page is public (unfurl) but noindex: no canonical link.
+  const previewHtml = await (
+    await fetch(BASE + `/blog/drafts/${draft.slug}`)
+  ).text();
+  assert.ok(
+    !/<link\s+rel="canonical"/.test(previewHtml),
     "a draft preview must NOT emit a canonical link (noindex)",
   );
 });
@@ -2013,11 +2029,13 @@ test("/ emits WebSite JSON-LD (Person enriched) and /blog emits Blog JSON-LD", a
     Array.isArray(person.knowsAbout) && person.knowsAbout.length > 0,
     "expected the Person node to carry a non-empty knowsAbout",
   );
-  // A self-referential canonical on the home page.
+  // A self-referential canonical on the home page: it must point at the site
+  // ROOT (origin with an optional trailing slash, no extra path), not just any
+  // href, so a regressed home canonical to some other path would redden.
   assert.match(
     home,
-    /<link\s+rel="canonical"\s+href="[^"]*"/,
-    "expected a canonical link on the home page",
+    /<link\s+rel="canonical"\s+href="https?:\/\/[^"\/]+\/?"/,
+    "expected the home canonical to point at the site root",
   );
 
   const blog = await (await fetch(BASE + "/blog")).text();
@@ -2032,5 +2050,24 @@ test("/ emits WebSite JSON-LD (Person enriched) and /blog emits Blog JSON-LD", a
     blog,
     /<link\s+rel="canonical"\s+href="[^"]*\/blog"/,
     "expected a self-referential canonical on /blog",
+  );
+});
+
+// Canonical coverage across route kinds (spec 0040): a noindex route emits NO
+// canonical, and an ordinary indexable page emits a SELF-referential one. Guards
+// both directions of the canonical policy, not just the home/post pages.
+test("noindex routes omit the canonical; indexable pages self-reference it", async () => {
+  // /login is noindex (robots index:false): no canonical link at all.
+  const login = await (await fetch(BASE + "/login")).text();
+  assert.ok(
+    !/<link\s+rel="canonical"/.test(login),
+    "a noindex route (/login) must NOT emit a canonical link",
+  );
+  // /about is a plain indexable page: a self-referential canonical.
+  const about = await (await fetch(BASE + "/about")).text();
+  assert.match(
+    about,
+    /<link\s+rel="canonical"\s+href="[^"]*\/about"/,
+    "expected a self-referential canonical on /about",
   );
 });
