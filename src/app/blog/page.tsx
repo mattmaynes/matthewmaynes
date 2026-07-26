@@ -5,13 +5,18 @@ import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { Button } from "@/components/ui";
 import { RssIcon } from "@/components/blog-icons";
+import { JsonLd } from "@/components/json-ld";
+import { blogJsonLd } from "@/lib/structured-data";
 import { blogFeedTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Blog",
-  // Autodiscovery: emits <link rel="alternate" type="application/rss+xml"> so a
-  // feed reader handed the /blog URL finds the feed automatically.
   alternates: {
+    // Self-referential canonical (spec 0040): a post is reachable from /blog, its
+    // tag archive, and its category archive; consolidate onto this one URL.
+    canonical: "/blog",
+    // Autodiscovery: emits <link rel="alternate" type="application/rss+xml"> so a
+    // feed reader handed the /blog URL finds the feed automatically.
     types: {
       "application/rss+xml": [
         { url: "/blog/feed.xml", title: blogFeedTitle },
@@ -45,6 +50,9 @@ export default function BlogPage() {
 
   return (
     <section className="mx-auto max-w-[1200px] px-6 py-12 sm:py-16">
+      {/* Blog structured data (spec 0040): names the blog + attributes it to the
+          site Person, tying the posts to a named collection and author. */}
+      <JsonLd data={blogJsonLd()} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-h1 font-bold text-text">Blog</h1>
         <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">

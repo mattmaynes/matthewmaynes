@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { JsonLd } from "@/components/json-ld";
+import { websiteJsonLd } from "@/lib/structured-data";
 import {
   AboutIcon,
   BlogIcon,
@@ -12,6 +15,13 @@ import { PostRow } from "@/components/post-row";
 import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { images, site } from "@/lib/site";
+
+// Self-referential canonical (spec 0040): the home page is reachable at "/", so
+// consolidate ranking signal onto that one URL. Path-relative - metadataBase (set
+// in the root layout) resolves it absolute.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 // Re-render every 60s (shared ISR window, spec 0035) so a scheduled post can take
 // over the "Latest post" highlight on its own once its publishAt passes - the
@@ -41,6 +51,9 @@ export default function HomePage() {
 
   return (
     <>
+      {/* WebSite structured data (spec 0040): ties the site to a named author /
+          publisher so an engine can attribute the pages and posts. */}
+      <JsonLd data={websiteJsonLd()} />
       {/* Hero: nature photo background with the headshot and intro on top. */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">

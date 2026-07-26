@@ -8,7 +8,10 @@ import {
 } from "@/components/social-icons";
 import { site, socialPath } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Contact" };
+export const metadata: Metadata = {
+  title: "Contact",
+  alternates: { canonical: "/contact" },
+};
 
 // Social links shown as icon + URL-path label, URLs from the single source of
 // truth. The contact row intentionally omits GitHub (the footer still carries it).

@@ -7,7 +7,8 @@
  * shift) and a build-time blurDataURL for `placeholder="blur"`. No PII by design.
  */
 import type { StaticImageData } from "next/image";
-import { identity, socialPath, twitterHandle } from "./identity";
+import { identity, socialPath, twitterHandle } from "./identity.ts";
+import { tagline, description, ogImageAlt, blogFeedTitle } from "./site-text.ts";
 // Photos are JPEG (smaller than PNG for photographic content); the eagle-snap
 // banner is a flat graphic and stays PNG (smaller than JPEG for that).
 import areaILive from "../../public/images/area-i-live.jpg";
@@ -21,21 +22,21 @@ import eagleSnapImg from "../../public/images/eagle-snap.png";
 // while the data lives in the single, hash-keyed ./identity module.
 export { socialPath, twitterHandle };
 
+// blogFeedTitle lives in ./site-text (asset-free) so the pure JSON-LD builder can
+// read the SAME title under `node --test`; re-export it here so existing
+// `@/lib/site` importers (the feed, the blog surfaces) keep resolving it. One
+// source, no drift (spec 0013).
+export { blogFeedTitle };
+
+// The tagline, description, and share-card alt live in ./site-text (asset-free)
+// so a pure builder like structured-data.ts can read the SAME strings under
+// `node --test` without loading the staged images below. One source, no drift.
 export const site = {
   ...identity,
-  tagline: "An endlessly curious problem solver who can't help but build things",
-  // One shared description: the <meta>, Open Graph, Twitter card, and manifest all
-  // read this so the link preview, search snippet, and install prompt never drift.
-  description:
-    "Personal site of Matthew Maynes, an engineering leader who builds things, plants trees, and leads by example.",
-  // Alt text for the generated share card (opengraph-image).
-  ogImageAlt: "Matthew Maynes - Engineering Director",
+  tagline,
+  description,
+  ogImageAlt,
 } as const;
-
-/** One title for the RSS feed, shared by the feed channel and the `<link
- *  rel="alternate">` autodiscovery on the blog surfaces, so the three never
- *  drift (spec 0013). */
-export const blogFeedTitle = `${site.name} - Blog`;
 
 export type NavItem = { href: string; label: string };
 

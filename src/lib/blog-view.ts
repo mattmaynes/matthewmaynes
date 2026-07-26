@@ -144,6 +144,29 @@ function offsetLabel(offsetMin: number): string {
 }
 
 /**
+ * Strip the non-prose markup from an MDX body, leaving just the prose a reader
+ * sees. Pure and deterministic: drops fenced code blocks, inline code spans,
+ * JSX/HTML tags (like <PostImage .../>), the URL of a markdown link (keeping the
+ * link TEXT), and any leftover heading/emphasis markers. The single source for
+ * this pipeline - `estimateReadingMinutes` (word count for reading time) and the
+ * JSON-LD `countWords` both run it, so a "prose" word count means the same thing
+ * everywhere.
+ */
+export function stripToProse(content: string): string {
+  return String(content ?? "")
+    // Fenced code blocks - not prose, drop entirely.
+    .replace(/```[\s\S]*?```/g, " ")
+    // Inline code spans - drop the markup and its contents.
+    .replace(/`[^`]*`/g, " ")
+    // JSX/HTML tags such as <PostImage name="..."/> - drop the whole tag.
+    .replace(/<[^>]+>/g, " ")
+    // Markdown links [text](url): keep the link text, drop the URL.
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    // Bare markdown/emphasis markers left over.
+    .replace(/[#>*_~`|-]+/g, " ");
+}
+
+/**
  * The union of every post's tags in first-appearance order, deduplicated
  * case-insensitively (keeping the first-seen casing). Does not mutate its input.
  */
