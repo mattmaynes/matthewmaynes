@@ -10,6 +10,11 @@ import {
   readingMinutes,
 } from "@/lib/blog";
 import { getBlogImage } from "@/lib/blog-images";
+import { JsonLd } from "@/components/json-ld";
+import {
+  blogPostingJsonLd,
+  breadcrumbListJsonLd,
+} from "@/lib/structured-data";
 import { blogFeedTitle } from "@/lib/site";
 
 type Params = { slug: string };
@@ -46,9 +51,14 @@ export async function generateMetadata({
   return {
     title: `${post.title} - Blog`,
     description: post.excerpt,
-    // Autodiscovery: advertise the blog feed from each post's <head> too, so a
-    // reader handed a post URL can still find the feed.
     alternates: {
+      // Self-referential canonical (spec 0040): the same post is reachable from
+      // /blog, its tag archive, and its category archive; consolidate onto this
+      // one URL. Set only on the published branch (the 404 branch above stays
+      // minimal), so drafts / not-yet-due scheduled posts emit none.
+      canonical: `/blog/${slug}`,
+      // Autodiscovery: advertise the blog feed from each post's <head> too, so a
+      // reader handed a post URL can still find the feed.
       types: {
         "application/rss+xml": [
           { url: "/blog/feed.xml", title: blogFeedTitle },
@@ -100,11 +110,25 @@ export default async function BlogPostPage({
       : null;
 
   return (
-    <PostArticle
-      post={post}
-      previous={toNavItem(previous)}
-      next={toNavItem(next)}
-      minutes={minutes}
-    />
+    <>
+      {/* Article + breadcrumb structured data (spec 0040). Emitted here, AFTER
+          the isPublishedNow guard above, so a draft / not-yet-due scheduled post
+          (served from /blog/drafts) never reaches this render and never leaks a
+          BlogPosting node - the same guard the page and OG route already use. */}
+      <JsonLd data={blogPostingJsonLd(post, { minutes })} />
+      <JsonLd
+        data={breadcrumbListJsonLd([
+          { name: "Home", url: "/" },
+          { name: "Blog", url: "/blog" },
+          { name: post.title },
+        ])}
+      />
+      <PostArticle
+        post={post}
+        previous={toNavItem(previous)}
+        next={toNavItem(next)}
+        minutes={minutes}
+      />
+    </>
   );
 }

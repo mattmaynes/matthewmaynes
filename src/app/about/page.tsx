@@ -4,7 +4,12 @@ import Link from "next/link";
 import { images } from "@/lib/site";
 import type { SiteImage } from "@/lib/site";
 
-export const metadata: Metadata = { title: "About" };
+export const metadata: Metadata = {
+  title: "About",
+  // Self-referential canonical (spec 0040); path-relative, resolved against
+  // metadataBase in the root layout.
+  alternates: { canonical: "/about" },
+};
 
 const personal: { image: SiteImage; caption: string; position?: string }[] = [
   { image: images.family, caption: "The whole crew." },

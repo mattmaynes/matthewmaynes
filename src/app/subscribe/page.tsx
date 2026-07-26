@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title: "Subscribe",
   description:
     "Subscribe to Matthew Maynes' mailing list for the occasional update when a new blog post or project ships.",
+  alternates: { canonical: "/subscribe" },
 };
 
 // Re-render every 60s (shared ISR window, spec 0035) so the "Latest post" block

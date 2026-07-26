@@ -3,7 +3,10 @@ import type { Metadata } from "next";
 // Footer link and browser tab read "AI Policy" (parity with "Privacy" and
 // "Subscribe"); the on-page heading is warmer. Like /privacy, this is a footer
 // utility, so it is kept out of the top nav and the sitemap.
-export const metadata: Metadata = { title: "AI Policy" };
+export const metadata: Metadata = {
+  title: "AI Policy",
+  alternates: { canonical: "/ai-policy" },
+};
 
 export default function AIPolicyPage() {
   return (

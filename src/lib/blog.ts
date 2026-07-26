@@ -18,6 +18,7 @@ import {
   formatPostDate,
   isCategory,
   slugify,
+  stripToProse,
 } from "./blog-view.ts";
 
 // Re-export the shared slugifier so existing `@/lib/blog` importers (and the
@@ -180,6 +181,13 @@ export function parseFrontmatter(raw: string): {
     throw new Error(`Frontmatter has an unparseable publishAt: ${data.publishAt}`);
   }
 
+  // The post `date` (YYYY-MM-DD) is parsed as UTC midnight all over the blog
+  // (sort, "New" badge, JSON-LD datePublished); a typo (e.g. `2026-13-40`) would
+  // otherwise silently produce Invalid Date downstream. Fail loud at build.
+  if (Number.isNaN(new Date(`${data.date}T00:00:00Z`).getTime())) {
+    throw new Error(`Frontmatter has an unparseable date: ${data.date}`);
+  }
+
   return { data: data as unknown as Frontmatter, content: body };
 }
 
@@ -203,18 +211,7 @@ const WORDS_PER_MINUTE = 200;
  * @returns whole minutes, always >= 1
  */
 export function estimateReadingMinutes(content: string): number {
-  const prose = String(content ?? "")
-    // Fenced code blocks - not prose, drop entirely.
-    .replace(/```[\s\S]*?```/g, " ")
-    // Inline code spans - drop the markup and its contents.
-    .replace(/`[^`]*`/g, " ")
-    // JSX/HTML tags such as <PostImage name="..."/> - drop the whole tag.
-    .replace(/<[^>]+>/g, " ")
-    // Markdown links [text](url): keep the link text, drop the URL.
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    // Bare markdown/emphasis markers left over.
-    .replace(/[#>*_~`|-]+/g, " ");
-  const words = prose.split(/\s+/).filter(Boolean);
+  const words = stripToProse(content).split(/\s+/).filter(Boolean);
   return Math.max(1, Math.round(words.length / WORDS_PER_MINUTE));
 }
 

@@ -55,6 +55,9 @@ export async function generateMetadata({
     // Layout appends " - Matthew Maynes"; this is the route-unique title.
     title: `Posts in "${category}" - Blog`,
     description: `${count} ${plural} in the "${category}" category on the Matthew Maynes blog - notes on engineering, leadership, nature, and life.`,
+    // Self-referential canonical (spec 0040), only on the found branch (the
+    // unknown-category branch above stays minimal). `slug` is the category slug.
+    alternates: { canonical: `/blog/categories/${slug}` },
   };
 }
 

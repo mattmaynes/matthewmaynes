@@ -5,7 +5,10 @@ import { GitHubIcon, LinkedInIcon, WebsiteIcon } from "@/components/social-icons
 import { site, socialPath } from "@/lib/site";
 import { resume } from "@/lib/resume";
 
-export const metadata: Metadata = { title: "Resume" };
+export const metadata: Metadata = {
+  title: "Resume",
+  alternates: { canonical: "/resume" },
+};
 
 export default function ResumePage() {
   return (

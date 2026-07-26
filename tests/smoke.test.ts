@@ -1925,3 +1925,192 @@ test("the /ingest PostHog proxy rewrites are configured", () => {
     "expected an /ingest rewrite to the PostHog US assets host",
   );
 });
+
+// SEO/AEO discovery surface (spec 0040). The /llms.txt route must be served as
+// text/plain and name a real published post with an absolute URL - so an answer
+// engine handed the file gets a working content map. A draft must never appear.
+test("GET /llms.txt serves text/plain naming a published post, omitting drafts", async () => {
+  const res = await fetch(BASE + "/llms.txt");
+  assert.equal(res.status, 200, "expected 200 for /llms.txt");
+  assert.match(
+    res.headers.get("content-type") ?? "",
+    /^text\/plain/,
+    "expected /llms.txt to be served as text/plain",
+  );
+  const body = await res.text();
+  // The H1 identity header and the section skeleton render.
+  assert.match(body, /^# Matthew Maynes/m, "expected the identity H1");
+  assert.ok(body.includes("## Writing"), "expected a Writing section");
+  // A known published post appears by title AND absolute URL - a value a blank
+  // route could not produce.
+  const published = getPublishedPosts()[0];
+  assert.ok(published, "fixture sanity: at least one published post");
+  assert.ok(
+    body.includes(published.title),
+    `expected /llms.txt to name the published post "${published.title}"`,
+  );
+  assert.ok(
+    body.includes(`/blog/${published.slug}`),
+    "expected /llms.txt to link the published post with an absolute URL",
+  );
+  // A draft must never leak into the AI content map (spec 0034 parity).
+  const draft = getDraftPosts()[0];
+  if (draft) {
+    assert.ok(
+      !body.includes(draft.title),
+      "the /llms.txt map must not list a draft post",
+    );
+  }
+  // Nor a not-yet-due scheduled post.
+  const scheduled = getScheduledPosts()[0];
+  if (scheduled) {
+    assert.ok(
+      !body.includes(scheduled.title),
+      "the /llms.txt map must not list a not-yet-due scheduled post",
+    );
+  }
+});
+
+// A published post's HTML must carry BlogPosting + BreadcrumbList JSON-LD with the
+// real datePublished (spec 0040) - a value only the true builder produces. The
+// per-page JSON-LD is a <script type="application/ld+json"> block; there are
+// several on the page (the layout Person too), so scan them all.
+test("a published post emits BlogPosting + BreadcrumbList JSON-LD with real fields", async () => {
+  const published = getPublishedPosts()[0];
+  assert.ok(published, "fixture sanity: at least one published post");
+  const html = await (await fetch(BASE + `/blog/${published.slug}`)).text();
+
+  // Collect every JSON-LD block and parse it (proves well-formedness, not just a
+  // substring match).
+  const blocks = [
+    ...html.matchAll(
+      /<script type="application\/ld\+json">(.*?)<\/script>/gs,
+    ),
+  ].map((m) => JSON.parse(m[1]));
+
+  const posting = blocks.find((b) => b["@type"] === "BlogPosting");
+  assert.ok(posting, "expected a BlogPosting JSON-LD node on the post page");
+  assert.equal(posting.headline, published.title, "BlogPosting headline = post title");
+  // datePublished is the ISO form of the post's real date - reverting the builder
+  // could not fabricate this exact value.
+  assert.equal(
+    posting.datePublished,
+    new Date(`${published.date}T00:00:00Z`).toISOString(),
+    "expected the BlogPosting datePublished to be the post's real date (ISO)",
+  );
+  assert.equal(
+    (posting.author ?? {})["@type"],
+    "Person",
+    "expected the BlogPosting author to be the Person",
+  );
+
+  const crumbs = blocks.find((b) => b["@type"] === "BreadcrumbList");
+  assert.ok(crumbs, "expected a BreadcrumbList JSON-LD node on the post page");
+  const items = crumbs.itemListElement ?? [];
+  assert.equal(items.length, 3, "expected Home > Blog > <post> crumbs");
+  assert.equal(items[2].name, published.title, "the terminal crumb is the post title");
+
+  // A self-referential canonical must be emitted (spec 0040).
+  assert.match(
+    html,
+    new RegExp(`<link\\s+rel="canonical"\\s+href="[^"]*/blog/${published.slug}"`),
+    "expected a self-referential canonical on the published post",
+  );
+});
+
+// A draft must not leak article structured data at its PUBLISHED URL: the
+// BlogPosting JSON-LD sits behind the same isPublishedNow gate as the published
+// render, so the published route 404s for a draft slug and emits no BlogPosting.
+// Targeting the published route (not the preview route, which never emits a
+// BlogPosting by design) makes this a FAILABLE guard: if the gate regressed, the
+// draft would render at /blog/<slug> WITH a BlogPosting node and redden this
+// (spec 0040 + learning 0019/0034). The separate check below asserts the public
+// preview route is noindex (no canonical).
+test("a draft emits no BlogPosting JSON-LD at its published URL and no canonical in preview", async () => {
+  const draft = getDraftPosts()[0];
+  if (!draft) return; // no drafts to exercise
+
+  // The published route is gated: a draft slug 404s and carries no BlogPosting.
+  const published = await fetch(BASE + `/blog/${draft.slug}`);
+  const publishedHtml = await published.text();
+  assert.equal(
+    published.status,
+    404,
+    "a draft must NOT be reachable at its published /blog/<slug> URL",
+  );
+  assert.ok(
+    !publishedHtml.includes('"@type":"BlogPosting"'),
+    "the published route for a draft slug must NOT emit a BlogPosting node (no article schema leak)",
+  );
+
+  // The preview page is public (unfurl) but noindex: no canonical link.
+  const previewHtml = await (
+    await fetch(BASE + `/blog/drafts/${draft.slug}`)
+  ).text();
+  assert.ok(
+    !/<link\s+rel="canonical"/.test(previewHtml),
+    "a draft preview must NOT emit a canonical link (noindex)",
+  );
+});
+
+// The homepage carries a WebSite node and /blog carries a Blog node (spec 0040);
+// the site-wide Person node is enriched with worksFor + knowsAbout.
+test("/ emits WebSite JSON-LD (Person enriched) and /blog emits Blog JSON-LD", async () => {
+  const home = await (await fetch(BASE + "/")).text();
+  const homeBlocks = [
+    ...home.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs),
+  ].map((m) => JSON.parse(m[1]));
+
+  assert.ok(
+    homeBlocks.some((b) => b["@type"] === "WebSite"),
+    "expected a WebSite JSON-LD node on the home page",
+  );
+  const person = homeBlocks.find((b) => b["@type"] === "Person");
+  assert.ok(person, "expected the site-wide Person node");
+  assert.ok(person.worksFor?.name, "expected the Person node to carry worksFor.name");
+  assert.ok(
+    Array.isArray(person.knowsAbout) && person.knowsAbout.length > 0,
+    "expected the Person node to carry a non-empty knowsAbout",
+  );
+  // A self-referential canonical on the home page: it must point at the site
+  // ROOT (origin with an optional trailing slash, no extra path), not just any
+  // href, so a regressed home canonical to some other path would redden.
+  assert.match(
+    home,
+    /<link\s+rel="canonical"\s+href="https?:\/\/[^"\/]+\/?"/,
+    "expected the home canonical to point at the site root",
+  );
+
+  const blog = await (await fetch(BASE + "/blog")).text();
+  const blogBlocks = [
+    ...blog.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs),
+  ].map((m) => JSON.parse(m[1]));
+  assert.ok(
+    blogBlocks.some((b) => b["@type"] === "Blog"),
+    "expected a Blog JSON-LD node on /blog",
+  );
+  assert.match(
+    blog,
+    /<link\s+rel="canonical"\s+href="[^"]*\/blog"/,
+    "expected a self-referential canonical on /blog",
+  );
+});
+
+// Canonical coverage across route kinds (spec 0040): a noindex route emits NO
+// canonical, and an ordinary indexable page emits a SELF-referential one. Guards
+// both directions of the canonical policy, not just the home/post pages.
+test("noindex routes omit the canonical; indexable pages self-reference it", async () => {
+  // /login is noindex (robots index:false): no canonical link at all.
+  const login = await (await fetch(BASE + "/login")).text();
+  assert.ok(
+    !/<link\s+rel="canonical"/.test(login),
+    "a noindex route (/login) must NOT emit a canonical link",
+  );
+  // /about is a plain indexable page: a self-referential canonical.
+  const about = await (await fetch(BASE + "/about")).text();
+  assert.match(
+    about,
+    /<link\s+rel="canonical"\s+href="[^"]*\/about"/,
+    "expected a self-referential canonical on /about",
+  );
+});
