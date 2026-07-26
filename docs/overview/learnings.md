@@ -119,6 +119,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   PER-DEPLOY gate so a future regression fails the deploy that introduces it. (0008/0019)
 - **A generated-artifact freshness gate must hash EVERY input that affects the output** (and only
   those) and regenerate from a clean build; verify the real output too, not just the hash. (0005/0007)
+- **A source-keyed freshness gate also trips on edits that DON'T change the output** - a site-wide
+  metadata sweep (adding `alternates.canonical` to every page) touches `src/app/resume/page.tsx`,
+  which is a hashed input to the resume-PDF gate, so `resume:pdf:check` reddens in CI after a green
+  local test even though the printed PDF is byte-identical (canonical is head-only). When a broad
+  change rakes across per-page sources, re-run every artifact gate keyed on those files
+  (`npm run resume:pdf`) and commit the refreshed artifact + hash, or the CI-only check fails the PR. (0040)
 - **A deploy that changes runtime topology (container count, memory) is a CAPACITY change** - a zero-
   downtime rollout doubles the footprint during the swap; size the host (and cohosted neighbours) for
   the peak, cap each stack's memory, and bound the deploy job so a wedged host fails fast. (0015)
