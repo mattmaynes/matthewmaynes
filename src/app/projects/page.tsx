@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Projects",
   description:
     "Things Matthew Maynes has built and shipped - professional work, open-source tooling, and hands-on builds.",
+  alternates: { canonical: "/projects" },
 };
 
 /**

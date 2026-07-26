@@ -4,7 +4,9 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ThemeScript } from "@/components/theme-script";
 import { PostHogProvider } from "@/components/posthog-provider";
-import { images, site, twitterHandle } from "@/lib/site";
+import { JsonLd } from "@/components/json-ld";
+import { personJsonLd } from "@/lib/structured-data";
+import { site, twitterHandle } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -49,18 +51,6 @@ export const viewport: Viewport = {
   ],
 };
 
-// Machine-readable identity for search engines and rich results. Mirrors the
-// human-facing site constants - one source, no drift.
-const personJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name: site.name,
-  url: site.url,
-  jobTitle: site.title,
-  image: new URL(images.headshot.src, site.url).toString(),
-  sameAs: [site.social.linkedin, site.social.github, site.social.x],
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -72,15 +62,7 @@ export default function RootLayout({
         <ThemeScript />
       </head>
       <body className="flex min-h-full flex-col bg-bg font-sans text-text">
-        <script
-          type="application/ld+json"
-          // Static, build-time JSON from our own constants - no user input.
-          // Escape `<` defensively in case a field ever becomes dynamic, so the
-          // payload can never break out of the script element.
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c"),
-          }}
-        />
+        <JsonLd data={personJsonLd()} />
         <PostHogProvider>
           <Header />
           <main className="flex-1">{children}</main>

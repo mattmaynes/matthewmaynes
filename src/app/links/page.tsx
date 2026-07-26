@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   title: "Links",
   description:
     "The quickest way in: read Matthew Maynes' blog, subscribe for new writing, and find him across social media.",
+  alternates: { canonical: "/links" },
 };
 
 // Re-render every 60s (shared ISR window, spec 0035) so the "Latest post" card

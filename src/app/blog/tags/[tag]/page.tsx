@@ -48,6 +48,9 @@ export async function generateMetadata({
     // Layout appends " - Matthew Maynes"; this is the route-unique title.
     title: `Posts tagged "${tag}" - Blog`,
     description: `${count} ${plural} tagged "${tag}" on the Matthew Maynes blog - notes on engineering, leadership, nature, and life.`,
+    // Self-referential canonical (spec 0040), only on the found branch (the
+    // unknown-tag branch above stays minimal). `slug` is the URL-safe tag slug.
+    alternates: { canonical: `/blog/tags/${slug}` },
   };
 }
 

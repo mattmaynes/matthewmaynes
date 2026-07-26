@@ -28,7 +28,13 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = detailProjects().find((p) => p.slug === slug);
   if (!project) return { title: "Projects" };
-  return { title: project.title, description: project.tagline };
+  return {
+    title: project.title,
+    description: project.tagline,
+    // Self-referential canonical (spec 0040), only on the found branch; the 404
+    // branch above stays minimal.
+    alternates: { canonical: `/projects/${slug}` },
+  };
 }
 
 export default async function ProjectDetailPage({
