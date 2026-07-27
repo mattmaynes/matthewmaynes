@@ -56,7 +56,7 @@ export default function LinksPage() {
   const pixelated = cover?.pixelated === true;
 
   return (
-    <section className="mx-auto max-w-md px-5 py-8 sm:py-12">
+    <section className="mx-auto px-5 py-8 sm:py-12">
       {/* Compact identity header - a small avatar, name, and one-line title. Kept
           deliberately minimal so the links below are the focus. */}
       <div className="flex flex-col items-center text-center">
@@ -77,7 +77,7 @@ export default function LinksPage() {
       </div>
 
       {/* Links first: the blog + the social channels (the primary asks). */}
-      <div className="mt-6 space-y-3">
+      <div className="mt-6 space-y-3 max-w-md mx-auto">
         <Button asChild size="lg" className="w-full">
           <Link href="/blog">Read the blog</Link>
         </Button>
@@ -99,49 +99,49 @@ export default function LinksPage() {
         </div>
       </div>
 
-      {/* Then the subscribe ask - the shared subscribe form (spec 0018), attributed
-          to this surface via the links_page analytics source. `links-subscribe`
-          keeps the form's fields STACKED in this narrow column (globals.css) instead
-          of squeezing email + name + button into one row and smooshing the name. */}
-      <div className="links-subscribe mt-6 border-t border-border pt-6">
-        <SubscribeForm source="links_page" alwaysShowName />
+      <div className="mt-6 border-t border-border pt-6">
+        <div className="max-w-2xl mx-auto">
+          <SubscribeForm source="links_page" alwaysShowName />
+        </div>
       </div>
 
       {/* Finally a taste of the latest post, linking straight into it. */}
       {latest ? (
         <div className="mt-6 border-t border-border pt-6">
-          {/* A real section heading (not a styled span) so the Latest-post section
-              is labelled for assistive tech consistently with the subscribe
-              section's h2 above it. h1 name -> h2 sections -> h3 post title. */}
-          <h2 className="text-caption font-semibold tracking-wide text-text-subtle uppercase">
-            Latest post
-          </h2>
-          <Link
-            href={`/blog/${latest.slug}`}
-            className="group mt-3 block overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset focus-visible:outline-none"
-          >
-            {cover ? (
-              <Image
-                src={cover}
-                alt={cover.alt}
-                sizes="(max-width: 448px) 100vw, 448px"
-                placeholder={pixelated ? "empty" : "blur"}
-                className="aspect-[16/9] w-full object-cover"
-                style={pixelated ? { imageRendering: "pixelated" } : undefined}
-              />
-            ) : null}
-            <div className="p-4">
-              <h3 className="text-body-lg font-semibold text-text group-hover:text-primary">
-                {latest.title}
-              </h3>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <p className="text-caption text-text-subtle">
-                  <time dateTime={latest.date}>{formatPostDate(latest.date)}</time>
-                </p>
-                <ReadingTimePill minutes={readingMinutes(latest)} />
+          <div className="max-w-2xl mx-auto">
+            {/* A real section heading (not a styled span) so the Latest-post section
+                is labelled for assistive tech consistently with the subscribe
+                section's h2 above it. h1 name -> h2 sections -> h3 post title. */}
+            <h2 className="text-caption font-semibold tracking-wide text-text-subtle uppercase">
+              Latest post
+            </h2>
+            <Link
+              href={`/blog/${latest.slug}`}
+              className="group mt-3 block overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset focus-visible:outline-none"
+            >
+              {cover ? (
+                <Image
+                  src={cover}
+                  alt={cover.alt}
+                  sizes="(max-width: 448px) 100vw, 448px"
+                  placeholder={pixelated ? "empty" : "blur"}
+                  className="aspect-[16/9] w-full object-cover"
+                  style={pixelated ? { imageRendering: "pixelated" } : undefined}
+                />
+              ) : null}
+              <div className="p-4">
+                <h3 className="text-body-lg font-semibold text-text group-hover:text-primary">
+                  {latest.title}
+                </h3>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <p className="text-caption text-text-subtle">
+                    <time dateTime={latest.date}>{formatPostDate(latest.date)}</time>
+                  </p>
+                  <ReadingTimePill minutes={readingMinutes(latest)} />
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         </div>
       ) : null}
 

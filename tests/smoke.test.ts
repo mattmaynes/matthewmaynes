@@ -380,13 +380,6 @@ const routes = [
       "min read",
       // The path back into the rest of the site.
       "Explore the whole site",
-      // The subscribe form is wrapped in `links-subscribe` so the globals.css rule
-      // can keep its fields STACKED in this narrow column. This marker only proves
-      // the WRAPPER ships (not the stacking itself); two more guards cover the rest:
-      // the `sm:flex-row sm:items-end` marker below proves the override's TARGET
-      // element still ships (so a Canopy rename that no-ops the override reddens),
-      // and the dedicated CSS-bundle test further down proves the rule text ships.
-      "links-subscribe",
       // The shared form's row container - the element the `.links-subscribe`
       // override targets. If Canopy renamed/dropped this class the override would
       // silently no-op and the form would re-smoosh, so pin it (as /subscribe and
@@ -679,37 +672,6 @@ test("the footer links /links, shown on desktop only (hidden sm:inline)", async 
     html,
     /class="hidden sm:inline"[\s\S]{0,160}href="\/links"/,
     "expected the /links footer link to sit inside a `hidden sm:inline` wrapper (desktop-only)",
-  );
-});
-
-// The /links stacking fix (feedback 0025) lives in a CSS rule, which an HTML-only
-// grep can't see - so deleting the rule would otherwise leave every test green
-// while the form re-smooshes. Guard the RULE itself: fetch the compiled stylesheet
-// the page links and assert the `.links-subscribe` stacking declaration ships. This
-// is the failable guard on the actual behaviour (the wrapper/`sm:flex-row` markers
-// above only prove the hook + target render).
-test("the /links subscribe-stack CSS rule ships in the compiled stylesheet", async () => {
-  const html = await (await fetch(BASE + "/links")).text();
-  const cssHrefs = [
-    ...html.matchAll(/href="([^"]+\.css(?:\?[^"]*)?)"/g),
-  ].map((m) => m[1]);
-  assert.ok(cssHrefs.length > 0, "expected /links to link at least one stylesheet");
-  let found = false;
-  for (const href of cssHrefs) {
-    const css = await (await fetchLocal(href)).text();
-    // The scoped rule targets `.links-subscribe` descendants and forces a column.
-    // Match tolerantly of minification whitespace.
-    if (
-      css.includes(".links-subscribe") &&
-      /\.links-subscribe[^{}]*\{[^{}]*flex-direction:\s*column/.test(css)
-    ) {
-      found = true;
-      break;
-    }
-  }
-  assert.ok(
-    found,
-    "expected the `.links-subscribe ... flex-direction: column` stacking rule in the compiled CSS",
   );
 });
 
