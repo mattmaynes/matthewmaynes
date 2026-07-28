@@ -26,6 +26,7 @@ import memoryKeeperLogin from "../../public/images/blog/memory-keeper-login.png"
 import memoryKeeperHome from "../../public/images/blog/memory-keeper-home.png";
 import memoryKeeperSettings from "../../public/images/blog/memory-keeper-settings.png";
 import memoryKeeper404 from "../../public/images/blog/memory-keeper-404.png";
+import leadershipBoardroom from "../../public/images/blog/leadership-boardroom.png";
 
 import type { SiteImage } from "./site";
 
@@ -110,6 +111,10 @@ export const blogImages = {
   "memory-keeper-404.png": {
     ...memoryKeeper404,
     alt: "A mobile Safari window at memorykeeper.app showing a bare '404 - Page not found.' error with a single Home link, reached by tapping the app's data policy button.",
+  },
+  "leadership-boardroom.png": {
+    ...leadershipBoardroom,
+    alt: "An empty executive boardroom with a long polished wood table and high-backed black leather chairs, a floral lei and a grass skirt laid across the table, tall windows looking onto a parking lot beyond.",
   },
 } satisfies Record<string, BlogImage>;
 
