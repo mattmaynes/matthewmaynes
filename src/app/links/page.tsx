@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui";
-import { ReadingTimePill } from "@/components/reading-time-pill";
+import { PostRow } from "@/components/post-row";
 import { SubscribeForm } from "@/components/subscribe-form";
 import {
   FacebookIcon,
@@ -12,12 +12,8 @@ import {
   XIcon,
 } from "@/components/social-icons";
 import { site, images } from "@/lib/site";
-import {
-  getPublishedPosts,
-  formatPostDate,
-  readingMinutes,
-} from "@/lib/blog";
-import { getBlogImage } from "@/lib/blog-images";
+import { getPublishedPosts, newPostSlug } from "@/lib/blog";
+import { toPostRows } from "@/lib/post-summaries";
 
 export const metadata: Metadata = {
   title: "Links",
@@ -30,6 +26,11 @@ export const metadata: Metadata = {
 // picks up a scheduled post on its own once its publishAt passes, with no deploy -
 // same treatment as /subscribe.
 export const revalidate = 60;
+
+// Evaluated once at module load (build/process start) - the "new as of this build"
+// semantics the "New" badge wants; computing Date.now() in render would trip
+// react-hooks/purity (learnings 0012). Mirrors the home page's "Latest post".
+const NOW_MS = Date.now();
 
 // The five social profiles, largest-reach first, as tappable icon buttons. Mirrors
 // the footer's list but sized up for a mobile "link in bio" (spec 0039).
@@ -48,12 +49,13 @@ const socials = [
 // Component fully in the SSG HTML; the only client island is the SubscribeForm.
 export default function LinksPage() {
   // The most recent published post, shown at the bottom as a taste of the writing.
-  // Resolved server-side (the cover carries its blurDataURL) exactly like
-  // /subscribe, and from the PUBLISHED set so a draft or not-yet-due scheduled post
-  // never leaks.
-  const latest = getPublishedPosts()[0];
-  const cover = latest?.coverKey ? getBlogImage(latest.coverKey) : undefined;
-  const pixelated = cover?.pixelated === true;
+  // Rendered through the same `toPostRows` + `PostRow` the home page and /blog
+  // listing use, so the summary (excerpt, category, tags, cover, reading time) is
+  // pixel-identical here. From the PUBLISHED set so a draft or not-yet-due
+  // scheduled post never leaks; the "New" badge is derived over the full set.
+  const posts = getPublishedPosts();
+  const newSlug = newPostSlug(posts, NOW_MS, 30);
+  const latest = toPostRows(posts.slice(0, 1), newSlug)[0] ?? null;
 
   return (
     <section className="mx-auto px-5 py-8 sm:py-12">
@@ -105,42 +107,18 @@ export default function LinksPage() {
         </div>
       </div>
 
-      {/* Finally a taste of the latest post, linking straight into it. */}
+      {/* Finally a taste of the latest post - the same rich summary row the home
+          page and /blog listing render (excerpt, category, tags, reading time),
+          via the shared PostRow so it never drifts from them. */}
       {latest ? (
         <div className="mt-6 border-t border-border pt-6">
           <div className="max-w-2xl mx-auto">
-            {/* A real section heading (not a styled span) so the Latest-post section
-                is labelled for assistive tech consistently with the subscribe
-                section's h2 above it. h1 name -> h2 sections -> h3 post title. */}
             <h2 className="text-caption font-semibold tracking-wide text-text-subtle uppercase">
               Latest post
             </h2>
-            <Link
-              href={`/blog/${latest.slug}`}
-              className="group mt-3 block overflow-hidden rounded-xl border border-border bg-surface transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset focus-visible:outline-none"
-            >
-              {cover ? (
-                <Image
-                  src={cover}
-                  alt={cover.alt}
-                  sizes="(max-width: 448px) 100vw, 448px"
-                  placeholder={pixelated ? "empty" : "blur"}
-                  className="aspect-[16/9] w-full object-cover"
-                  style={pixelated ? { imageRendering: "pixelated" } : undefined}
-                />
-              ) : null}
-              <div className="p-4">
-                <h3 className="text-body-lg font-semibold text-text group-hover:text-primary">
-                  {latest.title}
-                </h3>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <p className="text-caption text-text-subtle">
-                    <time dateTime={latest.date}>{formatPostDate(latest.date)}</time>
-                  </p>
-                  <ReadingTimePill minutes={readingMinutes(latest)} />
-                </div>
-              </div>
-            </Link>
+            <ul className="mt-3 flex flex-col">
+              <PostRow post={latest} />
+            </ul>
           </div>
         </div>
       ) : null}
