@@ -27,6 +27,7 @@ import memoryKeeperHome from "../../public/images/blog/memory-keeper-home.png";
 import memoryKeeperSettings from "../../public/images/blog/memory-keeper-settings.png";
 import memoryKeeper404 from "../../public/images/blog/memory-keeper-404.png";
 import leadershipBoardroom from "../../public/images/blog/leadership-boardroom.png";
+import rise from "../../public/images/blog/rise.webp";
 
 import type { SiteImage } from "./site";
 
@@ -115,6 +116,10 @@ export const blogImages = {
   "leadership-boardroom.png": {
     ...leadershipBoardroom,
     alt: "An empty executive boardroom with a long polished wood table and high-backed black leather chairs, a floral lei and a grass skirt laid across the table, tall windows looking onto a parking lot beyond.",
+  },
+  "rise.webp": {
+    ...rise,
+    alt: "The Rise marketing dashboard in Constant Contact: a welcome screen with campaign performance metrics.",
   },
 } satisfies Record<string, BlogImage>;
 
