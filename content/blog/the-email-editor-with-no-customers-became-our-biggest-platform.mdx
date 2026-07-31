@@ -3,57 +3,64 @@ title: The Email Editor With No Customers Became Our Biggest Platform
 date: 2026-07-31
 tags: [Constant Contact, Platform, Leadership]
 category: Engineering
-excerpt: I joined Constant Contact to lead a team building a brand-new email editor. It never found customers, so we repurposed it into Rise, the platform that now powers the whole product for over 100 developers shipping code twice a day.
+excerpt: I joined Constant Contact to lead a team building a brand-new email editor. It never found customers, so we repurposed it into Rise, the platform that now powers the whole product for over 150 developers shipping code twice a day.
 cover: rise.webp
 coverCaption: Rise, the platform that started life as an email editor no one was going to sell.
-publishAt: 2026-07-30T22:20:00-04:00
-draft: true
+publishAt: 2026-07-31T16:00:00-04:00
 ---
 
-*A note before this one: I left Constant Contact after two and a half years. There's more from that time than fits in a single post, so this is the first of a few reflections on what I built and what it taught me.*
+_A note before this one: I left Constant Contact after two and a half years. There's more from that time than fits in a single post, so this is the first of a few reflections on what I built and what it taught me._
 
 ## Help the small stand tall
 
-I initially joined Constant Contact on a recommendation from a friend who had recently joined. I was coming off of nearly 10 years working in q/kdb+ at KX and the company it acquired, Bedarra Research Labs. I was stepping into a role as a senior manager and would be leading frontend development teams. They were building systems in JavaScript, TypeScript and React. I had used these technologies before but had little work experience. I knew that I was stepping into a completely different ballgame but I was up for the challenge.
+I initially joined Constant Contact on a recommendation from a friend who had recently joined. I was coming off of nearly 10 years working in q/kdb+ at KX and the company it acquired, Bedarra Research Labs. I was stepping into a role as a senior manager and would be leading frontend development teams. They were building systems in TypeScript and React and planning on using NextJS for future work. I had used these technologies before but had little work experience. I knew that I was stepping into a completely different ballgame but I was up for the challenge.
 
-The company's mantra is "help the small stand tall," referring to helping small businesses compete with larger companies by giving them the marketing tools they need at an economic price. This message resonated with me. My parents have been entrepreneurs my whole life. When they had brick and mortar storefronts as I was growing up, they used Constant Contact to market their products.
-
-I knew I had room to grow and that I had a strong purpose. I was excited and ready to dive in. It didn't take long after I started that I was given a project that would define my time at the company.
+The company's mantra is "help the small stand tall," referring to helping small businesses compete with larger companies by giving them the marketing tools they need at an economic price. My parents have been entrepreneurs my whole life. When they had brick and mortar storefronts as I was growing up, they used Constant Contact to market their products. I knew the company and I had strong conviction in the mission. I was excited and ready to dive in. It didn't take long after I started that I was given a project that would define my time at the company.
 
 ## How hard can email be?
 
-Imagine you had to get a team of strangers through an obstacle course but each person was blindfolded and had a completely different course to navigate at the exact same time. That's what it is like to send an email. It seems so simple, put some text here, a button there, an image on top and you are set, where is the difficulty? When you send that email, it lands in several inboxes at the same time. Some of those inboxes are on computers, some on tablets, some on phones, each with a different screen size. Then to make matters worse, each email client (Gmail, Outlook, Apple Mail, etc.) renders the email with their own quirks, none of them are consistent. Something as simple as designing and sending an email is much harder than it may initially seem.
+Imagine you had to get a team of strangers through an obstacle course but each person was blindfolded and had a completely different obstacle to navigate at the exact same time. That's what it is like to send an email. It seems so simple, put some text here, a button there, an image on top and you are set, where is the difficulty? When you send that email, it lands in several inboxes at the same time. Some of those inboxes are on desktop computers, some on tablets, some on phones, each with a different screen size. Then to make matters worse, each email client (Gmail, Outlook, Apple Mail, etc.) renders the email with their own quirks, none of them are consistent. Something as simple as designing and sending an email is much harder than it may initially seem. Constant Contact has spent years building a cross-platform email editor that is capable of producing beautiful custom emails that render seamlessly in all of the major email clients.
 
-Constant Contact has spent years building a cross-platform email editor that is capable of producing beautiful custom emails that render seamlessly in all of the major email clients. The first major project I worked on when I joined Constant Contact was to lead a team to build an entirely new email editor as a separate, simplified product. Knowing nothing about how to build an email editor, or how hard it is to make an email look good, we set off.
+Not knowing any of that difficulty or the legacy of the Constant Contact email system, I was given a mission to lead a team to build a brand new email editor. It would be designed to work better on mobile devices and needed to be designed to work in the evolving landscape of AI agents. Knowing nothing about how to build an email editor, or how hard it is to make an email look good, we set off.
 
-## An incredible team
+## Waste-free delivery
 
-My manager at the time organized a team for me to lead to build this new email editor product. We didn't waste a moment. We defined a simple gateway and adapter pattern architecture and got building. I'm so thankful for the team my manager assembled. I didn't know how lucky I was at the time but looking back, I had incredible engineers driving the project forward. In just under 3 months we had an initial version that was ready for customer testing. We started doing moderated sessions and getting feedback and iterating on the product. It felt incredible that we were so close to having something we could go to market with, and then reality struck.
+My director at the time organized a team for me to lead to build this new email editor product. We didn't waste a moment. We defined a simple gateway and adapter pattern architecture and got building. I'm so thankful for the team my director assembled. I didn't know how lucky I was at the time but looking back, I had incredible engineers driving the project forward. In just under 3 months we had an initial version that was ready for customer testing. We started doing moderated sessions and getting feedback and iterating on the product. It felt incredible that we were so close to having something we could go to market with, and then reality struck.
 
-In my naive haste to build a product I hadn't bothered to investigate the marketing plan for our new product. It turned out there wasn't one. We had been building a product for no one and we suddenly had no direction. We also started to run up against email limitations. We were facing the problem of making emails look consistently good, and realizing the hard way why a cross-platform editor already existed. Months of effort were about to be wasted.
+In our haste to build a product I hadn't bothered to investigate the marketing plan for our new product. **It turned out there wasn't one.**
 
-I couldn't sit idle. We needed a way to save it. Thanks to a new product manager that had just joined the team, we devised a plan. Instead of building a new product, what if we made this the new platform for the current product?
+As an engineer, it isn't normally part of my role to have a go-to-market plan. In my career, I've had product leaders and marketing leaders that have managed this portion of the job for me. Now I was realizing that I had a major gap in my knowledge of a zero-to-one launch. _How do you actually get users?_
+
+We had been building a product for no one and we suddenly had no direction. We were also starting to run up against email limitations. We were learning the hard way why Constant Contact had invested in a cross-platform email editor for years. It is hard to make emails look consistently good for all users. **Months of effort were about to be wasted.**
+
+I couldn't sit idle. We needed a way to save it. At the time, a new product manager had recently joined our team. She stepped in to save the project and we devised a plan. Instead of building a new product, what if we made this the new platform for the current product?
 
 ## How to get the outcome you want
 
-The new product manager that joined the company quickly became a friend and taught me some valuable lessons. The first was how to get a group to agree to an outcome before you even ask.
+The new product manager quickly became a friend and taught me some valuable lessons. The first was how to get a group of stakeholders to agree to an outcome before you even ask.
 
 We knew we wanted to keep the platform we had built but find a way to repurpose it as the foundation for the UI for the core product. We started by going to each individual stakeholder and discussing the concept and possible path forward. Once the majority of the stakeholders were already onboard, we held a decision meeting.
 
-In the meeting, we made a pitch to use this new platform to power Constant Contact. It was an easy victory. We also gave the platform a new name.
+In the meeting, we made a pitch to use this new platform to power Constant Contact. **It was an easy victory**. We also gave the platform a new name. Constant Contact helps the small stand tall. We give small businesses the tools so they can rise above the competition. We decided to call the platform **Rise**. Over the months that followed, I led several teams that migrated most of the frontend application to this new platform.
 
-Constant Contact helps the small stand tall. We give small businesses the tools so they can rise above the competition. We decided to call the platform Rise.
+## A faster engine
 
-## A new engine
+Rise was built with NextJS and brought server-side rendering for application web pages. This accelerated page load speeds and improved Lighthouse scores on most pages from the mid 20s to the mid 80s (on a scale of 100). This meant that user experience for end customers was 3-4x faster on their local devices.
 
-Over the months that followed, I led several teams that migrated most of the frontend application to this new platform. Rise ushered in a new level of performance for both the user and the development teams. By using a consistent frontend architecture, we were able to build continuous deployment mechanisms that took teams from deploying changes once every two weeks to twice per day. Code is now shipping 20x more often, while reducing the defect count at the same time.
+Not only did the performance improve for customers, it also improved for developers. By using a consistent frontend architecture, we were able to build continuous deployment mechanisms that took teams from deploying changes once every two weeks to twice per day. Code is now shipping 20x more often.
+
+If you are not careful, shipping more often could lead to more defects slipping into production. It was critical that we maintained or improve quality with this platform. This meant changing how features were shipped so that we separated the _deploy_ from the _release_ of a feature. Code would deploy 2x per day, but features would be locked behind feature gates until the feature was ready for rollout.
+
+_We could now get value into customers hands faster than ever before._
+
+## Migrating with care
 
 Although the change was generally better for developers and customers, we still had nearly half a million customers using the old UI. The new user interface brought with it a new navigation structure and rolling out the changes required thoughtful consideration for how those customers were impacted.
 
-We started with an opt-in campaign for users to get the new UI. Then we began to force cohorts into the new experience carefully. As we added more users, we continued to accept feedback and make adjustments to keep customers happy. By the time we completed the rollout, we had less than a 5% opt-out rate, which was a major success.
+We started with an opt-in campaign for users to get the new UI. Then we began to automatically enroll cohorts into the new experience carefully. As we added more users, we continued to collect feedback and make adjustments to keep customers happy. By the time we completed the rollout, we had less than a 5% opt-out rate, which was a major success.
 
 ## A platform to power the future
 
-The Rise platform was a success. As of my last day, over 100 developers have used it with many shipping code twice daily. I'm so proud of what the teams I worked with were able to accomplish and I'm hopeful that it will serve Constant Contact for years to come.
+As of my last day, over 150 developers have used it with many shipping code twice daily. I'm so proud of what the teams I led were able to accomplish and I'm hopeful that it will serve Constant Contact for years to come.
 
-The Rise platform was one of the larger projects I led as part of my time at Constant Contact, but it is far from the only one. In my next post, I'll share some of the other areas I was able to contribute and what lessons they taught me.
+The Rise platform was one of the largest projects I led as part of my time at Constant Contact. It laid the groundwork for many of the other amazing things I had an opportunity to work on. In my next post, I'll share some of the other areas I was able to contribute and what lessons they taught me.
