@@ -149,17 +149,51 @@ learning, and both new surfaces have a trap:
   so the primary fill alone proves nothing. The `aria-label` covers presence; the RSS collapse is
   guarded by `max-[400px]:hidden`, a grep-unique string that reddens if the icon-only behaviour is
   reverted.
-- For the in-post block, `"Subscribe for updates"` and `"No spam; unsubscribe anytime."` already
-  appear on the same page from the end-of-post form, so neither can prove the in-post block rendered.
-  Guard on the title copy `Enjoying what you are reading?` and on
+- For the in-post block, on a **published** post `"Subscribe for updates"` and the shared no-spam
+  line also come from the end-of-post form on the same page, so neither can prove the in-post block
+  rendered. Guard on the title copy `Enjoying what you are reading?` and on
   `aria-label="Subscribe to the blog"` (the `<aside>` landmark), both unique to this component.
+- **Presence is not enough**: assert the block actually contains a form (an `name="email"` input and
+  the form's responsive row, both scoped to the `<aside>`), or deleting `<SubscribeForm>` from the
+  component ships a bordered box of copy with every marker still green. Assert `blog_post_inline`
+  too - it is serialized into the RSC payload, and flipping it to `blog_post` would silently merge
+  the two funnels this spec exists to separate.
 - The fixture-post assertion runs on the drafts preview route, which the smoke suite already drives
   with an authenticated session, so it exercises the real MDX compile rather than a mocked render.
+
+**Preview pages show the in-post block but not the end-of-post one.** A preview deliberately
+suppresses the end-of-post subscribe *chrome* (`post-article.tsx`, specs 0034/0035): a draft is not a
+place to collect signups. `<PostSubscribe />` is the opposite case - the author put it in the body,
+so a preview that hid it would misrepresent the post being reviewed. Content renders, chrome does
+not. The asymmetry is intended, and pinned in both directions by the smoke test.
+
+**Key decision - captions get a narrower component map than the body.** `InlineMdx` compiles the
+`coverCaption` frontmatter string and previously reused the body map, so `<PostSubscribe />` would
+have been resolvable inside a `<figcaption>` - rendering a live form and a second "Subscribe to the
+blog" landmark in a caption, which is wider than the "in a post's body" surface the authoring docs
+describe and would break the uniqueness premise the smoke markers rest on. Captions now get an inline
+subset (`a`, `strong`, `em`); an unregistered capitalized name still throws at compile, so a
+`<PostSubscribe />` in a caption fails the build loudly instead of rendering something odd.
 
 **Analytics.** `source: "blog_post_inline"` is a new value in an existing PII-free dimension - no new
 event, no new payload field, nothing about the subscriber. It makes the in-post placement's
 conversion separable from the end-of-post block's, which is the only way to judge later whether the
 "Out" decision above (keeping both blocks) is right.
+
+The `/blog` CTA is a **link**, not a form, so it needs attribution of its own: `/subscribe`
+hard-codes `source="subscribe_page"`, which would leave a CTA-driven signup indistinguishable from a
+footer-link, `/links`, shared-URL, or direct visit - and the CTA would inflate that bucket
+invisibly. Autocapture is no fallback (the footer emits an `<a>` with the same text and href on every
+page). So the CTA links to `/subscribe?from=blog_header`: posthog-js stamps `$current_url` on every
+event and the form submits in place via `fetch`, so the existing `blog_subscribe_*` events carry the
+param with no new event, no new client component, and no change to the local-suppression gate. The
+page never reads `searchParams` and its canonical is already pinned, so ISR and SEO are unaffected.
+
+**`ph-no-capture` restored.** Spec 0018 requires the subscribe form to carry it; the Canopy migration
+dropped it (PostHog's `maskAllInputs` was still masking the value, so nothing leaked and no test
+failed). This spec puts that input into article bodies, so the class is restored once at the app
+wrapper - covering all seven placements - and given a smoke marker so it cannot go missing silently
+again.
 
 ## Acceptance
 

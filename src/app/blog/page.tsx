@@ -5,7 +5,7 @@ import { toPostRows } from "@/lib/post-summaries";
 import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { Button } from "@/components/ui";
-import { RssIcon } from "@/components/blog-icons";
+import { RssButton } from "@/components/rss-button";
 import { JsonLd } from "@/components/json-ld";
 import { blogJsonLd } from "@/lib/structured-data";
 import { blogFeedTitle } from "@/lib/site";
@@ -67,25 +67,20 @@ export default function BlogPage() {
               Name) still holds - and this string is grep-unique, which is what the
               smoke test guards on (href="/subscribe" is emitted by the footer on
               every page, so it could never fail). */}
+          {/* ?from=blog_header is attribution, not routing. /subscribe hard-codes
+              source="subscribe_page", so without it a conversion driven by this CTA
+              is indistinguishable from a footer-link, /links, shared-URL, or direct
+              visit - and this CTA would silently inflate that bucket. Autocapture is
+              no fallback: the footer emits an <a> with the same text and href on
+              every page. posthog-js stamps $current_url on every event and the form
+              submits in place via fetch, so the existing blog_subscribe_* events
+              carry the param with no new event and no client component. The page
+              never reads searchParams and its canonical is pinned, so ISR and SEO
+              are unaffected. */}
           <Button asChild aria-label="Subscribe to the blog by email">
-            <Link href="/subscribe">Subscribe</Link>
+            <Link href="/subscribe?from=blog_header">Subscribe</Link>
           </Button>
-          {/* Below 400px the wordmark is dropped and the button squares off to its
-              icon, so the heading plus both CTAs stay on one row on a 360/375px
-              phone. The aria-label above carries the name, so nothing is lost when
-              the text hides. 400px (not `sm`, which is 640) is where "Blog" + two
-              labelled buttons actually stop fitting. */}
-          <Button
-            asChild
-            variant="outline"
-            aria-label="Subscribe to the blog via RSS"
-            className="max-[400px]:w-10 max-[400px]:gap-0 max-[400px]:px-0"
-          >
-            <a href="/blog/feed.xml">
-              <RssIcon className="h-5 w-5" />
-              <span className="max-[400px]:hidden">RSS</span>
-            </a>
-          </Button>
+          <RssButton />
         </div>
       </div>
       <p className="mt-3 max-w-2xl text-body text-text-muted">

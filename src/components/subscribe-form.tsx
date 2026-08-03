@@ -20,6 +20,31 @@ import {
  * nothing here knows them. `onSubscribe` forwards the honeypot (`company`) value so
  * the server can still drop naive bots.
  */
+/**
+ * Which surface a subscribe form instance renders on - a PII-free analytics
+ * dimension so the placements are separately attributable. Never the email.
+ *
+ * Exported so a caller can name the type instead of restating the union.
+ * `blog_post_inline` is the mid-article `<PostSubscribe />` block (spec 0041),
+ * deliberately distinct from `blog_post` (the end-of-post block) so the two
+ * placements that can appear on the SAME page stay separable.
+ */
+export type SubscribeSource =
+  | "blog_index"
+  | "blog_post"
+  | "blog_post_inline"
+  | "blog_tag"
+  | "blog_category"
+  | "subscribe_page"
+  | "links_page";
+
+/**
+ * The reassurance line, shared so every placement makes the same promise. The
+ * mid-article block (spec 0041) restates it above its own form, so a change here
+ * must not leave the two surfaces saying different things.
+ */
+export const SUBSCRIBE_NO_SPAM = "No spam; unsubscribe anytime.";
+
 export function SubscribeForm({
   className,
   source,
@@ -27,19 +52,7 @@ export function SubscribeForm({
   heading = true,
 }: {
   className?: string;
-  /** Which surface this instance renders on - a PII-free analytics dimension so
-   *  listing vs. post vs. the dedicated page are attributable. Never the email. */
-  source:
-    | "blog_index"
-    | "blog_post"
-    /** The mid-article <PostSubscribe /> block (spec 0041) - kept distinct from
-     *  "blog_post" (the end-of-post block) so the two placements on the same page
-     *  are separable in analytics. */
-    | "blog_post_inline"
-    | "blog_tag"
-    | "blog_category"
-    | "subscribe_page"
-    | "links_page";
+  source: SubscribeSource;
   /** Show the optional Name field from first paint instead of on email focus -
    *  used by the dedicated `/subscribe` page, which leads with the full ask. */
   alwaysShowName?: boolean;
@@ -93,14 +106,20 @@ export function SubscribeForm({
 
   return (
     <CanopySubscribeForm
-      className={className}
+      // ph-no-capture keeps the typed address out of PostHog autocapture and
+      // session replay. Spec 0018 requires it and the contact form still has it,
+      // but the Canopy migration dropped it here - `maskAllInputs` was masking the
+      // value anyway, so nothing leaked and nothing failed. Restored at the wrapper
+      // so all seven placements get it, including the new in-article one this spec
+      // puts in the middle of a post. Callers' own classes are preserved.
+      className={["ph-no-capture", className].filter(Boolean).join(" ")}
       source={source}
       alwaysShowName={alwaysShowName}
       heading={heading}
       onSubscribe={onSubscribe}
       onEvent={onEvent}
       title="Subscribe for updates"
-      description="New posts in your inbox now and then. No spam; unsubscribe anytime."
+      description={`New posts in your inbox now and then. ${SUBSCRIBE_NO_SPAM}`}
       successBadge="You are on the list"
       successMessage="Check your inbox for a welcome message. If you do not see it, look in your junk or spam folder, move it to your inbox, and mark it as not spam. That keeps my emails landing in your inbox, and it helps me reach everyone else too. Thank you!"
     />

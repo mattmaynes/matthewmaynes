@@ -164,7 +164,9 @@ In:
   gated by `clientAnalyticsEnabled()`, with the form wrapped in `ph-no-capture` -
   mirroring the contact form (learnings feedback 0011). The submit event also carries a
   PII-free **`has_name`** boolean (whether a name was provided) and a `source`
-  (`blog_index`/`blog_post`/`subscribe_page`) - never the name or email itself.
+  and a `source` - never the name or email itself. The `source` taxonomy has grown past the three
+  values this spec shipped (0027, 0038, 0039, 0041 each added one); the canonical list is the
+  exported `SubscribeSource` union in `src/components/subscribe-form.tsx`, not this bullet.
 - Secret wiring **documentation**: add `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`,
   `CTCT_LIST_ID` as empty, commented placeholders in `.env.example` (server-only, never
   `NEXT_PUBLIC_`). The live values already exist in `deploy/docker/.env.site` on the

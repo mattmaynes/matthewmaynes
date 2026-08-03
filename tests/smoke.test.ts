@@ -168,7 +168,14 @@ const routes = [
       // uniquely produces" learning). Nor on the primary fill classes - the
       // active category chip (spec 0038) emits those too, and this route
       // already asserts them above. This string is grep-unique to the CTA.
-      'aria-label="Subscribe to the blog by email"',
+      // The full rendered anchor, not the aria-label alone: the label proves the CTA
+      // exists but not that it still LINKS to /subscribe, so a bad href, a dropped
+      // `asChild`, or changed visible text would all stay green. (href="/subscribe"
+      // on its own is useless here - the shared footer emits it on every page.)
+      // ?from=blog_header is attribution: /subscribe hard-codes
+      // source="subscribe_page", so without the param a CTA-driven conversion is
+      // indistinguishable from footer/direct traffic.
+      'aria-label="Subscribe to the blog by email" href="/subscribe?from=blog_header">Subscribe</a>',
       // The RSS button collapses to icon-only below 400px (spec 0041) so the
       // heading + both CTAs stay on one row on a 360/375px phone. The variant
       // prefix is grep-unique to that treatment, so reverting to an always-
@@ -210,6 +217,13 @@ const routes = [
       // ships in SSR HTML: a partial revert that keeps the max-w collapse but strips
       // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
       "transition-all duration-200 ease-out motion-reduce:transition-none",
+      // ph-no-capture on the subscribe form (spec 0018) - keeps the typed address
+      // out of PostHog autocapture and session replay. The Canopy migration had
+      // silently dropped it (maskAllInputs was still masking the value, so nothing
+      // leaked and nothing failed); restored at the wrapper in spec 0041, which
+      // puts this form into article bodies. Nothing else on /blog emits the class,
+      // so removing it again reddens here instead of going unnoticed a second time.
+      "ph-no-capture",
     ],
     // The sample draft (spec 0034) and sample scheduled post (spec 0035) must NOT
     // appear on the public listing - a regression to getAllPosts(), or dropping the
@@ -1141,11 +1155,13 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
 // next-mdx-remote compile, proving the component resolves through the map rather
 // than that a component file exists.
 //
-// Marker choice matters here: the page ALSO renders the end-of-post subscribe form,
-// so "Subscribe for updates" and "No spam; unsubscribe anytime." are both present
-// whether or not the in-post block rendered - neither can fail. The two markers
-// below are grep-unique to <PostSubscribe>: its pitch line, and the <aside>
-// landmark's accessible name.
+// Marker choice matters here. On a PUBLISHED post the page also renders the
+// end-of-post subscribe form, so "Subscribe for updates" and the shared no-spam
+// line are present whether or not the in-post block rendered - neither could fail
+// there. (On THIS preview page the chrome block is suppressed, so the negative
+// assertion below is available too; the markers are chosen to hold on both.) The
+// positive markers are grep-unique to <PostSubscribe>: its pitch line and the
+// <aside> landmark's accessible name.
 test("<PostSubscribe /> renders a distinct mid-post subscribe aside inside the MDX body", async () => {
   const draft = getDraftPosts()[0];
   if (!draft) return; // no drafts to exercise
@@ -1162,6 +1178,34 @@ test("<PostSubscribe /> renders a distinct mid-post subscribe aside inside the M
   assert.ok(
     html.includes('aria-label="Subscribe to the blog"'),
     "expected the in-post block's <aside> landmark name (unique to <PostSubscribe>)",
+  );
+
+  // The block must actually CONTAIN A FORM. Without this, deleting <SubscribeForm>
+  // from PostSubscribe leaves every other assertion here green (the negative one
+  // below gets greener), and the spec's "a working email form" criterion would ship
+  // as a bordered box of copy. Scoped to the aside so it cannot be satisfied by some
+  // other form on the page.
+  const aside = html.match(
+    /<aside[^>]*aria-label="Subscribe to the blog"[\s\S]*?<\/aside>/,
+  )?.[0];
+  assert.ok(aside, "expected to locate the in-post subscribe <aside> in the HTML");
+  assert.ok(
+    aside.includes('name="email"'),
+    "expected an email input inside the in-post subscribe block",
+  );
+  assert.ok(
+    aside.includes("sm:flex-row sm:items-end"),
+    "expected the subscribe form's responsive row inside the in-post block",
+  );
+
+  // The placement's analytics source is an acceptance criterion in its own right -
+  // it is the whole justification for carrying both blocks - and flipping it to
+  // "blog_post" would merge the two funnels while passing lint, types, and every
+  // other assertion here. The prop is serialized into the RSC flight payload, so
+  // it is greppable in the page HTML.
+  assert.ok(
+    html.includes("blog_post_inline"),
+    "expected the in-post block to carry source=blog_post_inline (separate funnel)",
   );
 
   // The block must NOT enter the post's heading outline (spec 0041 Outcome): its

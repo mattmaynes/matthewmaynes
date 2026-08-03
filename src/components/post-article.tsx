@@ -9,7 +9,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui";
-import { RssIcon, ClockIcon } from "@/components/blog-icons";
+import { ClockIcon } from "@/components/blog-icons";
+import { RssButton } from "@/components/rss-button";
 import { PostBody, InlineMdx } from "@/components/post-body";
 import { ReadingTimePill } from "@/components/reading-time-pill";
 import { SubscribeForm } from "@/components/subscribe-form";
@@ -339,7 +340,12 @@ export function PostArticle({
       </p>
 
       {/* A preview (draft or scheduled) is not a subscribe surface - only published
-          posts invite readers to subscribe (spec 0034/0035). */}
+          posts invite readers to subscribe (spec 0034/0035).
+          This suppresses the CHROME block only. An author-placed <PostSubscribe />
+          inside the MDX body (spec 0041) still renders on a preview, deliberately:
+          it is content, and a preview that hid it would misrepresent the post being
+          reviewed. So a preview page shows the in-body block and not this one - that
+          asymmetry is intended, not a bug. */}
       {!isPreview ? (
         <SubscribeForm source="blog_post" className="mt-12 border-t border-border pt-10" />
       ) : null}
@@ -364,12 +370,7 @@ export function PostArticle({
         <Button asChild variant="outline">
           <Link href={basePath}>{isPreview ? "Back to drafts" : "Back to blog"}</Link>
         </Button>
-        <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">
-          <a href="/blog/feed.xml">
-            <RssIcon className="h-5 w-5" />
-            RSS
-          </a>
-        </Button>
+        <RssButton />
       </div>
     </article>
   );
