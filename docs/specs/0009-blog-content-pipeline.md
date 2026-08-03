@@ -168,6 +168,11 @@ rule.
 
 ## Notes
 
+- **Amendment (spec 0041):** the MDX component map in `src/components/post-body.tsx` has since grown
+  past the `<PostImage>` this spec introduced. It now also carries `<PostVideo>` (media registry, same
+  throw-on-unknown-name shape) and `<PostSubscribe>` (a zero-prop mid-article subscribe block, spec
+  0041). The allowlist a PR approver checks a post against lives in `AGENTS.md`; keep the two in step
+  whenever the map changes.
 - Voice/palette references: `docs/design/brand-guide.md`. Content rules: `docs/rules/` (ASCII-only,
   spaced hyphens, straight quotes).
 - New dependency (MDX compiler, possibly `gray-matter`) => the **security** and **architect**

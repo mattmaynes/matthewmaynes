@@ -28,6 +28,13 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   Force creds empty so guard/error paths (4xx/5xx/honeypot) run without the real upstream. (0007/0008)
 - **Verify the real artifact, not that it "rendered".** A green build only proves it compiled: fetch
   the OG card and assert `200` + `image/png`, count the PDF's pages, eyeball the output. (0004)
+- **A unique, failable marker can still guard the WRONG HALF of the thing.** Asserting a block's
+  chrome (its title copy, its landmark name) proves it rendered, not that it still *works*: deleting
+  the form inside a subscribe aside left every such marker green, and one negative assertion got
+  greener. When a unit is "container + payload", assert the payload too, scoped to the container so
+  another instance on the page cannot satisfy it - and assert any prop that is itself an acceptance
+  criterion (an analytics `source` that distinguishes two placements is serialized into the RSC
+  payload, so it is greppable; flipping it otherwise passes lint, types, and the whole suite). (0041)
 - **A new server-only secret needs a structural "absent from the client bundle" test.** Reading it
   server-side is only a convention; one `NEXT_PUBLIC_`/stray-import mistake ships it to the browser on
   a public repo. Extend the existing bundle-grep guard (the one that checks the PostHog key) to assert
@@ -48,6 +55,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   own tracked files constrained to prose + known components. Untrusted content needs an allowlist. A
   `<PostImage>`/`<PostVideo>`-style component that throws on an unknown name fails the build loudly on
   a typo. (0009)
+- **One component/config map shared by two surfaces silently widens the NARROWER one.** The MDX map
+  built for post bodies was also handed to the caption compiler, so a block-level component (a
+  subscribe aside with a live `<form>`) became resolvable inside a `<figcaption>` - beyond the
+  surface the authoring docs describe, and enough to break the "this marker occurs once per page"
+  premise other tests rest on. When you add to a shared allowlist, enumerate every consumer; give the
+  narrower surface its own subset rather than assuming authors will not reach for the extra. (0041)
 - **`next/image` needs a static import to kill flicker** (so `placeholder="blur"` gets a
   `blurDataURL`), but SOURCE size dominates first paint - right-size sources first. (0005/0006)
 - **Never build a redirect/absolute link from a Route Handler's `req.url`.** Behind a proxy `req.url`
@@ -154,6 +167,17 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   the old path (no re-export shim as a second canonical import). (0016/0018)
 - **A whole-corpus "global" fact must be computed ONCE over the full set by the caller and passed
   down**, never recomputed inside a mapper from whatever subset it was handed. (0016)
+- **A LINK-shaped CTA is invisible in a funnel that attributes by form.** A form carries its own
+  `source`; a link that hands off to a shared landing page inherits *that page's* source, so its
+  conversions are indistinguishable from every other route to the same page - and it silently
+  inflates the bucket it lands in. Autocapture is no fallback when shared chrome (a footer) emits the
+  same text and href site-wide. Carry attribution in the href (`?from=<placement>`): the analytics
+  client already stamps the URL on every event, so it costs no new event, no client component, and no
+  change to the suppression gate. Same rule for any two placements of one control. (0041)
+- **When one control is duplicated at two call sites, the second copy is where the drift lands.** A
+  change made "just on this page" (a narrow-viewport collapse on one of two RSS buttons) leaves the
+  same control behaving differently on the same phone. Extract on the second call site, not the
+  third. (0041)
 
 ## Credentials, security & ops
 

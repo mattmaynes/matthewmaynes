@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { BlogList } from "@/components/blog-list";
 import { SubscribeForm } from "@/components/subscribe-form";
 import { Button } from "@/components/ui";
-import { RssIcon } from "@/components/blog-icons";
+import { RssButton } from "@/components/rss-button";
 import { JsonLd } from "@/components/json-ld";
 import { blogJsonLd } from "@/lib/structured-data";
 import { blogFeedTitle } from "@/lib/site";
@@ -55,12 +56,32 @@ export default function BlogPage() {
       <JsonLd data={blogJsonLd()} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-h1 font-bold text-text">Blog</h1>
-        <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">
-          <a href="/blog/feed.xml">
-            <RssIcon className="h-5 w-5" />
-            RSS
-          </a>
-        </Button>
+        {/* The two follow affordances, grouped so they wrap as a unit under the
+            heading rather than splitting across lines (spec 0041). Email leads as
+            the primary fill; RSS stays the outline secondary it already was, so the
+            two no longer read as co-equal asks. */}
+        <div className="flex items-center gap-2">
+          {/* aria-label, not the bare visible text: the adjacent RSS button's name
+              also begins "Subscribe to the blog", so spell out which channel this
+              is. "Subscribe" is a prefix of the full name, so WCAG 2.5.3 (Label in
+              Name) still holds - and this string is grep-unique, which is what the
+              smoke test guards on (href="/subscribe" is emitted by the footer on
+              every page, so it could never fail). */}
+          {/* ?from=blog_header is attribution, not routing. /subscribe hard-codes
+              source="subscribe_page", so without it a conversion driven by this CTA
+              is indistinguishable from a footer-link, /links, shared-URL, or direct
+              visit - and this CTA would silently inflate that bucket. Autocapture is
+              no fallback: the footer emits an <a> with the same text and href on
+              every page. posthog-js stamps $current_url on every event and the form
+              submits in place via fetch, so the existing blog_subscribe_* events
+              carry the param with no new event and no client component. The page
+              never reads searchParams and its canonical is pinned, so ISR and SEO
+              are unaffected. */}
+          <Button asChild aria-label="Subscribe to the blog by email">
+            <Link href="/subscribe?from=blog_header">Subscribe</Link>
+          </Button>
+          <RssButton />
+        </div>
       </div>
       <p className="mt-3 max-w-2xl text-body text-text-muted">
         Notes on engineering, leadership, nature, and life, written down as I go.

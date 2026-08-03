@@ -24,7 +24,8 @@ must:
 - be spell-checked in **Canadian English** (colour, honour, but -ize: realize, organize, recognize);
 - follow the repo writing and formatting rules (`docs/rules/guidelines.md`: no long dashes);
 - keep the public-repo rule above (no PII; location no finer than region);
-- stay **prose plus the known `<PostImage>` / `<PostVideo>` components only** - an `.mdx` post is
+- stay **prose plus the known `<PostImage>` / `<PostVideo>` / `<PostSubscribe>` components only**
+  (`<PostSubscribe />` takes no props and drops the mid-article subscribe block in) - an `.mdx` post is
   compiled and executed at build (`next-mdx-remote`), so arbitrary JSX, `<script>`, raw HTML,
   `import`s, or JS expressions are a code-injection surface; the PR approver confirms a post has none;
 - ship via a **pull request that is approved before it merges** - never committed straight to `main`.
