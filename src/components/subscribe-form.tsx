@@ -32,6 +32,10 @@ export function SubscribeForm({
   source:
     | "blog_index"
     | "blog_post"
+    /** The mid-article <PostSubscribe /> block (spec 0041) - kept distinct from
+     *  "blog_post" (the end-of-post block) so the two placements on the same page
+     *  are separable in analytics. */
+    | "blog_post_inline"
     | "blog_tag"
     | "blog_category"
     | "subscribe_page"

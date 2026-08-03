@@ -121,6 +121,12 @@ In:
     disclaimer -> prev/next -> nav; see spec 0021 for prev/next).
   - Dedicated **`/subscribe`** page (see below), which renders the form with
     `alwaysShowName heading={false}`.
+  - **Amendment (spec 0041):** two more placements have since shipped, both reusing this form and
+    route unchanged - a **primary Subscribe CTA** in the `/blog` header row beside the RSS button
+    (a link to `/subscribe`, not a form), and **`<PostSubscribe />`**, an author-placed mid-article
+    block inside a post's MDX body (`source: "blog_post_inline"`, distinct from the end-of-post
+    block's `"blog_post"`). A post carrying it renders two subscribe forms; that is intended, see
+    0041's Out section. The `source` union in `subscribe-form.tsx` grew the one new value.
 - **Dedicated `/subscribe` page** (`src/app/subscribe/page.tsx`): a Server Component with a
   page-level H1 + invitation copy, then `<SubscribeForm source="subscribe_page" alwaysShowName
   heading={false} />`, then the newest post (`getAllPosts()[0]`, cover resolved server-side via

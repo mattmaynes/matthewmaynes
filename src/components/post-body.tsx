@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 import Image from "next/image";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { Video } from "@/components/ui";
+import { SubscribeForm } from "@/components/subscribe-form";
 import { getBlogImage } from "@/lib/blog-images";
 import { getBlogVideo } from "@/lib/blog-videos";
 import { postMediaMaxWidth } from "@/lib/blog-view";
@@ -121,9 +122,56 @@ function PostVideo({
   );
 }
 
+/**
+ * <PostSubscribe /> in the MDX -> the mid-article subscribe ask (spec 0041). The
+ * end-of-post block only converts readers who finish; this one lets an author put
+ * the ask at the moment a reader has decided they like the writing.
+ *
+ * It takes no props on purpose. Every prop is authoring surface on a component
+ * compiled from content, and one consistent block site-wide beats per-post copy.
+ *
+ * Two deliberate choices make it read as an aside rather than as part of the story:
+ *
+ * 1. It is an <aside> with an accessible name. That is the element HTML defines for
+ *    content tangentially related to the main content, so a screen-reader user gets
+ *    a skippable landmark instead of an interruption mid-article.
+ * 2. Its title is a styled <p>, NOT a heading, and Canopy's own <h2> is turned off
+ *    via heading={false}. A heading here would inject a phantom section into the
+ *    post's outline, level-with the author's real headings - misrepresenting the
+ *    document structure to heading navigation and to the BlogPosting JSON-LD the
+ *    post already emits (spec 0040).
+ *
+ * The panel styling is semantic Harbor tokens only (the discipline documented at the
+ * top of this file), and `my-12` sets it off more than the `my-8` figures do.
+ */
+function PostSubscribe() {
+  return (
+    <aside
+      aria-label="Subscribe to the blog"
+      className="my-12 rounded-lg border border-border bg-muted p-6 sm:p-8"
+    >
+      <p className="text-h4 font-bold text-text">Enjoying what you are reading?</p>
+      {/* Cadence-free on purpose: the site promises no schedule anywhere else
+          ("New posts in your inbox now and then"), and a cadence this blog does not
+          keep is a broken expectation - and, for a Canadian sender under CASL, a
+          representation worth not making. The no-spam clause is the exact string the
+          form itself uses, so the voice matches across every placement. */}
+      <p className="mt-2 max-w-2xl text-body text-text-muted">
+        Get new posts in your inbox when I publish them. No spam; unsubscribe anytime.
+      </p>
+      {/* heading={false}: the title above replaces Canopy's built-in <h2>. The
+          `blog_post_inline` source keeps this placement's conversions separable from
+          the end-of-post block's, which is the only way to judge later whether
+          carrying both blocks is worth it. */}
+      <SubscribeForm source="blog_post_inline" heading={false} className="mt-5" />
+    </aside>
+  );
+}
+
 const components = {
   PostImage,
   PostVideo,
+  PostSubscribe,
   h2: (props: ComponentProps<"h2">) => (
     <h2
       className="mt-12 border-b border-border pb-2 text-h2 font-semibold text-text"

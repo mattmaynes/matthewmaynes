@@ -11,8 +11,10 @@
     "Scheduled") and flips onto the blog + feed on its own within ~a minute of that time,
     with no deploy. ALWAYS include a timezone offset - a bare datetime is read as UTC:
       publishAt: 2026-07-19T19:00:00-04:00   # 7:00 p.m. Eastern (EDT)
-  - Body is prose plus the known components ONLY: <PostImage> and <PostVideo>.
+  - Body is prose plus the known components ONLY: <PostImage>, <PostVideo>, <PostSubscribe>.
     Register images in src/lib/blog-images.ts and video in src/lib/blog-videos.ts first.
+    <PostSubscribe /> takes no props: drop it at a natural break to put the mailing-list
+    ask mid-article, where a reader has decided they like the writing (spec 0041).
   - Quote the title when it contains a colon (as a "Series #N: ..." title usually does).
 */}
 ---

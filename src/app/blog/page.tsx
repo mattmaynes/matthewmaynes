@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getPublishedPosts, newPostSlug } from "@/lib/blog";
 import { toPostRows } from "@/lib/post-summaries";
 import { BlogList } from "@/components/blog-list";
@@ -55,12 +56,37 @@ export default function BlogPage() {
       <JsonLd data={blogJsonLd()} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-h1 font-bold text-text">Blog</h1>
-        <Button asChild variant="outline" aria-label="Subscribe to the blog via RSS">
-          <a href="/blog/feed.xml">
-            <RssIcon className="h-5 w-5" />
-            RSS
-          </a>
-        </Button>
+        {/* The two follow affordances, grouped so they wrap as a unit under the
+            heading rather than splitting across lines (spec 0041). Email leads as
+            the primary fill; RSS stays the outline secondary it already was, so the
+            two no longer read as co-equal asks. */}
+        <div className="flex items-center gap-2">
+          {/* aria-label, not the bare visible text: the adjacent RSS button's name
+              also begins "Subscribe to the blog", so spell out which channel this
+              is. "Subscribe" is a prefix of the full name, so WCAG 2.5.3 (Label in
+              Name) still holds - and this string is grep-unique, which is what the
+              smoke test guards on (href="/subscribe" is emitted by the footer on
+              every page, so it could never fail). */}
+          <Button asChild aria-label="Subscribe to the blog by email">
+            <Link href="/subscribe">Subscribe</Link>
+          </Button>
+          {/* Below 400px the wordmark is dropped and the button squares off to its
+              icon, so the heading plus both CTAs stay on one row on a 360/375px
+              phone. The aria-label above carries the name, so nothing is lost when
+              the text hides. 400px (not `sm`, which is 640) is where "Blog" + two
+              labelled buttons actually stop fitting. */}
+          <Button
+            asChild
+            variant="outline"
+            aria-label="Subscribe to the blog via RSS"
+            className="max-[400px]:w-10 max-[400px]:gap-0 max-[400px]:px-0"
+          >
+            <a href="/blog/feed.xml">
+              <RssIcon className="h-5 w-5" />
+              <span className="max-[400px]:hidden">RSS</span>
+            </a>
+          </Button>
+        </div>
       </div>
       <p className="mt-3 max-w-2xl text-body text-text-muted">
         Notes on engineering, leadership, nature, and life, written down as I go.

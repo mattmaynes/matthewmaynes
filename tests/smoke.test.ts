@@ -161,6 +161,19 @@ const routes = [
       "Career Reflection",
       // RSS subscribe link (spec 0013) must render, pointing at the feed.
       'href="/blog/feed.xml"',
+      // Primary "Subscribe" CTA in the header row (spec 0041), linking to
+      // /subscribe. Guarded on the CTA's aria-label, NOT on href="/subscribe":
+      // the shared footer links /subscribe on every page, so the href marker
+      // stays green with the CTA deleted (the recurring "assert what the unit
+      // uniquely produces" learning). Nor on the primary fill classes - the
+      // active category chip (spec 0038) emits those too, and this route
+      // already asserts them above. This string is grep-unique to the CTA.
+      'aria-label="Subscribe to the blog by email"',
+      // The RSS button collapses to icon-only below 400px (spec 0041) so the
+      // heading + both CTAs stay on one row on a 360/375px phone. The variant
+      // prefix is grep-unique to that treatment, so reverting to an always-
+      // labelled button reddens here rather than passing silently.
+      "max-[400px]:hidden",
       // Feed autodiscovery <link rel="alternate" type="application/rss+xml">.
       // Its href is absolute (metadataBase), so this mimetype marker - not the
       // root-relative subscribe href above - is what guards the head link.
@@ -1121,6 +1134,70 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
     const wrongDraft = await fetch(BASE + `/blog/drafts/${published.slug}`, { headers });
     assert.equal(wrongDraft.status, 404, "a published slug must 404 at /blog/drafts/<slug>");
   }
+});
+
+// The mid-article <PostSubscribe /> block (spec 0041). Exercised on the draft
+// fixture, which carries the component in its MDX body - so this drives the REAL
+// next-mdx-remote compile, proving the component resolves through the map rather
+// than that a component file exists.
+//
+// Marker choice matters here: the page ALSO renders the end-of-post subscribe form,
+// so "Subscribe for updates" and "No spam; unsubscribe anytime." are both present
+// whether or not the in-post block rendered - neither can fail. The two markers
+// below are grep-unique to <PostSubscribe>: its pitch line, and the <aside>
+// landmark's accessible name.
+test("<PostSubscribe /> renders a distinct mid-post subscribe aside inside the MDX body", async () => {
+  const draft = getDraftPosts()[0];
+  if (!draft) return; // no drafts to exercise
+  const headers = await previewCookie(); // preview area is gated (spec 0036)
+
+  const res = await fetch(BASE + `/blog/drafts/${draft.slug}`, { headers });
+  assert.equal(res.status, 200, "expected 200 for the draft page");
+  const html = await res.text();
+
+  assert.ok(
+    html.includes("Enjoying what you are reading?"),
+    "expected the in-post subscribe block's pitch line (unique to <PostSubscribe>)",
+  );
+  assert.ok(
+    html.includes('aria-label="Subscribe to the blog"'),
+    "expected the in-post block's <aside> landmark name (unique to <PostSubscribe>)",
+  );
+
+  // The block must NOT enter the post's heading outline (spec 0041 Outcome): its
+  // title is a styled <p>, and Canopy's built-in <h2> is off via heading={false}.
+  // A regression to the default heading would put "Subscribe for updates" in an
+  // <h2> level-with the author's real section headings, misrepresenting the
+  // document structure to heading navigation and the BlogPosting JSON-LD (0040).
+  // Assert on the rendered heading text, so it fails on the SEMANTIC defect
+  // rather than on a class name that could be restyled.
+  const headings = [...html.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) =>
+    m[1].replace(/<[^>]*>/g, "").trim(),
+  );
+  assert.ok(
+    !headings.some((h) => h.includes("Enjoying what you are reading")),
+    `the in-post block's title must not be a heading; found headings: ${JSON.stringify(headings)}`,
+  );
+
+  // Preview fidelity, and the line between authored content and page chrome. A
+  // preview page deliberately suppresses the end-of-post subscribe block
+  // (post-article.tsx, specs 0034/0035) - it is chrome, and a draft is not a place
+  // to collect signups. <PostSubscribe /> is the opposite: the AUTHOR put it in the
+  // body, so a preview that hid it would misrepresent the post the author is
+  // reviewing. Hence exactly one block here, and it is the authored one.
+  //
+  // This asymmetry is easy to "fix" wrongly in either direction, so pin both halves.
+  assert.ok(
+    !html.includes("Subscribe for updates"),
+    "the end-of-post subscribe CHROME must stay suppressed on a preview page (0034/0035)",
+  );
+
+  // NOTE: that a PUBLISHED post carrying <PostSubscribe /> shows BOTH asks (0041's
+  // Out section) has no direct guard, because putting the component into live
+  // content is deliberately out of 0041's scope. It follows from this test (the
+  // component renders wherever it is authored) plus the existing /blog/<slug>
+  // assertion that the end-of-post block renders on a published post. Worth an
+  // explicit marker in whichever content PR first uses the component.
 });
 
 // The gated preview index must render FRESH, not cached (feedback 0023): ISR's
