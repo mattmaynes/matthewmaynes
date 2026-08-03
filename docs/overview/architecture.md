@@ -20,7 +20,10 @@
   (`src/components/post-body.tsx`) over our own tracked files only. Inline media is resolved through
   registries that mirror the `site.ts` map: `blog-images.ts` (static-imported, blur placeholder,
   `pixelated` flag) and `blog-videos.ts` (self-hosted H.264 + poster + intrinsic dimensions). A
-  `<PostImage>`/`<PostVideo>` throws on an unknown name, so a typo fails the build.
+  `<PostImage>`/`<PostVideo>` throws on an unknown name, so a typo fails the build. The map also
+  carries `<PostSubscribe>` (spec 0041), a zero-prop mid-article subscribe aside. Captions get a
+  **narrower** map: `InlineMdx` compiles the `coverCaption` frontmatter with an inline subset
+  (`a`/`strong`/`em`) so block-level components cannot be nested into a `<figcaption>`.
 - Pure, fs-free view helpers live in `blog-view.js` (the one `slugify`, `tagSlug`/`tagFromSlug`,
   `categorySlug`/`categoryFromSlug`, the fixed `CATEGORIES` enum + `isCategory`, the `filterPosts`
   (tag) / `filterByCategory` (spec 0038) filters sharing one query matcher, the shared
