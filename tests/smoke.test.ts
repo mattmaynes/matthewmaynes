@@ -161,6 +161,26 @@ const routes = [
       "Career Reflection",
       // RSS subscribe link (spec 0013) must render, pointing at the feed.
       'href="/blog/feed.xml"',
+      // Primary "Subscribe" CTA in the header row (spec 0041), linking to
+      // /subscribe. Guarded on the CTA's aria-label, NOT on href="/subscribe":
+      // the shared footer links /subscribe on every page, so the href marker
+      // stays green with the CTA deleted (the recurring "assert what the unit
+      // uniquely produces" learning). Nor on the primary fill classes - the
+      // active category chip (spec 0038) emits those too, and this route
+      // already asserts them above. This string is grep-unique to the CTA.
+      // The full rendered anchor, not the aria-label alone: the label proves the CTA
+      // exists but not that it still LINKS to /subscribe, so a bad href, a dropped
+      // `asChild`, or changed visible text would all stay green. (href="/subscribe"
+      // on its own is useless here - the shared footer emits it on every page.)
+      // ?from=blog_header is attribution: /subscribe hard-codes
+      // source="subscribe_page", so without the param a CTA-driven conversion is
+      // indistinguishable from footer/direct traffic.
+      'aria-label="Subscribe to the blog by email" href="/subscribe?from=blog_header">Subscribe</a>',
+      // The RSS button collapses to icon-only below 400px (spec 0041) so the
+      // heading + both CTAs stay on one row on a 360/375px phone. The variant
+      // prefix is grep-unique to that treatment, so reverting to an always-
+      // labelled button reddens here rather than passing silently.
+      "max-[400px]:hidden",
       // Feed autodiscovery <link rel="alternate" type="application/rss+xml">.
       // Its href is absolute (metadataBase), so this mimetype marker - not the
       // root-relative subscribe href above - is what guards the head link.
@@ -170,11 +190,12 @@ const routes = [
       // actually fail (feedback 0013 / the recurring "assert what the unit
       // uniquely produces" learning): the bare "sm:flex-row" utility is emitted by
       // the shared footer too, so it could NOT catch a dropped form. Instead:
-      // - the subtext copy proves the form body rendered (unique string), and
+      // - the subtext copy ("New posts in your inbox now and then.") proves the form
+      //   body rendered - still unique to the form after the no-spam line was dropped, and
       // - "sm:flex-row sm:items-end" is the form's own row container class combo,
       //   which nothing else on /blog emits, so it guards the responsive layout.
       "Subscribe for updates",
-      "No spam; unsubscribe anytime.",
+      "New posts in your inbox now and then.",
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is collapsed until the email is focused, so a
@@ -197,6 +218,13 @@ const routes = [
       // ships in SSR HTML: a partial revert that keeps the max-w collapse but strips
       // the transition (-> instant jump, the exact defect 0024 fixes) reddens here.
       "transition-all duration-200 ease-out motion-reduce:transition-none",
+      // ph-no-capture on the subscribe form (spec 0018) - keeps the typed address
+      // out of PostHog autocapture and session replay. The Canopy migration had
+      // silently dropped it (maskAllInputs was still masking the value, so nothing
+      // leaked and nothing failed); restored at the wrapper in spec 0041, which
+      // puts this form into article bodies. Nothing else on /blog emits the class,
+      // so removing it again reddens here instead of going unnoticed a second time.
+      "ph-no-capture",
     ],
     // The sample draft (spec 0034) and sample scheduled post (spec 0035) must NOT
     // appear on the public listing - a regression to getAllPosts(), or dropping the
@@ -249,8 +277,16 @@ const routes = [
       // row container) guards the responsive layout - the bare "sm:flex-row"
       // utility is shared by chrome and could not fail.
       "Subscribe for updates",
-      "No spam; unsubscribe anytime.",
+      "New posts in your inbox now and then.",
       "sm:flex-row sm:items-end",
+      // BOTH subscribe blocks render on a published post carrying <PostSubscribe />
+      // (spec 0041): the mid-article one after section two, and the end-of-post one
+      // above. This is the case the earlier PR could not guard, because no live post
+      // used the component yet - the content rollout is what makes it assertable.
+      // "Enjoying what you are reading?" is unique to the in-post block, and the
+      // markers above are the end-of-post form's, so dropping either reddens.
+      "Enjoying what you are reading?",
+      'aria-label="Subscribe to the blog"',
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is collapsed until the email is focused, so a
       // dropped Name field reddens this. The DEFAULT-collapsed state is guarded by
@@ -310,7 +346,7 @@ const routes = [
     contains: [
       // Page-unique invitation copy proves the real page body rendered (not just
       // <head> on an error shell). A phrase from the promise, so it is distinct
-      // from the blog boxes' "No spam; unsubscribe anytime." subtext.
+      // from the blog boxes' "New posts in your inbox now and then." subtext.
       "I will not send you many emails",
       // The form renders with all three fields inline: `sm:flex-row sm:items-end`
       // is the row container, and `sm:max-w-md` proves the Name field is SHOWN inline
@@ -371,7 +407,7 @@ const routes = [
       // The subscribe ask - the shared form rendered (its heading is on here). The
       // subtext is unique to the form body, so a dropped/broken form reddens this.
       "Subscribe for updates",
-      "No spam; unsubscribe anytime.",
+      "New posts in your inbox now and then.",
       // The Latest-post card (last): its section label + the reading-time pill
       // ("min read" is unique to the card on this route). DURABLE - we do NOT pin
       // the newest post's title/slug (that changes with every post); newest-first
@@ -1121,6 +1157,98 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
     const wrongDraft = await fetch(BASE + `/blog/drafts/${published.slug}`, { headers });
     assert.equal(wrongDraft.status, 404, "a published slug must 404 at /blog/drafts/<slug>");
   }
+});
+
+// The mid-article <PostSubscribe /> block (spec 0041). Exercised on the draft
+// fixture, which carries the component in its MDX body - so this drives the REAL
+// next-mdx-remote compile, proving the component resolves through the map rather
+// than that a component file exists.
+//
+// Marker choice matters here. On a PUBLISHED post the page also renders the
+// end-of-post subscribe form, so "Subscribe for updates" and the shared no-spam
+// line are present whether or not the in-post block rendered - neither could fail
+// there. (On THIS preview page the chrome block is suppressed, so the negative
+// assertion below is available too; the markers are chosen to hold on both.) The
+// positive markers are grep-unique to <PostSubscribe>: its pitch line and the
+// <aside> landmark's accessible name.
+test("<PostSubscribe /> renders a distinct mid-post subscribe aside inside the MDX body", async () => {
+  const draft = getDraftPosts()[0];
+  if (!draft) return; // no drafts to exercise
+  const headers = await previewCookie(); // preview area is gated (spec 0036)
+
+  const res = await fetch(BASE + `/blog/drafts/${draft.slug}`, { headers });
+  assert.equal(res.status, 200, "expected 200 for the draft page");
+  const html = await res.text();
+
+  assert.ok(
+    html.includes("Enjoying what you are reading?"),
+    "expected the in-post subscribe block's pitch line (unique to <PostSubscribe>)",
+  );
+  assert.ok(
+    html.includes('aria-label="Subscribe to the blog"'),
+    "expected the in-post block's <aside> landmark name (unique to <PostSubscribe>)",
+  );
+
+  // The block must actually CONTAIN A FORM. Without this, deleting <SubscribeForm>
+  // from PostSubscribe leaves every other assertion here green (the negative one
+  // below gets greener), and the spec's "a working email form" criterion would ship
+  // as a bordered box of copy. Scoped to the aside so it cannot be satisfied by some
+  // other form on the page.
+  const aside = html.match(
+    /<aside[^>]*aria-label="Subscribe to the blog"[\s\S]*?<\/aside>/,
+  )?.[0];
+  assert.ok(aside, "expected to locate the in-post subscribe <aside> in the HTML");
+  assert.ok(
+    aside.includes('name="email"'),
+    "expected an email input inside the in-post subscribe block",
+  );
+  assert.ok(
+    aside.includes("sm:flex-row sm:items-end"),
+    "expected the subscribe form's responsive row inside the in-post block",
+  );
+
+  // The placement's analytics source is an acceptance criterion in its own right -
+  // it is the whole justification for carrying both blocks - and flipping it to
+  // "blog_post" would merge the two funnels while passing lint, types, and every
+  // other assertion here. The prop is serialized into the RSC flight payload, so
+  // it is greppable in the page HTML.
+  assert.ok(
+    html.includes("blog_post_inline"),
+    "expected the in-post block to carry source=blog_post_inline (separate funnel)",
+  );
+
+  // The block must NOT enter the post's heading outline (spec 0041 Outcome): its
+  // title is a styled <p>, and Canopy's built-in <h2> is off via heading={false}.
+  // A regression to the default heading would put "Subscribe for updates" in an
+  // <h2> level-with the author's real section headings, misrepresenting the
+  // document structure to heading navigation and the BlogPosting JSON-LD (0040).
+  // Assert on the rendered heading text, so it fails on the SEMANTIC defect
+  // rather than on a class name that could be restyled.
+  const headings = [...html.matchAll(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g)].map((m) =>
+    m[1].replace(/<[^>]*>/g, "").trim(),
+  );
+  assert.ok(
+    !headings.some((h) => h.includes("Enjoying what you are reading")),
+    `the in-post block's title must not be a heading; found headings: ${JSON.stringify(headings)}`,
+  );
+
+  // Preview fidelity, and the line between authored content and page chrome. A
+  // preview page deliberately suppresses the end-of-post subscribe block
+  // (post-article.tsx, specs 0034/0035) - it is chrome, and a draft is not a place
+  // to collect signups. <PostSubscribe /> is the opposite: the AUTHOR put it in the
+  // body, so a preview that hid it would misrepresent the post the author is
+  // reviewing. Hence exactly one block here, and it is the authored one.
+  //
+  // This asymmetry is easy to "fix" wrongly in either direction, so pin both halves.
+  assert.ok(
+    !html.includes("Subscribe for updates"),
+    "the end-of-post subscribe CHROME must stay suppressed on a preview page (0034/0035)",
+  );
+
+  // The both-blocks-on-one-published-post case IS now guarded, on the
+  // /blog/<slug> route entry above ("Enjoying what you are reading?" alongside the
+  // end-of-post form's markers) - the content rollout put the component into every
+  // published post, so the case finally exists to assert.
 });
 
 // The gated preview index must render FRESH, not cached (feedback 0023): ISR's

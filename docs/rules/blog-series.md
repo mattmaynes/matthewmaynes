@@ -58,6 +58,10 @@ Then register the assets so the build can resolve them:
 
 Both components throw on an unknown name, so a typo fails the build rather than shipping a gap.
 
+One more component needs no registration: `<PostSubscribe />` (spec 0041) takes no props and renders
+the mid-article subscribe block. Drop it at a natural break, once at most, where a reader has decided
+they like the writing. The end-of-post subscribe block renders regardless.
+
 ## The email sash (bake it into the cover)
 
 Email clients drop CSS `transform`, so the site's rotated sash cannot be reproduced with CSS in an

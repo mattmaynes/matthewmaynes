@@ -30,6 +30,8 @@ We used durable queues that could be reread from any point, paired with checkpoi
 
 This is also where I learned the actual value of staying technical while leading. When something broke, I wasn't reading a summary of the failure from someone else. I could trace it myself, back to the checkpoint, back to the sequence id, back to the exact worker that choked. **That is a different kind of authority than the kind you get from a title.**
 
+<PostSubscribe />
+
 ## Backwards, on purpose
 
 q evaluates right to left. Almost every language you've ever used evaluates left to right, so that's already a small gear-shift for anyone new to it. Our pipeline syntax, the part you'd chain together to actually build a job, read left to right, which meant it ran backwards relative to every other line of q on the same screen.

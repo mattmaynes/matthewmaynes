@@ -121,6 +121,12 @@ In:
     disclaimer -> prev/next -> nav; see spec 0021 for prev/next).
   - Dedicated **`/subscribe`** page (see below), which renders the form with
     `alwaysShowName heading={false}`.
+  - **Amendment (spec 0041):** two more placements have since shipped, both reusing this form and
+    route unchanged - a **primary Subscribe CTA** in the `/blog` header row beside the RSS button
+    (a link to `/subscribe`, not a form), and **`<PostSubscribe />`**, an author-placed mid-article
+    block inside a post's MDX body (`source: "blog_post_inline"`, distinct from the end-of-post
+    block's `"blog_post"`). A post carrying it renders two subscribe forms; that is intended, see
+    0041's Out section. The `source` union in `subscribe-form.tsx` grew the one new value.
 - **Dedicated `/subscribe` page** (`src/app/subscribe/page.tsx`): a Server Component with a
   page-level H1 + invitation copy, then `<SubscribeForm source="subscribe_page" alwaysShowName
   heading={false} />`, then the newest post (`getAllPosts()[0]`, cover resolved server-side via
@@ -158,7 +164,9 @@ In:
   gated by `clientAnalyticsEnabled()`, with the form wrapped in `ph-no-capture` -
   mirroring the contact form (learnings feedback 0011). The submit event also carries a
   PII-free **`has_name`** boolean (whether a name was provided) and a `source`
-  (`blog_index`/`blog_post`/`subscribe_page`) - never the name or email itself.
+  and a `source` - never the name or email itself. The `source` taxonomy has grown past the three
+  values this spec shipped (0027, 0038, 0039, 0041 each added one); the canonical list is the
+  exported `SubscribeSource` union in `src/components/subscribe-form.tsx`, not this bullet.
 - Secret wiring **documentation**: add `CTCT_CLIENT_ID`, `CTCT_REFRESH_TOKEN`,
   `CTCT_LIST_ID` as empty, commented placeholders in `.env.example` (server-only, never
   `NEXT_PUBLIC_`). The live values already exist in `deploy/docker/.env.site` on the
