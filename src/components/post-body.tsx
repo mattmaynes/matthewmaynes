@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 import Image from "next/image";
 import { compileMDX } from "next-mdx-remote/rsc";
 import { Video } from "@/components/ui";
-import { SubscribeForm, SUBSCRIBE_NO_SPAM } from "@/components/subscribe-form";
+import { SubscribeForm } from "@/components/subscribe-form";
 import { getBlogImage } from "@/lib/blog-images";
 import { getBlogVideo } from "@/lib/blog-videos";
 import { postMediaMaxWidth } from "@/lib/blog-view";
@@ -167,10 +167,11 @@ function PostSubscribe() {
       {/* Cadence-free on purpose: the site promises no schedule anywhere else
           ("New posts in your inbox now and then"), and a cadence this blog does not
           keep is a broken expectation - and, for a Canadian sender under CASL, a
-          representation worth not making. The no-spam clause is the exact string the
-          form itself uses, so the voice matches across every placement. */}
+          representation worth not making. No no-spam disclaimer either, matching the
+          form's own subtext: it protests too much, and Constant Contact puts a real
+          unsubscribe link in every message it sends. */}
       <p className="mt-2 max-w-2xl text-body text-text-muted">
-        Get new posts in your inbox when I publish them. {SUBSCRIBE_NO_SPAM}
+        Get new posts in your inbox when I publish them.
       </p>
       {/* heading={false}: the title above replaces Canopy's built-in <h2>. The
           `blog_post_inline` source keeps this placement's conversions separable from

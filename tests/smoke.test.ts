@@ -190,11 +190,12 @@ const routes = [
       // actually fail (feedback 0013 / the recurring "assert what the unit
       // uniquely produces" learning): the bare "sm:flex-row" utility is emitted by
       // the shared footer too, so it could NOT catch a dropped form. Instead:
-      // - the subtext copy proves the form body rendered (unique string), and
+      // - the subtext copy ("New posts in your inbox now and then.") proves the form
+      //   body rendered - still unique to the form after the no-spam line was dropped, and
       // - "sm:flex-row sm:items-end" is the form's own row container class combo,
       //   which nothing else on /blog emits, so it guards the responsive layout.
       "Subscribe for updates",
-      "No spam; unsubscribe anytime.",
+      "New posts in your inbox now and then.",
       "sm:flex-row sm:items-end",
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is collapsed until the email is focused, so a
@@ -276,8 +277,16 @@ const routes = [
       // row container) guards the responsive layout - the bare "sm:flex-row"
       // utility is shared by chrome and could not fail.
       "Subscribe for updates",
-      "No spam; unsubscribe anytime.",
+      "New posts in your inbox now and then.",
       "sm:flex-row sm:items-end",
+      // BOTH subscribe blocks render on a published post carrying <PostSubscribe />
+      // (spec 0041): the mid-article one after section two, and the end-of-post one
+      // above. This is the case the earlier PR could not guard, because no live post
+      // used the component yet - the content rollout is what makes it assertable.
+      // "Enjoying what you are reading?" is unique to the in-post block, and the
+      // markers above are the end-of-post form's, so dropping either reddens.
+      "Enjoying what you are reading?",
+      'aria-label="Subscribe to the blog"',
       // Optional Name affordance (spec 0018 amendment): its label ships in the
       // SSR HTML even though the field is collapsed until the email is focused, so a
       // dropped Name field reddens this. The DEFAULT-collapsed state is guarded by
@@ -337,7 +346,7 @@ const routes = [
     contains: [
       // Page-unique invitation copy proves the real page body rendered (not just
       // <head> on an error shell). A phrase from the promise, so it is distinct
-      // from the blog boxes' "No spam; unsubscribe anytime." subtext.
+      // from the blog boxes' "New posts in your inbox now and then." subtext.
       "I will not send you many emails",
       // The form renders with all three fields inline: `sm:flex-row sm:items-end`
       // is the row container, and `sm:max-w-md` proves the Name field is SHOWN inline
@@ -398,7 +407,7 @@ const routes = [
       // The subscribe ask - the shared form rendered (its heading is on here). The
       // subtext is unique to the form body, so a dropped/broken form reddens this.
       "Subscribe for updates",
-      "No spam; unsubscribe anytime.",
+      "New posts in your inbox now and then.",
       // The Latest-post card (last): its section label + the reading-time pill
       // ("min read" is unique to the card on this route). DURABLE - we do NOT pin
       // the newest post's title/slug (that changes with every post); newest-first
@@ -1236,12 +1245,10 @@ test("<PostSubscribe /> renders a distinct mid-post subscribe aside inside the M
     "the end-of-post subscribe CHROME must stay suppressed on a preview page (0034/0035)",
   );
 
-  // NOTE: that a PUBLISHED post carrying <PostSubscribe /> shows BOTH asks (0041's
-  // Out section) has no direct guard, because putting the component into live
-  // content is deliberately out of 0041's scope. It follows from this test (the
-  // component renders wherever it is authored) plus the existing /blog/<slug>
-  // assertion that the end-of-post block renders on a published post. Worth an
-  // explicit marker in whichever content PR first uses the component.
+  // The both-blocks-on-one-published-post case IS now guarded, on the
+  // /blog/<slug> route entry above ("Enjoying what you are reading?" alongside the
+  // end-of-post form's markers) - the content rollout put the component into every
+  // published post, so the case finally exists to assert.
 });
 
 // The gated preview index must render FRESH, not cached (feedback 0023): ISR's

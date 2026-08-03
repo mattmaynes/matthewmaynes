@@ -38,13 +38,6 @@ export type SubscribeSource =
   | "subscribe_page"
   | "links_page";
 
-/**
- * The reassurance line, shared so every placement makes the same promise. The
- * mid-article block (spec 0041) restates it above its own form, so a change here
- * must not leave the two surfaces saying different things.
- */
-export const SUBSCRIBE_NO_SPAM = "No spam; unsubscribe anytime.";
-
 export function SubscribeForm({
   className,
   source,
@@ -119,7 +112,12 @@ export function SubscribeForm({
       onSubscribe={onSubscribe}
       onEvent={onEvent}
       title="Subscribe for updates"
-      description={`New posts in your inbox now and then. ${SUBSCRIBE_NO_SPAM}`}
+      // No "No spam; unsubscribe anytime." tag-line: it protests too much, and the
+      // reassurance it offers is already carried where it counts - Constant Contact
+      // puts a real unsubscribe link in every message it sends. Express consent
+      // (CASL) comes from the visible "Subscribe for updates" intent, not from this
+      // sentence, so dropping it changes nothing about the consent record.
+      description="New posts in your inbox now and then."
       successBadge="You are on the list"
       successMessage="Check your inbox for a welcome message. If you do not see it, look in your junk or spam folder, move it to your inbox, and mark it as not spam. That keeps my emails landing in your inbox, and it helps me reach everyone else too. Thank you!"
     />

@@ -65,7 +65,15 @@ approver checks a post against, so that documentation moves in the same PR.
 - **`src/components/subscribe-form.tsx`** - add `"blog_post_inline"` to the `source` union.
 - **Copy** (cadence-free, matching the rest of the site - see Approach):
   - Title: `Enjoying what you are reading?`
-  - Body: `Get new posts in your inbox when I publish them. No spam; unsubscribe anytime.`
+  - Body: `Get new posts in your inbox when I publish them.`
+- **Drop the no-spam tag-line from every subscribe surface.** The form's subtext loses
+  `No spam; unsubscribe anytime.`, leaving `New posts in your inbox now and then.` See Approach for
+  why this costs nothing on the consent side. The smoke markers that keyed on the removed sentence
+  move to the surviving one, which is still unique to the form body.
+- **Roll the block out to the existing posts.** Every published post in `content/blog/` gets a single
+  `<PostSubscribe />` after its **second** section (immediately before its third `##` heading). All
+  eleven have at least three sections, so none ends up with the block stranded at the foot of the
+  post next to the end-of-post form.
 - **Docs the PR approver reads** - widen the component allowlist from "`<PostImage>` / `<PostVideo>`"
   to include `<PostSubscribe>` in `AGENTS.md` (both the blog and the series carve-outs reference it),
   `docs/rules/blog-series.md`, and the comment block in `docs/templates/blog-series-post.mdx`.
@@ -83,9 +91,10 @@ approver checks a post against, so that documentation moves in the same PR.
 
 **Out**
 
-- **Adding `<PostSubscribe />` to a live published post.** That is a content edit under the
-  `AGENTS.md` lightweight carve-out, author's choice per post, and it would couple a pipeline PR to a
-  content decision. This spec ships the capability; the first real use is a separate content PR.
+- ~~Adding `<PostSubscribe />` to a live published post.~~ **Amended: now in scope** (see Scope). It
+  was held out as a separate content PR, but the author asked for the rollout in the same change, so
+  all eleven published posts carry the block. Placement is mechanical (after the second section), not
+  a per-post editorial judgement, which is what made batching it safe.
 - **Suppressing the end-of-post subscribe block** when a post uses the in-post one. Two asks on a
   long article is standard newsletter practice and the two read differently (an interstitial nudge
   vs. a closing block); detecting the component in the MDX source before render would need new
@@ -130,8 +139,14 @@ does. No hard-coded palette, no new token.
 them", not "weekly". The site's existing copy deliberately promises no schedule ("New posts in your
 inbox now and then"; `/subscribe` says "I will not send you many emails, I promise"), and a weekly
 promise the blog does not keep is both a broken expectation and, for a Canadian sender under CASL, a
-representation worth not making. The reassurance clause is the exact string the form already uses
-("No spam; unsubscribe anytime.") so the voice matches across placements.
+representation worth not making.
+
+**Key decision - no no-spam disclaimer, anywhere.** "No spam; unsubscribe anytime." reads as
+protesting too much, and it buys nothing it is not already paying for elsewhere: Constant Contact
+puts a real unsubscribe link in every message it sends, and it owns the consent record. Under CASL
+the express consent comes from the visible "Subscribe for updates" intent at the point of signup,
+not from a reassurance sentence beside the button, so removing it changes nothing legally. Dropped
+from the shared form subtext and never added to the in-post block, so every placement reads the same.
 
 **Key decision - `max-[400px]:` for the RSS collapse, not `sm:`.** The repo's breakpoints are
 Tailwind's defaults (no custom `xs`), and `sm` is 640px - hiding the "RSS" label all the way up to
