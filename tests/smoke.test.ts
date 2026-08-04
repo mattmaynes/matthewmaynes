@@ -342,6 +342,33 @@ const routes = [
     absent: ["Placeholder"],
   },
   {
+    // Content licensing + personal-views disclaimer (spec 0042). Footer utility
+    // like /privacy and /ai-policy, but unlike them it IS in the sitemap.
+    path: "/terms",
+    title: "Terms - Matthew Maynes",
+    // One page-unique phrase per section that carries an acceptance criterion, so
+    // dropping any single section reddens rather than the page passing on its
+    // heading alone. All grep-confirmed unique to this route.
+    contains: [
+      "Terms and Copyright",
+      // ownership / no-reuse
+      "all rights reserved",
+      // the media reservation - the part the author cares most about
+      "not stock imagery",
+      // the AI split: text quotable, media not
+      "used as training data, in whole or in part",
+      // the code exception
+      "the source is MIT licensed",
+      // views-are-my-own, naming employers explicitly
+      "not the views of my employer, past or present",
+      // permission route (must be /contact, never an address - public-repo rule)
+      'href="/contact"',
+    ],
+    // The public-repo PII rule: permission requests route through the contact
+    // form, so no address may appear in the copy.
+    absent: ["Placeholder", "@matthewmaynes.com", "mailto:"],
+  },
+  {
     path: "/contact",
     title: "Contact - Matthew Maynes",
     // Assert form-unique copy (the textarea placeholder) AND the social-row
@@ -1791,6 +1818,30 @@ test("a category archive lists its posts with a route-unique title; badge links 
   assert.equal(missingCat.status, 404, "expected 404 for an unknown category slug");
 });
 
+// The rights notice + Terms link live in the SHARED footer (spec 0042), so they
+// must appear on every page, not just one. Checked on two unrelated routes -
+// asserting on a single page could not tell "the footer carries it" apart from
+// "that one page happens to say it", which is the whole claim here.
+test("every page's footer carries the rights notice and links to /terms", async () => {
+  for (const path of ["/", "/blog"]) {
+    const html = await (await fetch(BASE + path)).text();
+    assert.ok(
+      html.includes("All rights reserved."),
+      `expected the rights notice in the footer on ${path}`,
+    );
+    assert.ok(
+      html.includes('href="/terms"'),
+      `expected a /terms link in the footer on ${path}`,
+    );
+    // ...and it must be the footer's own link, next to Privacy - not some stray
+    // mention - so pin the rendered label too.
+    assert.ok(
+      html.includes(">Terms</a>"),
+      `expected the footer's Terms link label on ${path}`,
+    );
+  }
+});
+
 test("robots, sitemap, and manifest are served", async () => {
   const robots = await fetch(BASE + "/robots.txt");
   assert.equal(robots.status, 200, "expected /robots.txt to 200");
@@ -1817,6 +1868,14 @@ test("robots, sitemap, and manifest are served", async () => {
     "expected /projects to be listed in the sitemap now that it ships",
   );
   assert.match(sitemapXml, /matthewmaynes\.com/, "expected canonical host URLs");
+
+  // spec 0042: /terms is a footer utility (like /privacy) but is deliberately
+  // listed, so the licensing position is discoverable rather than guessable.
+  assert.match(
+    sitemapXml,
+    /\/terms<\/loc>/,
+    "expected /terms in the sitemap (spec 0042)",
+  );
 
   // spec 0027: individual posts and per-tag archives are now crawlable. Assert a
   // real post URL (posts were previously absent from the sitemap entirely) and a

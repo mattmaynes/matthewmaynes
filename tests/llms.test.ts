@@ -135,3 +135,32 @@ test("buildLlmsTxt handles an empty post list without breaking the sections", ()
   assert.match(out, /^## Writing$/m);
   assert.ok(out.includes("No posts published yet."), "expected an empty-writing note");
 });
+
+// spec 0042: the file exists to invite answer engines, so it must state the terms
+// rather than stay silent - and it must draw the line the author actually wants:
+// the TEXT is quotable, the images and video are not reusable and not training
+// data. Asserting both halves plus the /terms link, because a section that only
+// said "all rights reserved" would contradict the file's own purpose and a
+// section that only granted the text would leave the media unstated.
+test("buildLlmsTxt states the content usage terms, splitting text from media", () => {
+  const out = buildLlmsTxt({ site: SITE, nav: NAV, posts: POSTS });
+  assert.match(out, /^## Usage$/m, "expected a Usage section");
+  assert.ok(
+    out.includes("may be read, quoted, and cited with attribution"),
+    "expected the TEXT to be explicitly quotable (this file invites answer engines)",
+  );
+  assert.ok(
+    out.includes("may not be reproduced, redistributed, or used as training data"),
+    "expected the images and video to be explicitly reserved",
+  );
+  assert.ok(
+    out.includes(`${SITE.url}/terms`),
+    "expected an absolute link to the authoritative terms page",
+  );
+  // Usage must precede More, so a crawler reading top-down hits the terms before
+  // the feed links rather than after them.
+  assert.ok(
+    out.indexOf("## Usage") < out.indexOf("## More"),
+    "expected Usage to sit above More",
+  );
+});

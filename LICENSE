@@ -1,0 +1,61 @@
+This repository holds two different kinds of work, under two different terms.
+Read both. Neither section grants anything the other reserves.
+
+================================================================================
+1. SOURCE CODE - MIT License
+================================================================================
+
+Applies to the software that builds and runs this site: everything under `src/`,
+`scripts/`, `tests/`, `docs/`, and the repository's configuration files.
+
+Copyright (c) 2026 Matthew Maynes
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+2. CONTENT AND MEDIA - All rights reserved
+================================================================================
+
+Applies to the site's content: everything under `content/`, `public/images/`,
+`public/videos/`, and `emails/`. This includes all blog posts and project write-
+ups, and all photographs and video, including images of my family.
+
+Copyright (c) 2026 Matthew Maynes. All rights reserved.
+
+This material is NOT covered by the MIT License above and is not open source.
+No permission is granted to copy, reproduce, republish, redistribute, mirror,
+sell, or create derivative works from it, and no permission is granted to use it
+as training data for machine learning models, in whole or in part, in any medium.
+
+You may read it, link to it, and quote short excerpts of the TEXT with clear
+attribution and a link back to the original page - ordinary quotation, the sort a
+review or a citation makes. That permission does not extend to the photographs or
+video, which may not be reproduced at all.
+
+To ask for anything beyond that, get in touch: https://matthewmaynes.com/contact
+
+--------------------------------------------------------------------------------
+A note on what this file can and cannot do
+--------------------------------------------------------------------------------
+
+This repository is public on GitHub. GitHub's Terms of Service grant every GitHub
+user a licence to view public repositories and to reproduce them by forking. That
+grant comes from making the repository public and is not overridden by this file.
+The reservation above states my position and applies everywhere it can; it does
+not undo the platform terms, and it is not a technical control.

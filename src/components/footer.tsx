@@ -23,7 +23,17 @@ export function Footer() {
     <footer className="mt-16 border-t border-border bg-surface print:hidden">
       <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
         <p className="text-caption text-text-muted">
-          &copy; {new Date().getFullYear()} {site.name}.{" "}
+          {/* "All rights reserved." is the pointer to spec 0042's position; the
+              detail lives on /terms and the machine-readable half in the repo's
+              root LICENSE. If one of the three changes, review all three. */}
+          &copy; {new Date().getFullYear()} {site.name}. All rights reserved.{" "}
+          <Link
+            href="/terms"
+            className="underline-offset-4 hover:text-text hover:underline"
+          >
+            Terms
+          </Link>
+          {" "}&middot;{" "}
           <Link
             href="/privacy"
             className="underline-offset-4 hover:text-text hover:underline"

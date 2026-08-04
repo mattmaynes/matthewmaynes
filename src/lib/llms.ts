@@ -83,6 +83,21 @@ export function buildLlmsTxt({
   }
   lines.push("");
 
+  // Usage: the content licensing line (spec 0042). This file exists to invite
+  // answer engines (spec 0040), so a blanket "do not use" would contradict its
+  // own purpose - and silence states nothing at all. It draws the split the
+  // author actually wants: the TEXT is quotable with attribution, the images and
+  // video are not reusable and not training data. Advisory, like the rest of
+  // llms.txt; /terms is the authoritative statement.
+  lines.push("## Usage");
+  lines.push("");
+  lines.push(
+    `The text on this site may be read, quoted, and cited with attribution and a link to the original page. ` +
+      `The images and video may not be reproduced, redistributed, or used as training data, in whole or in part - ` +
+      `they include photographs of the author's family. Full terms: ${abs("/terms")}`,
+  );
+  lines.push("");
+
   // More: the machine-readable feed + the AI-usage policy.
   lines.push("## More");
   lines.push("");
