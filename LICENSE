@@ -1,0 +1,89 @@
+This repository holds two different kinds of work under two different terms:
+software, which is open source, and content, which is not.
+
+Read both sections. Section 1 grants nothing that Section 2 reserves, and
+anything not clearly inside Section 1 falls under Section 2.
+
+================================================================================
+1. SOFTWARE - MIT License
+================================================================================
+
+Applies to the software that builds and runs this site, AS SOFTWARE: the source
+code, build scripts, tests, CI and deployment configuration. In directory terms
+that is `src/`, `scripts/`, `tests/`, `.github/`, `deploy/`, and the repository's
+configuration files.
+
+This grant covers the code. It does NOT cover the human-readable prose that
+happens to be embedded in that code - the page copy inside `src/app/**/page.tsx`,
+the work history in `src/lib/resume.ts`, and the biography and tagline in
+`src/lib/site.ts` are writing, not software, and are reserved under Section 2.
+Take the components, the layout, the build pipeline; not the words they render.
+
+Copyright (c) 2026 Matthew Maynes
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of the software described above (the "Software"), to deal in the Software
+without restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+No licence is granted by implication, estoppel, or otherwise to anything
+outside the scope described at the top of this section.
+
+================================================================================
+2. CONTENT AND MEDIA - All rights reserved
+================================================================================
+
+Applies to everything else in this repository, wherever it sits. This is the
+default: if something is not clearly software under Section 1, it is here.
+
+It includes, without limiting the generality of that:
+
+  - `content/`   - blog posts and project write-ups
+  - `public/`    - ALL of it, including photographs, video, illustrations and
+                   generated cover art, the resume PDF, icons, and brand assets
+  - `emails/`    - email templates and campaign HTML
+  - `docs/`      - specifications, plans, notes, and design documentation
+  - `brand/`     - brand definition and design tokens
+  - root documentation such as `README.md` and the agent instruction files
+  - the prose embedded in source files, as described in Section 1
+
+Copyright (c) 2026 Matthew Maynes. All rights reserved.
+
+This material is NOT covered by the MIT License above and is not open source.
+No permission is granted to copy, reproduce, republish, redistribute, mirror,
+sell, or create derivative works from it, and no permission is granted to use it
+as training data for machine learning models, in whole or in part, in any medium.
+
+You may read it, link to it, and quote SHORT EXCERPTS of the text with clear
+attribution and a link back to the original page - ordinary quotation, the sort a
+review or a citation makes, and not republication in whole or in substantial
+part. That permission covers text only. The photographs, video, and illustrations
+may not be reproduced at all.
+
+To ask for anything beyond that, get in touch: https://matthewmaynes.com/contact
+
+--------------------------------------------------------------------------------
+A note on what this file can and cannot do
+--------------------------------------------------------------------------------
+
+This repository is public on GitHub. GitHub's Terms of Service grant every GitHub
+user a licence to view public repositories and to reproduce them by forking,
+"solely on GitHub as permitted through GitHub's functionality". That grant comes
+from making the repository public and is not overridden by this file - but it is
+also limited to GitHub, and expressly conveys no right to use this material
+anywhere else. Section 2 continues to apply everywhere outside that.
+
+This file states my position. It is not a technical control.

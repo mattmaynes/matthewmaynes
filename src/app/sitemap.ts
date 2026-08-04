@@ -17,7 +17,10 @@ export const revalidate = 60;
 // belongs in the sitemap even though it is deliberately kept out of `nav`. (An
 // in-progress stub like `/projects` or a footer utility like `/privacy` stays out
 // of both by simply not appearing here.)
-const EXTRA_ROUTES: readonly string[] = ["/subscribe", "/links"];
+// /terms is a footer utility like /privacy, but unlike /privacy it IS listed: it
+// states the content licensing position (spec 0042), so both people and crawlers
+// should be able to find it rather than having to guess the URL.
+const EXTRA_ROUTES: readonly string[] = ["/subscribe", "/links", "/terms"];
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 

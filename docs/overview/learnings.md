@@ -177,6 +177,17 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   the old path (no re-export shim as a second canonical import). (0016/0018)
 - **A whole-corpus "global" fact must be computed ONCE over the full set by the caller and passed
   down**, never recomputed inside a mapper from whatever subset it was handed. (0016)
+- **Classify by NATURE, not by directory, when a policy splits a repo's contents.** The licence split
+  was written as a directory list, which silently put the site's *written* content under the code's
+  permissive half: page prose lives in `src/app/**/page.tsx` and the resume in `src/lib/resume.ts`.
+  Directory boundaries and kind boundaries do not coincide. State the rule by what the thing IS, then
+  use directories as a guide and name the exceptions that live inside the wrong tree. Applies to any
+  content-vs-code policy: licensing, PII scrubbing, what ships to a CDN. (0042)
+- **A policy enumeration without a catch-all reads as a deliberate exclusion.** Reserving
+  `public/images/` and `public/videos/` left `public/resume.pdf` unnamed - not merely un-covered, but
+  arguably excluded on purpose, because listing siblings implies the omission was chosen. Any
+  allow/deny list over repo contents needs a default ("anything not in A falls under B"), or the next
+  directory added falls through the gap. (0042)
 - **A component rendered MORE THAN ONCE must not own a singleton element.** A hero header duplicated
   for two breakpoint layouts owned the `<h1>`, so every post emitted two. When you duplicate a
   component for layout reasons, first lift anything that must appear once - the heading, an `id`, a
