@@ -94,7 +94,18 @@ function HeroMeta({
           ))}
         </ul>
       ) : null}
-      <h1
+      {/* Presentational only. The hero header is rendered TWICE per post - overlaid
+          on the cover at >= sm, stacked below it on mobile - and both copies are in
+          the HTML at every breakpoint (the inactive one is hidden with `display:
+          none`, not omitted). So a styled <h1> here shipped two H1s in the source of
+          every post with a cover: `display:none` keeps assistive tech down to one,
+          but crawlers and validators parse the markup, not the computed style, and
+          they see both. The single semantic <h1> now lives once in the cover figure.
+          These copies must stay aria-hidden: without it the sr-only <h1> and the
+          visible copy would both be announced, which is the defect in the other
+          direction. */}
+      <p
+        aria-hidden="true"
         className={
           overlay
             ? "mt-3 text-h1 font-bold text-white"
@@ -102,7 +113,7 @@ function HeroMeta({
         }
       >
         {post.title}
-      </h1>
+      </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 ${
           overlay ? "text-white/90" : "text-text-subtle"
@@ -237,6 +248,15 @@ export function PostArticle({
         // overlay, so the image renders clean and the header stacks below it. The
         // pixel-art cover fills the width and upscales crisply.
         <figure>
+          {/* The page's single semantic heading. It is visually hidden because the
+              styled title is drawn per breakpoint by HeroMeta (overlaid on the cover
+              on desktop, stacked below it on mobile) and both of those copies are
+              presentational (aria-hidden) - see the note there. Do not "simplify"
+              this away by promoting one HeroMeta copy back to an <h1>: both copies
+              are always present in the markup, so that reinstates the duplicate.
+              The no-cover branch below carries its own real <h1> and does not use
+              HeroMeta, so it needs nothing here. */}
+          <h1 className="sr-only">{post.title}</h1>
           {/* Cap a tall/portrait cover to about an iPhone's height (the shared
               post-media standard), centred, so it does not dominate the screen on
               desktop. A landscape cover is unaffected: postMediaMaxWidth resolves to

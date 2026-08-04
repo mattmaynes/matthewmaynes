@@ -636,11 +636,19 @@ for (const route of routes) {
       html.includes(`<title>${route.title}</title>`),
       `expected ${route.path} to render <title>${route.title}</title>`,
     );
-    // Body actually rendered (not just <head> on an error shell).
-    assert.match(
-      html,
-      /<h1[\s>]/,
-      `expected ${route.path} to render an <h1>`,
+    // Body actually rendered (not just <head> on an error shell) - and EXACTLY one
+    // <h1>. The count matters, not just the presence: a post's hero header is
+    // rendered twice (overlaid on the cover at >= sm, stacked below it on mobile)
+    // and both copies ship in the markup at every breakpoint, with the inactive one
+    // hidden via `display:none`. That hid the duplicate from assistive tech but not
+    // from crawlers or validators, which parse markup rather than computed style, so
+    // every post with a cover shipped two H1s until feedback 0026. `/<h1[\s>]/`
+    // alone stayed green through all of it. Counting is what makes it failable.
+    const h1s = [...html.matchAll(/<h1[\s>]/g)].length;
+    assert.equal(
+      h1s,
+      1,
+      `expected ${route.path} to render exactly one <h1>, found ${h1s}`,
     );
     // Route-unique body content: proves the real page rendered, so a blank body
     // or a reverted placeholder can't pass on the shared <h1> alone.
