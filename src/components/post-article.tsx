@@ -94,7 +94,19 @@ function HeroMeta({
           ))}
         </ul>
       ) : null}
-      <h1
+      {/* Presentational only. The hero header is rendered TWICE per post - overlaid
+          on the cover at >= sm, stacked below it on mobile - and both copies are in
+          the HTML at every breakpoint (the inactive one is hidden with `display:
+          none`, not omitted). So a styled <h1> here shipped two H1s in the source of
+          every post with a cover: `display:none` keeps assistive tech down to one,
+          but crawlers and validators parse the markup, not the computed style, and
+          they see both. The single semantic <h1> now lives once, just above the
+          cover figure.
+          These copies must stay aria-hidden: without it the sr-only <h1> and the
+          visible copy would both be announced, which is the defect in the other
+          direction. */}
+      <p
+        aria-hidden="true"
         className={
           overlay
             ? "mt-3 text-h1 font-bold text-white"
@@ -102,7 +114,7 @@ function HeroMeta({
         }
       >
         {post.title}
-      </h1>
+      </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 ${
           overlay ? "text-white/90" : "text-text-subtle"
@@ -207,7 +219,8 @@ export function PostArticle({
             Draft
           </span>
           <span className="text-text-muted">
-            Draft preview - this post is not published and is hidden from the blog.
+            Draft preview - this post is not published and is hidden from the
+            blog.
           </span>
         </div>
       ) : null}
@@ -236,53 +249,70 @@ export function PostArticle({
         // bottom gradient. On mobile a short wide cover has no room for a legible
         // overlay, so the image renders clean and the header stacks below it. The
         // pixel-art cover fills the width and upscales crisply.
-        <figure>
-          {/* Cap a tall/portrait cover to about an iPhone's height (the shared
+        <>
+          {/* The page's single semantic heading. It is visually hidden because the
+              styled title is drawn per breakpoint by HeroMeta (overlaid on the cover
+              on desktop, stacked below it on mobile) and both of those copies are
+              presentational (aria-hidden) - see the note there. Do not "simplify"
+              this away by promoting one HeroMeta copy back to an <h1>: both copies
+              are always present in the markup, so that reinstates the duplicate.
+              The no-cover branch below carries its own real <h1> and does not use
+              HeroMeta, so it needs nothing here.
+
+              It sits OUTSIDE the <figure> on purpose. A figure with a figcaption is
+              exposed as a `figure` role with an accessible name, so a heading jump
+              that landed here would drop the reader inside the image group, and
+              figure-extracting consumers (reader mode, scrapers) would carry the
+              post title off as part of the cover. The title belongs to the document,
+              not to the picture. `sr-only` is position:absolute, so hoisting it out
+              changes no layout. */}
+          <h1 className="sr-only">{post.title}</h1>
+          <figure>
+            {/* Cap a tall/portrait cover to about an iPhone's height (the shared
               post-media standard), centred, so it does not dominate the screen on
               desktop. A landscape cover is unaffected: postMediaMaxWidth resolves to
               100%, so it stays full column width and the overlaid header still has
               room. */}
-          <div
-            className="relative mx-auto overflow-hidden rounded-lg border-[0.5px] border-border"
-            style={{ maxWidth: postMediaMaxWidth(cover.width, cover.height) }}
-          >
-            <Image
-              src={cover}
-              alt={cover.alt}
-              sizes="(max-width: 896px) 90vw, 896px"
-              priority
-              placeholder={pixelated ? "empty" : "blur"}
-              className="h-auto w-full"
-              style={pixelated ? { imageRendering: "pixelated" } : undefined}
-            />
-            <div className="absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/80 via-black/45 to-transparent px-7 pt-16 pb-7 sm:block">
-              <HeroMeta post={post} minutes={minutes} overlay />
-            </div>
-            {post.series ? (
-              // Series sash: a diagonal accent ribbon across the top-left corner
-              // of the cover, the strong visual marker that this post belongs to
-              // an ongoing series. The parent's `overflow-hidden` clips the band's
-              // overhanging ends into a clean corner banner.
-              <div
-                className="pointer-events-none absolute -left-16 top-7 z-10 w-56 -rotate-45 bg-accent py-1 text-center text-caption font-semibold uppercase tracking-wider text-accent-foreground shadow-md"
-              >
-                {post.series}
+            <div
+              className="relative mx-auto overflow-hidden rounded-lg border-[0.5px] border-border"
+              style={{ maxWidth: postMediaMaxWidth(cover.width, cover.height) }}
+            >
+              <Image
+                src={cover}
+                alt={cover.alt}
+                sizes="(max-width: 896px) 90vw, 896px"
+                priority
+                placeholder={pixelated ? "empty" : "blur"}
+                className="h-auto w-full"
+                style={pixelated ? { imageRendering: "pixelated" } : undefined}
+              />
+              <div className="absolute inset-x-0 bottom-0 hidden bg-gradient-to-t from-black/80 via-black/45 to-transparent px-7 pt-16 pb-7 sm:block">
+                <HeroMeta post={post} minutes={minutes} overlay />
               </div>
+              {post.series ? (
+                // Series sash: a diagonal accent ribbon across the top-left corner
+                // of the cover, the strong visual marker that this post belongs to
+                // an ongoing series. The parent's `overflow-hidden` clips the band's
+                // overhanging ends into a clean corner banner.
+                <div className="pointer-events-none absolute -left-16 top-7 z-10 w-56 -rotate-45 bg-accent py-1 text-center text-caption font-semibold uppercase tracking-wider text-accent-foreground shadow-md">
+                  {post.series}
+                </div>
+              ) : null}
+            </div>
+            {/* Mobile: header below the clean cover, in default on-page colours. */}
+            <div className="mt-4 sm:hidden">
+              <HeroMeta post={post} minutes={minutes} overlay={false} />
+            </div>
+            {post.coverCaption ? (
+              // Same caption treatment as an in-body <PostImage>: compile the
+              // inline markdown so a link renders, and flatten MDX's wrapping <p>
+              // back to caption-sized, subtle text.
+              <figcaption className="mt-3 max-w-4xl text-center text-caption text-text-subtle italic [&_p]:m-0 [&_p]:text-caption [&_p]:text-text-subtle">
+                <InlineMdx source={post.coverCaption} />
+              </figcaption>
             ) : null}
-          </div>
-          {/* Mobile: header below the clean cover, in default on-page colours. */}
-          <div className="mt-4 sm:hidden">
-            <HeroMeta post={post} minutes={minutes} overlay={false} />
-          </div>
-          {post.coverCaption ? (
-            // Same caption treatment as an in-body <PostImage>: compile the
-            // inline markdown so a link renders, and flatten MDX's wrapping <p>
-            // back to caption-sized, subtle text.
-            <figcaption className="mt-3 max-w-4xl text-center text-caption text-text-subtle italic [&_p]:m-0 [&_p]:text-caption [&_p]:text-text-subtle">
-              <InlineMdx source={post.coverCaption} />
-            </figcaption>
-          ) : null}
-        </figure>
+          </figure>
+        </>
       ) : (
         // No cover: fall back to the plain, on-page header treatment.
         <header>
@@ -347,7 +377,10 @@ export function PostArticle({
           reviewed. So a preview page shows the in-body block and not this one - that
           asymmetry is intended, not a bug. */}
       {!isPreview ? (
-        <SubscribeForm source="blog_post" className="mt-12 border-t border-border pt-10" />
+        <SubscribeForm
+          source="blog_post"
+          className="mt-12 border-t border-border pt-10"
+        />
       ) : null}
 
       <PostNav
@@ -358,8 +391,8 @@ export function PostArticle({
 
       {/* No comments section here; point readers at a real conversation instead. */}
       <p className="mt-8 text-caption text-text-subtle italic">
-        If you are looking for comments, you won&apos;t find them here, but I&apos;d
-        still love to hear your opinion.{" "}
+        If you are looking for comments, you won&apos;t find them here, but
+        I&apos;d still love to hear your opinion.{" "}
         <Link href="/contact" className="text-primary hover:underline">
           Send me an email
         </Link>{" "}
@@ -368,7 +401,9 @@ export function PostArticle({
 
       <div className="mt-12 flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">
-          <Link href={basePath}>{isPreview ? "Back to drafts" : "Back to blog"}</Link>
+          <Link href={basePath}>
+            {isPreview ? "Back to drafts" : "Back to blog"}
+          </Link>
         </Button>
         <RssButton />
       </div>
