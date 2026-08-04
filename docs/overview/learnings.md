@@ -35,6 +35,16 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   another instance on the page cannot satisfy it - and assert any prop that is itself an acceptance
   criterion (an analytics `source` that distinguishes two placements is serialized into the RSC
   payload, so it is greppable; flipping it otherwise passes lint, types, and the whole suite). (0041)
+- **A presence assertion cannot catch a DUPLICATION bug - for a singleton, assert the count.**
+  `assert.match(html, /<h1[\s>]/)` is satisfied by one H1 and by two, so every post shipped a
+  duplicate heading under a green suite. Anything a document may contain exactly once - `<h1>`, a
+  canonical link, a landmark, a JSON-LD node of a given `@type` - needs `=== 1`, not "at least one".
+  (0026)
+- **`display:none` hides a markup defect from BOTH channels people audit by hand.** It removes the
+  element from the accessibility tree, so a screen-reader pass comes back clean, and only one copy is
+  on screen, so a visual pass does too - while crawlers, validators, unfurlers, and feed readers, which
+  consume markup and apply no computed style, still see everything. When a component is duplicated and
+  CSS-switched per breakpoint, audit the HTML SOURCE, not the rendered page. (0026)
 - **A new server-only secret needs a structural "absent from the client bundle" test.** Reading it
   server-side is only a convention; one `NEXT_PUBLIC_`/stray-import mistake ships it to the browser on
   a public repo. Extend the existing bundle-grep guard (the one that checks the PostHog key) to assert
@@ -167,6 +177,11 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   the old path (no re-export shim as a second canonical import). (0016/0018)
 - **A whole-corpus "global" fact must be computed ONCE over the full set by the caller and passed
   down**, never recomputed inside a mapper from whatever subset it was handed. (0016)
+- **A component rendered MORE THAN ONCE must not own a singleton element.** A hero header duplicated
+  for two breakpoint layouts owned the `<h1>`, so every post emitted two. When you duplicate a
+  component for layout reasons, first lift anything that must appear once - the heading, an `id`, a
+  landmark role - out to the single-instance parent, and leave the copies presentational
+  (`aria-hidden`) so the one real element is not announced twice. (0026)
 - **A LINK-shaped CTA is invisible in a funnel that attributes by form.** A form carries its own
   `source`; a link that hands off to a shared landing page inherits *that page's* source, so its
   conversions are indistinguishable from every other route to the same page - and it silently

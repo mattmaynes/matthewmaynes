@@ -250,6 +250,17 @@ const routes = [
     // reverting the post body to text-body would keep every other marker green.
     contains: [
       "accidentally designed a metaphor",
+      // The single semantic heading carries the TITLE, not just an <h1> tag
+      // (feedback 0026). The route-wide "exactly one <h1>" count below stays green
+      // on an EMPTY sr-only heading, which is worse for a crawler than the duplicate
+      // it replaced - so pin the text too.
+      '<h1 class="sr-only">I Picked the Wrong Elective</h1>',
+      // aria-hidden on BOTH styled title copies is load-bearing, not decoration:
+      // drop it and the h1 count is still 1 while a screen reader announces the
+      // title twice (the sr-only heading, then the displayed copy). Nothing else on
+      // the page emits these class combinations, so removing either reddens here.
+      '<p aria-hidden="true" class="mt-3 text-h1 font-bold text-white">',
+      '<p aria-hidden="true" class="mt-3 text-h2 font-bold text-text">',
       "min read",
       "By Matthew Maynes",
       "views expressed here are my own",
@@ -636,11 +647,19 @@ for (const route of routes) {
       html.includes(`<title>${route.title}</title>`),
       `expected ${route.path} to render <title>${route.title}</title>`,
     );
-    // Body actually rendered (not just <head> on an error shell).
-    assert.match(
-      html,
-      /<h1[\s>]/,
-      `expected ${route.path} to render an <h1>`,
+    // Body actually rendered (not just <head> on an error shell) - and EXACTLY one
+    // <h1>. The count matters, not just the presence: a post's hero header is
+    // rendered twice (overlaid on the cover at >= sm, stacked below it on mobile)
+    // and both copies ship in the markup at every breakpoint, with the inactive one
+    // hidden via `display:none`. That hid the duplicate from assistive tech but not
+    // from crawlers or validators, which parse markup rather than computed style, so
+    // every post with a cover shipped two H1s until feedback 0026. `/<h1[\s>]/`
+    // alone stayed green through all of it. Counting is what makes it failable.
+    const h1s = [...html.matchAll(/<h1[\s>]/g)].length;
+    assert.equal(
+      h1s,
+      1,
+      `expected ${route.path} to render exactly one <h1>, found ${h1s}`,
     );
     // Route-unique body content: proves the real page rendered, so a blank body
     // or a reverted placeholder can't pass on the shared <h1> alone.
@@ -1249,6 +1268,56 @@ test("<PostSubscribe /> renders a distinct mid-post subscribe aside inside the M
   // /blog/<slug> route entry above ("Enjoying what you are reading?" alongside the
   // end-of-post form's markers) - the content rollout put the component into every
   // published post, so the case finally exists to assert.
+});
+
+// EVERY published post must carry exactly one <h1> (feedback 0026), not just the
+// one post pinned in the route table above.
+//
+// Two independent ways a second heading gets in, and the route table catches
+// neither on the other ten posts:
+//   1. the cover-hero regression this feedback fixes (HeroMeta is rendered twice);
+//   2. an author writing a top-level `# Heading` in the MDX body - `post-body.tsx`
+//      maps h2/p/a/hr/strong/em/blockquote but NOT h1, so a stray `#` renders as a
+//      raw, unstyled <h1> and silently gives that post two.
+// The second is the reason this loops rather than adding one more route entry: the
+// defect would live in content, so it can appear on any post at any time, in a PR
+// that touches no code at all.
+test("every published post renders exactly one <h1>, carrying its own title", async () => {
+  const posts = getPublishedPosts();
+  assert.ok(posts.length > 0, "expected at least one published post to check");
+
+  for (const post of posts) {
+    const res = await fetch(`${BASE}/blog/${post.slug}`);
+    assert.equal(res.status, 200, `expected 200 for /blog/${post.slug}`);
+    // Strip <script> so the RSC flight payload cannot contribute. (It serializes
+    // elements as ["$","h1",...] and escapes literal "<" to <, so it does not
+    // match today - stripping keeps that true if the encoding ever changes.)
+    const html = (await res.text()).replace(/<script[\s\S]*?<\/script>/g, "");
+    const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/g)];
+    assert.equal(
+      h1s.length,
+      1,
+      `expected exactly one <h1> on /blog/${post.slug}, found ${h1s.length}: ` +
+        JSON.stringify(h1s.map((m) => m[1].slice(0, 60))),
+    );
+    // ...and it must be the post's title, not an empty or stray heading - a count
+    // of one is satisfied by an empty <h1>, which is worse for a crawler than two.
+    // Titles carry apostrophes ("Leadership Isn't a Title"), which React escapes,
+    // so decode the entities React actually emits before comparing.
+    const heading = h1s[0][1]
+      .replace(/<[^>]*>/g, "")
+      .replace(/&#x27;|&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .trim();
+    assert.equal(
+      heading,
+      post.title,
+      `the <h1> on /blog/${post.slug} must carry the post title`,
+    );
+  }
 });
 
 // The gated preview index must render FRESH, not cached (feedback 0023): ISR's
