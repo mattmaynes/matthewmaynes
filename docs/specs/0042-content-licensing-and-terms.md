@@ -43,11 +43,15 @@ opposite of the intent. Adding the file wrongly is worse than the current gap.
 
 **In**
 
-- **`LICENSE`** (root, new): a two-part file. Part one, MIT covering "the software" - everything
-  under `src/`, `scripts/`, `tests/`, and the config. Part two, an explicit reservation covering
-  `content/`, `public/images/`, `public/videos/`, and `emails/`: all rights reserved, no reuse or
-  redistribution without written permission. Names the split unambiguously so neither half can be
-  read as covering the other.
+- **`LICENSE`** (root, new): a two-part file split by **nature, not directory**. Part one, MIT over
+  the software *as software* - `src/`, `scripts/`, `tests/`, `.github/`, `deploy/`, config - and
+  explicitly NOT over the prose embedded in it (page copy in `src/app/**/page.tsx`, the work history
+  in `src/lib/resume.ts`, the bio in `src/lib/site.ts`), which is writing. Part two reserves
+  everything else: `content/`, **all** of `public/` (photos, video, illustrations, the resume PDF,
+  icons, brand assets), `emails/`, `docs/`, `brand/`, and the root markdown - plus a
+  **default-to-reserved catch-all**, so a directory added later cannot fall through an enumeration
+  gap into the MIT half. The grant binds "the Software" to that scope and adds a no-implied-grant
+  clause.
 - **`src/app/terms/page.tsx`** (new): a Server Component in the same shape as `/privacy` and
   `/ai-policy` - page `h1`, prose sections, `metadata` with a canonical. Sections: what is covered,
   what you may do, what you may not do, the code exception, AI and automated use, views are my own,
@@ -83,9 +87,11 @@ opposite of the intent. Adding the file wrongly is worse than the current gap.
 kinds of thing with two different intents: code Matthew is happy for people to learn from and reuse,
 and personal writing and family photographs he is not. A single-licence file cannot express that. So
 the file states both halves and names the directories each covers. MIT for the code keeps it
-recognisable to GitHub's licence detection and to anyone reading it; the reservation half is plain
-English rather than a named licence, because no standard content licence says "no reuse at all"
-(CC BY-NC-ND still grants redistribution).
+recognisable to anyone reading it; the reservation half is plain English rather than a named licence,
+because no standard content licence says "no reuse at all" (CC BY-NC-ND still grants redistribution).
+Note that GitHub's licence detection matches on whole-file similarity, so a split file reports as
+"Other" rather than MIT - which is the safe outcome here, since reporting MIT would imply the media
+is MIT too.
 
 **Key decision - a page, not just a file.** A root `LICENSE` is invisible to a site visitor, and a
 footer line is too small to hold the detail. `/terms` is the readable surface; the `LICENSE` is the
@@ -101,9 +107,11 @@ is a statement of terms, not an access control - `llms.txt` is advisory and a cr
 **What this does NOT achieve, stated plainly.** None of it prevents redistribution:
 
 - **The repo is public on GitHub, and GitHub's Terms of Service grant every user a licence to view
-  and fork public repositories.** The photographs and video are committed under `public/`, so they
-  are forkable regardless of what this `LICENSE` or `/terms` says. A notice on the site does not
-  override terms accepted by making the repo public.
+  and fork public repositories** - though only "solely on GitHub as permitted through GitHub's
+  functionality", conveying no rights to use the material elsewhere. The photographs and video are
+  committed under `public/`, so they are forkable on GitHub regardless of what this `LICENSE` or
+  `/terms` says. A notice on the site does not override terms accepted by making the repo public.
+  The "solely on GitHub" limit is worth stating precisely: it is the part that protects the author.
 - Anything served at `matthewmaynes.com` can be saved by anyone who loads the page.
 - `robots.txt` and `llms.txt` are advisory.
 
