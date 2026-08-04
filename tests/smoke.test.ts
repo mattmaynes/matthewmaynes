@@ -355,18 +355,22 @@ const routes = [
       "all rights reserved",
       // the media reservation - the part the author cares most about
       "not stock imagery",
-      // the AI split: text quotable, media not
+      // the AI split - BOTH halves. Guarding only the reservation would let the
+      // permissive half be deleted or flipped to a blanket deny (which would
+      // contradict spec 0040's invite-answer-engines goal) under a green suite.
+      "the same line applies to machines as to people",
       "used as training data, in whole or in part",
       // the code exception
       "the source is MIT licensed",
       // views-are-my-own, naming employers explicitly
       "not the views of my employer, past or present",
-      // permission route (must be /contact, never an address - public-repo rule)
-      'href="/contact"',
+      // Permission routing. NOT 'href="/contact"' - the top nav emits that on
+      // every page, so it is shared chrome and stays green with this whole
+      // section deleted (proven in review). These two are unique to the section.
+      "Ask. I am reasonable",
+      ">contact page</a>",
     ],
-    // The public-repo PII rule: permission requests route through the contact
-    // form, so no address may appear in the copy.
-    absent: ["Placeholder", "@matthewmaynes.com", "mailto:"],
+    absent: ["Placeholder"],
   },
   {
     path: "/contact",
@@ -1822,24 +1826,55 @@ test("a category archive lists its posts with a route-unique title; badge links 
 // must appear on every page, not just one. Checked on two unrelated routes -
 // asserting on a single page could not tell "the footer carries it" apart from
 // "that one page happens to say it", which is the whole claim here.
+//
+// Scoped to the <footer> ELEMENT, not the whole document: a document-wide grep
+// stays green if the notice drifts into the header, which would make this test's
+// own name false.
 test("every page's footer carries the rights notice and links to /terms", async () => {
   for (const path of ["/", "/blog"]) {
     const html = await (await fetch(BASE + path)).text();
+    const footer = html.match(/<footer[\s\S]*?<\/footer>/)?.[0];
+    assert.ok(footer, `expected a <footer> element on ${path}`);
     assert.ok(
-      html.includes("All rights reserved."),
-      `expected the rights notice in the footer on ${path}`,
+      footer.includes("All rights reserved."),
+      `expected the rights notice inside the footer on ${path}`,
     );
     assert.ok(
-      html.includes('href="/terms"'),
-      `expected a /terms link in the footer on ${path}`,
+      footer.includes('href="/terms"'),
+      `expected a /terms link inside the footer on ${path}`,
     );
     // ...and it must be the footer's own link, next to Privacy - not some stray
     // mention - so pin the rendered label too.
     assert.ok(
-      html.includes(">Terms</a>"),
+      footer.includes(">Terms</a>"),
       `expected the footer's Terms link label on ${path}`,
     );
   }
+});
+
+// The public-repo PII rule (AGENTS.md) as an assertion rather than a review
+// habit, reusing the same regex trio /resume uses. The earlier literal markers
+// ("@matthewmaynes.com", "mailto:") only caught an on-domain address; a plain
+// personal address, a phone number, or the postal code walked straight through.
+test("/terms leaks no contact PII (permission requests route through /contact)", async () => {
+  const html = await (await fetch(BASE + "/terms")).text();
+  assert.doesNotMatch(
+    html,
+    /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i,
+    "expected /terms to contain no email address",
+  );
+  assert.doesNotMatch(
+    html,
+    /\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/,
+    "expected /terms to contain no phone number",
+  );
+  assert.doesNotMatch(html, /\bK0K\s?3E0\b/i, "expected /terms to contain no postal code");
+  // Canonical (spec 0042 acceptance): the title is pinned by the route table,
+  // the canonical is not covered by the existing /about + /login canonical test.
+  assert.ok(
+    html.includes('rel="canonical" href="https://matthewmaynes.com/terms"'),
+    "expected /terms to emit a self-referential canonical",
+  );
 });
 
 test("robots, sitemap, and manifest are served", async () => {
@@ -2159,6 +2194,23 @@ test("GET /llms.txt serves text/plain naming a published post, omitting drafts",
   // The H1 identity header and the section skeleton render.
   assert.match(body, /^# Matthew Maynes/m, "expected the identity H1");
   assert.ok(body.includes("## Writing"), "expected a Writing section");
+  // Usage terms on the REAL route (spec 0042). The unit test proves the builder
+  // emits the section; this proves the served file does, with the production
+  // site URL rather than the unit fixture's. Both halves of the split, because
+  // guarding one lets the other be dropped.
+  assert.ok(body.includes("## Usage"), "expected a Usage section on the served file");
+  assert.ok(
+    body.includes("may be read, quoted, and cited with attribution"),
+    "expected the text to be explicitly quotable in the served llms.txt",
+  );
+  assert.ok(
+    body.includes("may not be reproduced, redistributed, or used as training data"),
+    "expected the media to be explicitly reserved in the served llms.txt",
+  );
+  assert.ok(
+    body.includes("https://matthewmaynes.com/terms"),
+    "expected the served llms.txt to link the real /terms URL",
+  );
   // A known published post appears by title AND absolute URL - a value a blank
   // route could not produce.
   const published = getPublishedPosts()[0];

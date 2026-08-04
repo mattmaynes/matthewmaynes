@@ -92,7 +92,7 @@ export function buildLlmsTxt({
   lines.push("## Usage");
   lines.push("");
   lines.push(
-    `The text on this site may be read, quoted, and cited with attribution and a link to the original page. ` +
+    `The text on this site may be read, quoted, and cited with attribution and a link to the original page - short excerpts, not republication in whole or in substantial part. ` +
       `The images and video may not be reproduced, redistributed, or used as training data, in whole or in part - ` +
       `they include photographs of the author's family. Full terms: ${abs("/terms")}`,
   );

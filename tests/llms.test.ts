@@ -145,16 +145,19 @@ test("buildLlmsTxt handles an empty post list without breaking the sections", ()
 test("buildLlmsTxt states the content usage terms, splitting text from media", () => {
   const out = buildLlmsTxt({ site: SITE, nav: NAV, posts: POSTS });
   assert.match(out, /^## Usage$/m, "expected a Usage section");
+  // Scoped to the section body, so a matching phrase drifting into Writing or
+  // More cannot satisfy these.
+  const usage = out.slice(out.indexOf("## Usage"), out.indexOf("## More"));
   assert.ok(
-    out.includes("may be read, quoted, and cited with attribution"),
+    usage.includes("may be read, quoted, and cited with attribution"),
     "expected the TEXT to be explicitly quotable (this file invites answer engines)",
   );
   assert.ok(
-    out.includes("may not be reproduced, redistributed, or used as training data"),
+    usage.includes("may not be reproduced, redistributed, or used as training data"),
     "expected the images and video to be explicitly reserved",
   );
   assert.ok(
-    out.includes(`${SITE.url}/terms`),
+    usage.includes(`${SITE.url}/terms`),
     "expected an absolute link to the authoritative terms page",
   );
   // Usage must precede More, so a crawler reading top-down hits the terms before
