@@ -31,6 +31,7 @@ import rise from "../../public/images/blog/rise.webp";
 import sheaTwoWeeks from "../../public/images/blog/shea-two-weeks.jpg";
 import sheaFourMonths from "../../public/images/blog/shea-four-months.jpg";
 import rogueInvitational from "../../public/images/blog/rogue-invitational.jpg";
+import familyPortrait from "../../public/images/blog/family-portrait.jpg";
 
 import type { SiteImage } from "./site";
 
@@ -98,10 +99,16 @@ export const blogImages = {
   },
   "shea-four-months.jpg": {
     ...sheaFourMonths,
-    // Doubles as the post cover: a tall portrait, so top-align the cropped
-    // renders (listing thumbnail, OG card) to keep her face in frame.
-    focus: "top",
+    // No `focus`: this is an in-body image only, so it is never cropped. (It was
+    // briefly the Life Log #2 cover, which is why it carried focus: "top".)
     alt: "A four-month-old baby in a blue floral outfit propped up on her arms during tummy time, mouth open in a wide grin at the camera.",
+  },
+  "family-portrait.jpg": {
+    ...familyPortrait,
+    // The Life Log #2 cover. No `focus`: the three faces sit mid-frame, so the
+    // default centre crop keeps them; top-aligning would crop to the siding above
+    // them. The OG card uses the committed og/family-portrait.png rendition.
+    alt: "A couple outside their home with their baby: the mother sitting in a grey wicker chair holding the baby on her lap, the father crouched beside them holding the baby's hand, both smiling down at her.",
   },
   "rogue-invitational.jpg": {
     ...rogueInvitational,
