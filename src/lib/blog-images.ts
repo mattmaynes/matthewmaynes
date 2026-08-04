@@ -28,8 +28,6 @@ import memoryKeeperSettings from "../../public/images/blog/memory-keeper-setting
 import memoryKeeper404 from "../../public/images/blog/memory-keeper-404.png";
 import leadershipBoardroom from "../../public/images/blog/leadership-boardroom.png";
 import rise from "../../public/images/blog/rise.webp";
-import sheaTwoWeeks from "../../public/images/blog/shea-two-weeks.jpg";
-import sheaFourMonths from "../../public/images/blog/shea-four-months.jpg";
 import rogueInvitational from "../../public/images/blog/rogue-invitational.jpg";
 import familyPortrait from "../../public/images/blog/family-portrait.jpg";
 
@@ -92,16 +90,6 @@ export const blogImages = {
   "sasha-running.jpg": {
     ...sashaRunning,
     alt: "A white curly-coated dog running across a sunny green lawn toward the camera, tongue out, a treeline behind.",
-  },
-  "shea-two-weeks.jpg": {
-    ...sheaTwoWeeks,
-    alt: "A sleeping newborn in a knitted hat, one hand curled up beside her face, wrapped in a floral muslin blanket on a cream quilt.",
-  },
-  "shea-four-months.jpg": {
-    ...sheaFourMonths,
-    // No `focus`: this is an in-body image only, so it is never cropped. (It was
-    // briefly the Life Log #2 cover, which is why it carried focus: "top".)
-    alt: "A four-month-old baby in a blue floral outfit propped up on her arms during tummy time, mouth open in a wide grin at the camera.",
   },
   "family-portrait.jpg": {
     ...familyPortrait,
