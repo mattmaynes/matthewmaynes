@@ -34,6 +34,13 @@ export const blogVideos = {
     alt: "A hazy, smoke-yellowed sky dimming the daylight over a rural lawn, a quiet road and a distant treeline, wildfire smoke drifting in from far away.",
     poster: "/videos/blog/wildfire-smoke-poster.jpg",
   },
+  "squat-405.mp4": {
+    src: "/videos/blog/squat-405.mp4",
+    width: 720,
+    height: 1280,
+    alt: "A lifter in a home gym unracking a loaded barbell in a power rack, squatting to depth and standing it back up, then racking the bar.",
+    poster: "/videos/blog/squat-405-poster.jpg",
+  },
 } satisfies Record<string, BlogVideo>;
 
 export type BlogVideoKey = keyof typeof blogVideos;
