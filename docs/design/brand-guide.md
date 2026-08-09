@@ -1,14 +1,14 @@
-# Brand Guide — Matthew Maynes
+# Brand Guide - Matthew Maynes
 
 ## Brand Identity
 
-The Matthew Maynes brand reflects a hands-on engineering leader who solves problems, builds things, and leads by example — but also someone grounded in nature, family, and life outside of code. The visual identity should feel:
+The Matthew Maynes brand reflects a hands-on engineering leader who solves problems, builds things, and leads by example - but also someone grounded in nature, family, and life outside of code. The visual identity should feel:
 
-- **Professional** — Credible and polished, appropriate for an engineering director
-- **Technical** — Clearly from someone who builds things, not just manages
-- **Approachable** — Warm and human, not cold or corporate
-- **Grounded** — Connected to nature, family, and the real world
-- **Clean** — Minimal, focused, no visual noise
+- **Professional** - Credible and polished, appropriate for an engineering director
+- **Technical** - Clearly from someone who builds things, not just manages
+- **Approachable** - Warm and human, not cold or corporate
+- **Grounded** - Connected to nature, family, and the real world
+- **Clean** - Minimal, focused, no visual noise
 
 ## Logo / Wordmark
 
@@ -20,13 +20,13 @@ MATTHEW MAYNES
 
 - All caps, generous letter-spacing
 - Optional: a subtle monogram `MM` mark for favicon and small contexts
-- The monogram can use a geometric/minimal style — two interlocking or side-by-side M letterforms
+- The monogram can use a geometric/minimal style - two interlocking or side-by-side M letterforms
 
-## Color Palette — "Harbor"
+## Color Palette - "Harbor"
 
 The palette is built on the [`@rogueoak/roots`](https://www.npmjs.com/package/@rogueoak/roots)
 design tokens. Roots ships a nature theme (moss / bark / stone / amber); this site re-points the
-semantic roles onto a bluer + slate set — **Harbor** — while keeping a warm gold accent so it
+semantic roles onto a bluer + slate set - **Harbor** - while keeping a warm gold accent so it
 stays inviting, not corporate-cold. The override lives in `src/styles/theme-harbor.css`; components
 read only the semantic roles, so light/dark theming needs no per-component code.
 
@@ -81,12 +81,12 @@ Fonts come from the Roots tokens (`--font-sans`, `--font-mono`); the site self-h
 ### Font Scale
 
 ```
-h1: 2.5rem (40px)  — Page titles
-h2: 2rem (32px)    — Section headings
-h3: 1.5rem (24px)  — Subsection headings
-h4: 1.25rem (20px) — Card titles
-body: 1rem (16px)  — Body text
-small: 0.875rem (14px) — Captions, metadata
+h1:    2.5rem   (40px) - Page titles
+h2:    2rem     (32px) - Section headings
+h3:    1.5rem   (24px) - Subsection headings
+h4:    1.25rem  (20px) - Card titles
+body:  1rem     (16px) - Body text
+small: 0.875rem (14px) - Captions, metadata
 ```
 
 ## Spacing & Layout
@@ -135,17 +135,17 @@ small: 0.875rem (14px) — Captions, metadata
 
 ## Voice & Tone (for written content)
 
-- **Direct** — Lead with the point, then explain
-- **Technical but accessible** — Don't dumb it down, but don't gatekeep
-- **Personal** — Write in first person, share real experiences and life outside of work
-- **Grounded** — Draw metaphors from nature, building, and hands-on work when it feels natural
-- **Concise** — Respect the reader's time
+- **Direct** - Lead with the point, then explain
+- **Technical but accessible** - Don't dumb it down, but don't gatekeep
+- **Personal** - Write in first person, share real experiences and life outside of work
+- **Grounded** - Draw metaphors from nature, building, and hands-on work when it feels natural
+- **Concise** - Respect the reader's time
 
 ## Favicon & Open Graph
 
 - Favicon: `MM` monogram on Harbor blue (`--color-primary`) background
 - Open Graph image: Name + title + brand colors for social sharing
-- Format: `matthewmaynes.com — Engineering Leader & Builder`
+- Format: `matthewmaynes.com - Engineering Leader & Builder`
 
 ## The "Whole Person" Principle
 
@@ -153,6 +153,6 @@ The site should feel like it belongs to a complete person, not just a resume. Th
 
 - The **Home** page hero can feature a nature photo from the property as a background
 - The **About** page includes a personal section alongside the professional one
-- **Blog** topics span engineering, leadership, nature, fitness, and life — all welcome
+- **Blog** topics span engineering, leadership, nature, fitness, and life - all welcome
 - Seasonal touches are encouraged (e.g., the hero image could rotate with the seasons)
 - The overall effect: someone you'd want to work with *and* have a conversation with
