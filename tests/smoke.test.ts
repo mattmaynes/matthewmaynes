@@ -458,11 +458,22 @@ const routes = [
       "min read",
       // The path back into the rest of the site.
       "Explore the whole site",
-      // The shared form's row container - the element the `.links-subscribe`
-      // override targets. If Canopy renamed/dropped this class the override would
-      // silently no-op and the form would re-smoosh, so pin it (as /subscribe and
-      // the blog boxes already do).
+      // The form's own row container class combo, unique to the form on this
+      // route (the footer emits a BARE "sm:flex-row", blog-list "sm:items-center",
+      // post-nav "sm:items-stretch"), so it reddens if Canopy renames or drops
+      // the row container. Note what it does NOT prove: the class ships
+      // identically at any container width, so it cannot tell a well-laid-out
+      // form from a smooshed one. The width guard is the separate scoped test
+      // below. (This pin once also protected the `.links-subscribe` override
+      // from feedback 0025; #177 removed that override.)
       "sm:flex-row sm:items-end",
+      // alwaysShowName is feedback 0025's precondition - with the name field
+      // collapsed there is no third field to smoosh, so dropping the prop would
+      // quietly retire the case the width guard exists for. "sm:max-w-md" is the
+      // REVEALED marker (spec 0024; the field animates via max-width), the
+      // positive counterpart to /blog's `absent: sm:max-w-md`.
+      "Name (optional)",
+      "sm:max-w-md",
     ],
     // The Latest-post card must use the PUBLISHED set: a draft or not-yet-due
     // scheduled sample post must never surface here (spec 0034/0035). The sample
@@ -743,6 +754,31 @@ test("the /links stack renders in intent order: links -> subscribe -> latest pos
     );
     prev = at;
   }
+});
+
+// Feedback 0025's fix now lives entirely in ONE class: the width cap on the
+// block wrapping the subscribe form. #177 widened it and deleted the
+// `.links-subscribe` override plus both of its guards, leaving the replacement
+// behaviour unasserted - narrow this wrapper back to `max-w-md` and the name
+// field re-smooshes to "Name (opt|" with every other assertion on this route
+// still green. Scoped to the wrapper the subscribe <section> sits directly
+// inside, so no other `max-w-*` on the page can satisfy it.
+test("the /links subscribe block sits in the wide wrapper that keeps its fields unsmooshed", async () => {
+  const html = await (await fetch(BASE + "/links")).text();
+  const wrapper = html.match(
+    /<div class="([^"]*)"><section[^>]*>(?=[\s\S]{0,200}Subscribe for updates)/,
+  );
+  assert.ok(wrapper, "expected to locate the /links subscribe block wrapper");
+  assert.doesNotMatch(
+    wrapper[1],
+    /max-w-(xs|sm|md)\b/,
+    `expected the subscribe wrapper NOT to carry a narrow width cap (feedback 0025: at max-w-md the name field clips to "Name (opt|"), got "${wrapper[1]}"`,
+  );
+  assert.match(
+    wrapper[1],
+    /max-w-2xl/,
+    `expected the subscribe wrapper to keep its max-w-2xl cap (spec 0039), got "${wrapper[1]}"`,
+  );
 });
 
 // The footer surfaces the /links page (spec 0039) on larger screens only - the

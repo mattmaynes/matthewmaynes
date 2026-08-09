@@ -58,14 +58,23 @@ to go deeper.
 
 ## Approach
 
-- **One column, reused parts.** The page is a Server Component that renders a centred
-  `max-w-md`-ish column. The identity header uses the existing static-imported `headshot` (carries
-  its `blurDataURL`), rendered circular. The Latest-post card is a compact **cover-on-top** variant
-  (the narrow column favours a vertical card over the side-by-side `/subscribe` treatment); it
-  resolves the cover server-side exactly like `/subscribe` and honours the `pixelated` flag. The
-  subscribe block is the shared `SubscribeForm` with `alwaysShowName`, its fields kept **stacked** in
-  this narrow column via a scoped `.links-subscribe` override (feedback 0025; the form's `sm:flex-row`
-  viewport breakpoint would otherwise smoosh the name field at ~448px). The social row maps
+- **One column, reused parts.** The page is a Server Component. There is no page-level width cap:
+  the outer `<section>` is uncapped and the identity header runs full width, centred by
+  `text-center`. The caps sit on the blocks - `max-w-md` on the primary links stack (the
+  `Read the blog` CTA plus the social row) and `max-w-2xl` on the subscribe block and Latest-post
+  block below it. The identity header uses the existing static-imported `headshot` (carries its
+  `blurDataURL`), rendered circular. The Latest-post block is the **shared `PostRow`** (via
+  `toPostRows`), the same rich summary row the home page and `/blog` listing render - thumbnail
+  beside excerpt, category chip, tags, and reading time at `sm`+, stacking to cover-on-top below
+  it, all `PostRow`'s own behaviour - so the page no longer resolves the cover itself and cannot
+  drift from those surfaces (#183). The subscribe block is the shared `SubscribeForm` with
+  `alwaysShowName`, laid out inline by the form's own `sm:flex-row` breakpoint, with no page-scoped
+  override involved. (Feedback 0025 originally kept the fields **stacked** here via a
+  `.links-subscribe` rule, because the block was then capped at `max-w-md` and the breakpoint
+  smooshed the name field at ~448px. What removed the need was **dropping that cap**, not the
+  `max-w-2xl` itself: from 640px to ~712px the block is viewport-bound and narrower than 672px, and
+  the fields still fit. Worst case is exactly 640px, where the name input measures ~133px against a
+  ~116px `Name (optional)` placeholder.) The social row maps
   `site.social` through the existing icon wrappers as
   large icon buttons (each an `<a target="_blank" rel="noopener noreferrer">` with an
   `aria-label`), the same treatment the footer already uses, sized up for touch.

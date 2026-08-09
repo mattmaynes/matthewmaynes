@@ -1,5 +1,12 @@
 # 0025 - /links subscribe form fields smooshed in the narrow column
 
+> **Status: fix superseded (the Learning below still stands).** The `.links-subscribe` override
+> described here was removed by #177, which widened the `/links` subscribe block from `max-w-md` to
+> `max-w-2xl` for desktop. The container now has room for the inline row, so the override had
+> nothing left to correct. Do not reinstate it: the record below is kept for the reasoning, not as a
+> description of current behaviour. See `docs/specs/0039-links-page.md` for how the block lays out
+> today.
+
 ## Symptom
 
 On the `/links` link-in-bio page, the subscribe form squeezed its three fields (email + optional

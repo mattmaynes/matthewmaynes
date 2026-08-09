@@ -122,6 +122,21 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   stacked layout with a container-scoped rule: target the internal layout class by attribute selector
   (`.wrapper [class*="sm:flex-row"]`) at higher specificity (0,2,0 beats Tailwind's 0,1,0, so no
   `!important`), scoped to a wrapper so only that embedding changes. (0025)
+  **But first ask whether the narrow column is load-bearing** - this override was deleted a day
+  later by #177, which dropped the block's `max-w-md` cap and gave the row the room it wanted.
+  Removing the constraint beat fighting the breakpoint. (0025)
+- **Deleting a fix's MECHANISM deletes its guards; the behaviour still needs one.** #177 removed the
+  `.links-subscribe` override and, correctly, both tests that were specific to it - but shipped no
+  replacement guard, so the entire fix came to rest on a single `max-w-2xl` class with nothing
+  asserting it. Reverting that one class reproduced feedback 0025 exactly (the name field clipping to
+  `"Name (opt|"`) with the full suite green. When a fix moves from mechanism A to mechanism B, the
+  test moves too: re-anchor the guard on whatever now carries the behaviour, and pin the
+  PRECONDITION as well (here `alwaysShowName` - with the name field collapsed there is no third
+  field to smoosh, so the case quietly retires). And beware a marker that merely LOOKS like a guard:
+  the form's `sm:flex-row sm:items-end` combo proves the row container shipped, but it is emitted
+  identically at any container width, so it can never distinguish a well-laid-out form from a
+  smooshed one. Also update the docs in the same change - #177 left spec 0039 and a smoke-test
+  comment describing a mechanism that no longer existed, which is how a spec starts lying. (0025/0039)
 - **Verify a token class name against the actual theme before using it** (`text-text-muted`, not
   `text-muted`) - grep the generated CSS. A wrong token renders unreadable, silently. Reach for a
   semantic role, not a raw Tailwind step; add a `@theme` role if missing and confirm it emitted. (0011/0014)
