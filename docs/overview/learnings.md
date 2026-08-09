@@ -148,6 +148,14 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   PER-DEPLOY gate so a future regression fails the deploy that introduces it. (0008/0019)
 - **A generated-artifact freshness gate must hash EVERY input that affects the output** (and only
   those) and regenerate from a clean build; verify the real output too, not just the hash. (0005/0007)
+- **Adding a SECOND derivation path from one source is how a generated set goes inconsistent.**
+  Shipping the brand SVG as the vector favicon first copied it directly while the rasters still came
+  from a PNG master rendered by a manual, documented-only `qlmanage` step: one command then produced
+  a fresh vector and stale rasters, a footgun that did not exist when everything derived from a
+  single master. The fix is to fold the manual step INTO the script so there is one path and one
+  command, not to document the second step harder. Pair it with a CI gate that can actually run -
+  when the generator needs platform-only tooling (macOS `sips`/`qlmanage`), the gate must be a plain
+  byte compare (`icons:check`) so ubuntu CI can enforce freshness the generator never could. (0037)
 - **A source-keyed freshness gate also trips on edits that DON'T change the output, and the
   sanctioned fix can be wrong.** A site-wide metadata sweep (adding `alternates.canonical` to every
   page) touches `src/app/resume/page.tsx` and `src/app/privacy/page.tsx` - both hashed inputs to

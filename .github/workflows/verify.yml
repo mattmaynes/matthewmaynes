@@ -33,6 +33,10 @@ jobs:
       # not stamped (npm run privacy:stamp). A pure content-hash compare that
       # ignores the date value, so a stale date can never ship silently.
       - run: npm run privacy:check
+      # Fail if the brand vector changed but the committed favicon was not
+      # regenerated (npm run icons). A byte compare, so it needs none of the
+      # macOS tooling the full icon build depends on.
+      - run: npm run icons:check
       # BLOG_FIXTURES_DIR is TEST-ONLY (feedback 0022): it injects the sample
       # draft/scheduled posts (tests/fixtures/blog, kept out of live content) so the
       # standalone artifact this build produces - which `npm test`'s smoke suite

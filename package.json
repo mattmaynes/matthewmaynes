@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "BLOG_FIXTURES_DIR=\"$PWD/tests/fixtures/blog\" node --test --test-concurrency=1 tests/*.test.ts",
+    "icons": "node scripts/build-icons.ts",
+    "icons:check": "node scripts/build-icons.ts --check",
     "resume:pdf": "node scripts/generate-resume-pdf.ts",
     "resume:pdf:check": "node scripts/generate-resume-pdf.ts --check",
     "privacy:stamp": "node scripts/check-privacy-date.ts",

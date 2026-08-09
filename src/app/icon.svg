@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Matthew Maynes">
+  <defs>
+    <linearGradient id="spark" gradientUnits="userSpaceOnUse" x1="120" y1="392" x2="392" y2="120">
+      <stop offset="0"    stop-color="#2c557b"/>
+      <stop offset="0.55" stop-color="#5685ae"/>
+      <stop offset="1"    stop-color="#82a6c8"/>
+    </linearGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.42" r="0.78">
+      <stop offset="0" stop-color="#1f3447"/>
+      <stop offset="1" stop-color="#0b1420"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#3a6a95" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#3a6a95" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="252" r="205" fill="url(#glow)"/>
+
+  <g stroke-linecap="round" fill="none" stroke="url(#spark)">
+    <g stroke-width="26" opacity="0.18">
+      <path d="M146 372 L146 150"/>
+      <path d="M146 150 L256 300"/>
+      <path d="M256 300 L366 150"/>
+      <path d="M366 150 L366 372"/>
+    </g>
+    <g stroke-width="11">
+      <path d="M146 372 L146 150"/>
+      <path d="M146 150 L256 300"/>
+      <path d="M256 300 L366 150"/>
+      <path d="M366 150 L366 372"/>
+    </g>
+  </g>
+
+  <g>
+    <g fill="#3a6a95" opacity="0.20"><circle cx="146" cy="150" r="17"/> <circle cx="366" cy="150" r="17"/> <circle cx="146" cy="372" r="17"/> <circle cx="366" cy="372" r="17"/></g>
+    <g fill="#3a6a95" opacity="0.16"><circle cx="146" cy="261" r="15"/> <circle cx="366" cy="261" r="15"/> <circle cx="201" cy="225" r="15"/> <circle cx="311" cy="225" r="15"/></g>
+    <circle cx="256" cy="300" r="19" fill="#d99a4a" opacity="0.24"/>
+    <g fill="#eef3f8"><circle cx="146" cy="150" r="9"/> <circle cx="366" cy="150" r="9"/> <circle cx="146" cy="372" r="9"/> <circle cx="366" cy="372" r="9"/></g>
+    <g fill="#9fb6cd"><circle cx="146" cy="261" r="7"/> <circle cx="366" cy="261" r="7"/> <circle cx="201" cy="225" r="7"/> <circle cx="311" cy="225" r="7"/></g>
+    <circle cx="256" cy="300" r="11" fill="#d99a4a"/>
+  </g>
+</svg>
