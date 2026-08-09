@@ -12,6 +12,19 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   class *combination* nothing else emits, or the exact behaviour on the surface that carries it.
   Every visible/behavioural acceptance criterion needs its own failable guard in the same PR. This is
   the single most-repeated lesson here.
+- **A test asserting a COLD-START behaviour must create the cold state IN THE TEST, not assume it
+  and not merely reset it in a shared hook.** The prewarm test's MISS -> HIT flip needs an empty
+  image cache, but `next/image` writes variants to `<serverDir>/.next/cache`, which outlives the
+  server AND the reused build - so it held for exactly one run per build, then reported HIT on the
+  "cold" request. Resetting in `before` only RELOCATED the assumption (environment -> declaration
+  order): a sibling test warms `/` through the entry script's default routes, the same page the MISS
+  check samples, so a reorder or concurrent tests bring it back. Any test keyed on a first-time
+  effect (cache MISS, one-shot migration, empty table, "first request" path) owns that setup itself.
+  Reset the cache ROOT, not a pinned internal subdir - `rmSync` with `force` makes a wrong path a
+  silent no-op, so an upstream move re-arms the bug quietly. Note where this hides: CI builds fresh
+  every job, so it was permanently green there and only ever reddened locally mid-iteration - a green
+  pipeline is NOT evidence the suite is deterministic. Re-running the suite twice without rebuilding
+  is the cheap check. (0027)
 - **An "in this order" acceptance criterion needs a source-order assertion, not presence markers.**
   `html.includes(a) && html.includes(b)` stays green when a stack is reshuffled (a section floated to
   the top) - it only proves both rendered. Assert that each marker's byte offset increases down the
