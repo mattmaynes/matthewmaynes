@@ -109,6 +109,20 @@ async function waitForReady(timeoutMs = 60000) {
 }
 
 let server;
+let serverDir;
+
+// next/image writes its optimized variants under the standalone server's own
+// .next/cache, which survives the server exiting AND the build being reused
+// below - so a second run against one build serves the "cold" request from the
+// last run's cache. Reset the whole cache root, not just the images/ subdir:
+// under standalone it holds only runtime output (prerender output lives in
+// .next/server), and `force` means a wrong path fails silently, so pinning the
+// internal images/ path would let a Next upgrade that moves it quietly
+// reinstate the bug. Safe to call with the server running - next/image consults
+// the directory per request, so the next one MISSes.
+function resetImageCache() {
+  rmSync(join(serverDir, ".next", "cache"), { recursive: true, force: true });
+}
 
 before(async () => {
   const standaloneDir = join(root, ".next", "standalone");
@@ -122,18 +136,9 @@ before(async () => {
     serverJs = findServerJs(standaloneDir);
     if (!serverJs) throw new Error("standalone server.js not found after build");
   }
-  const serverDir = dirname(serverJs);
+  serverDir = dirname(serverJs);
   assembleStandalone(root, serverDir);
-  // Start COLD. next/image writes its optimized variants under the server's own
-  // .next/cache/images, which survives both the server exiting and the build
-  // being reused above - so on any second run against the same build, the
-  // "cold" request below HITs and the test fails on stale state rather than on
-  // a real regression. CI never sees it (it builds fresh every time), which is
-  // exactly why it has to be reset here instead of left to the environment.
-  rmSync(join(serverDir, ".next", "cache", "images"), {
-    recursive: true,
-    force: true,
-  });
+  resetImageCache();
   server = spawn("node", ["server.js"], {
     cwd: serverDir,
     stdio: "inherit",
@@ -147,6 +152,13 @@ after(() => {
 });
 
 test("prewarm warms the home page images and flips MISS -> HIT", async () => {
+  // Own the cold state rather than inheriting it. The before hook already
+  // cleared the cache, but the entry-script test below warms "/" through the
+  // script's default routes - the same page sampled here - so this test would
+  // otherwise be cold only by declaration order, and a reorder or a switch to
+  // concurrent tests would quietly bring the flake back.
+  resetImageCache();
+
   // Sample a hero image URL before warming: a fresh server reports a cache MISS.
   const html = await (await fetch(BASE + "/")).text();
   const [sample] = extractImageUrls(html, BASE);
