@@ -24,6 +24,15 @@ a single, checkable line. For how to write and ship (tests, commits, releases) s
    - Yes: `const badge = isActive ? <Active /> : <Inactive />` above the block, then `{badge}`.
    - No:  `<div>{isActive ? <Active /> : <Inactive />}</div>` inline.
 
+## Comments
+
+1. Comment sparingly, and only for non-intuitive code. Well-named, well-shaped code documents
+   itself; a comment that restates what the code plainly does is redundant and becomes tech debt,
+   since it has to be kept in sync as the code changes. When you do comment, explain the *why* the
+   code cannot show - a constraint or non-obvious reason - not the *what* it already says.
+   - Yes: `// Back off: the upstream API rate-limits bursts and drops the extras.`
+   - No:  `i += 1  // increment i by one`
+
 ## Styling
 
 1. Style with the design system tokens. Do not invent custom styling. If you need a style the

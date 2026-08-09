@@ -2,7 +2,7 @@
 
 ## Mission
 
-**matthewmaynes.com** — a personal website for Matthew Maynes that serves as a portfolio,
+**matthewmaynes.com** - a personal website for Matthew Maynes that serves as a portfolio,
 resume, and blog. It presents Matthew as a hands-on engineering leader and builder (from shipping
 his first iOS app at 18 to leading engineering at Constant Contact) while showing the whole person,
 not just the resume.
@@ -15,17 +15,17 @@ not just the resume.
 
 ## Goals
 
-1. **Portfolio** — highlight key projects and professional accomplishments.
-2. **Resume / About** — a detailed `/resume` (with PDF download) plus an `/about` page that tells
+1. **Portfolio** - highlight key projects and professional accomplishments.
+2. **Resume / About** - a detailed `/resume` (with PDF download) plus an `/about` page that tells
    the fuller, more personal story.
-3. **Blog** — write about technical topics, leadership, nature, and life.
-4. **Personal brand** — a consistent, professional identity built on the Harbor palette.
-5. **Self-hosted** — containerized, runs locally today, deploys to a Linux VM later.
+3. **Blog** - write about technical topics, leadership, nature, and life.
+4. **Personal brand** - a consistent, professional identity built on the Harbor palette.
+5. **Self-hosted** - containerized, runs locally today, deploys to a Linux VM later.
 
 ## Non-goals (v1)
 
 - User accounts or authentication.
-- A CMS backend — blog posts and project data are authored as files in the repo.
+- A CMS backend - blog posts and project data are authored as files in the repo.
 - Blog comments and an analytics dashboard (can come later).
 
 ## Hard constraints

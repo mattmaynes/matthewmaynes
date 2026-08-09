@@ -1,0 +1,8 @@
+# Paths the Trellis compliance pass skips. Blank and '#' lines are ignored; a
+# trailing slash skips a directory subtree, anything else is a path glob.
+
+# Brand logos we render but do not author. The em-dash sits inside each SVG's
+# aria-label, which reproduces the project's own tagline verbatim; rewriting it
+# would misquote someone else's mark.
+public/images/projects/rogueoak-logo.svg
+public/images/projects/spectra-logo.svg

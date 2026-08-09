@@ -1,8 +1,8 @@
-# 0001 — Scaffold the walking skeleton
+# 0001 - Scaffold the walking skeleton
 
 ## Problem
 
-There is no application yet — only planning docs and the Harbor palette in `src/styles/`. We need
+There is no application yet - only planning docs and the Harbor palette in `src/styles/`. We need
 a runnable foundation: a Next.js app with every page in the site map present (as placeholders),
 themed with Harbor, that builds and runs locally in a container. This is the base every later
 feature builds on.
@@ -47,7 +47,7 @@ When done, a developer can:
 
 **Out** (later specs)
 
-- Real body copy/narrative, OG images, favicon. (Photos/headshot are now **in** — see *Assets*.)
+- Real body copy/narrative, OG images, favicon. (Photos/headshot are now **in** - see *Assets*.)
 - Real resume content + PDF generation (own spec; uses the print-stylesheet approach).
 - Working contact form / server-side mail + spam protection (own spec).
 - MDX pipeline, real blog posts, project data, tag filtering.
