@@ -58,14 +58,18 @@ to go deeper.
 
 ## Approach
 
-- **One column, reused parts.** The page is a Server Component that renders a centred
-  `max-w-md`-ish column. The identity header uses the existing static-imported `headshot` (carries
-  its `blurDataURL`), rendered circular. The Latest-post card is a compact **cover-on-top** variant
-  (the narrow column favours a vertical card over the side-by-side `/subscribe` treatment); it
-  resolves the cover server-side exactly like `/subscribe` and honours the `pixelated` flag. The
-  subscribe block is the shared `SubscribeForm` with `alwaysShowName`, its fields kept **stacked** in
-  this narrow column via a scoped `.links-subscribe` override (feedback 0025; the form's `sm:flex-row`
-  viewport breakpoint would otherwise smoosh the name field at ~448px). The social row maps
+- **One column, reused parts.** The page is a Server Component that renders a centred column,
+  `max-w-md` for the identity header and social row and `max-w-2xl` for the subscribe block and
+  Latest-post card below it. The identity header uses the existing static-imported `headshot`
+  (carries its `blurDataURL`), rendered circular. The Latest-post card is a compact
+  **cover-on-top** variant (the column favours a vertical card over the side-by-side `/subscribe`
+  treatment); it resolves the cover server-side exactly like `/subscribe` and honours the
+  `pixelated` flag. The subscribe block is the shared `SubscribeForm` with `alwaysShowName`, laid
+  out inline by the form's own `sm:flex-row` breakpoint - the `max-w-2xl` container gives the three
+  fields room, so no page-scoped override is involved. (Feedback 0025 originally kept them
+  **stacked** here via a `.links-subscribe` rule, because the block was then `max-w-md` and the
+  breakpoint smooshed the name field at ~448px; widening the block for desktop removed both the
+  problem and the override.) The social row maps
   `site.social` through the existing icon wrappers as
   large icon buttons (each an `<a target="_blank" rel="noopener noreferrer">` with an
   `aria-label`), the same treatment the footer already uses, sized up for touch.

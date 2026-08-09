@@ -122,6 +122,12 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   stacked layout with a container-scoped rule: target the internal layout class by attribute selector
   (`.wrapper [class*="sm:flex-row"]`) at higher specificity (0,2,0 beats Tailwind's 0,1,0, so no
   `!important`), scoped to a wrapper so only that embedding changes. (0025)
+  **But first ask whether the narrow column is load-bearing** - this override was deleted a day
+  later by #177, which widened the block to `max-w-2xl` and gave the row the room it wanted. Removing
+  the constraint beat fighting the breakpoint. When you do ship the override and later relax the
+  constraint, delete the override AND the docs describing it in the same change: #177 removed the
+  rule and its tests but left spec 0039 and a smoke-test comment asserting a mechanism that no longer
+  existed, which is how a spec starts lying. (0025/0039)
 - **Verify a token class name against the actual theme before using it** (`text-text-muted`, not
   `text-muted`) - grep the generated CSS. A wrong token renders unreadable, silently. Reach for a
   semantic role, not a raw Tailwind step; add a `@theme` role if missing and confirm it emitted. (0011/0014)

@@ -458,10 +458,14 @@ const routes = [
       "min read",
       // The path back into the rest of the site.
       "Explore the whole site",
-      // The shared form's row container - the element the `.links-subscribe`
-      // override targets. If Canopy renamed/dropped this class the override would
-      // silently no-op and the form would re-smoosh, so pin it (as /subscribe and
-      // the blog boxes already do).
+      // The form's own row container class combo, which guards the responsive
+      // layout - same rationale as /blog, the post pages, and /subscribe. The
+      // bare "sm:flex-row" utility is emitted by shared chrome too and so could
+      // not fail; this combo is unique to the form. (It once also protected the
+      // `.links-subscribe` stacking override from feedback 0025; that override
+      // went away with #177, which widened this block to `max-w-2xl` and let the
+      // fields sit inline. The pin still earns its place on the layout grounds
+      // above.)
       "sm:flex-row sm:items-end",
     ],
     // The Latest-post card must use the PUBLISHED set: a draft or not-yet-due
