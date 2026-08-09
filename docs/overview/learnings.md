@@ -38,7 +38,7 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   each picks its data source independently and regresses alone. (0034)
 - **Encode acceptance criteria as automated assertions, not human review** - especially the public-
   site PII rule (grep the rendered HTML for any email/phone/postal, tolerating only the placeholder).
-  Force creds empty so guard/error paths (4xx/5xx/honeypot) run without the real upstream. (0007/0008)
+  Force creds empty so guard/error paths (4xx/5xx) run without the real upstream. (0007/0008)
 - **Verify the real artifact, not that it "rendered".** A green build only proves it compiled: fetch
   the OG card and assert `200` + `image/png`, count the PDF's pages, eyeball the output. (0004)
 - **A unique, failable marker can still guard the WRONG HALF of the thing.** Asserting a block's
@@ -260,6 +260,10 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
 - **Pin supply-chain inputs to immutable identifiers** - CI Actions and host scripts to commit SHAs,
   and a pinned host key to the SAME identifier the deploy connects to (hostname vs IP), or a DNS
   cutover breaks on a key mismatch. (0002/0019)
+- **A honeypot hidden field is not a free spam guard - autofill fills hidden fields, so it silently
+  drops real users** (a false negative invisible to both sides). Prefer guards that can't misfire on a
+  legitimate submission - same-origin + rate limit - over a hidden-field trap; when a shared component
+  drops such a trap, mirror the removal in any hand-rolled forms that copied it. (0028)
 
 ## Worktree
 

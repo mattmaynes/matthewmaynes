@@ -1,19 +1,11 @@
 /**
  * Generic, request-agnostic HTTP spam/abuse guards shared by the public POST
- * endpoints (`/v1/contact`, `/v1/subscribe`): a honeypot check, a scheme-agnostic
- * same-origin check, and a best-effort in-memory per-key rate limiter. These carry
- * no feature-specific assumptions, so both the contact and subscribe cores import
- * them from here rather than duplicating (spec 0018 extraction). Pure and I/O-free
- * (the limiter's clock is injectable), so they are unit-tested without a server.
+ * endpoints (`/v1/contact`, `/v1/subscribe`): a scheme-agnostic same-origin check
+ * and a best-effort in-memory per-key rate limiter. These carry no feature-specific
+ * assumptions, so both the contact and subscribe cores import them from here rather
+ * than duplicating (spec 0018 extraction). Pure and I/O-free (the limiter's clock is
+ * injectable), so they are unit-tested without a server.
  */
-
-/**
- * The honeypot is a hidden field a real user never sees or fills; a naive bot
- * that fills every input trips it. A filled honeypot means "drop silently".
- */
-export function isHoneypotFilled(value: unknown): boolean {
-  return typeof value === "string" && value.trim() !== "";
-}
 
 /**
  * Same-origin check by host (scheme-agnostic, so the Caddy https<->http proxy
@@ -21,7 +13,7 @@ export function isHoneypotFilled(value: unknown): boolean {
  * the Host the request actually arrived on). A request with neither Origin nor
  * Referer is rejected: a browser form POST always carries one; a drive-by script
  * often does not. Forgeable, so this thins drive-by spam - it is not a security
- * boundary (the honeypot + rate limit are the real guards).
+ * boundary (the rate limit is the real guard).
  * @param origin - the `Origin` header
  * @param referer - the `Referer` header
  * @param host - the `Host` header

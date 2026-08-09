@@ -1,11 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { NextResponse } from "next/server";
-import {
-  createRateLimiter,
-  isHoneypotFilled,
-  isSameOrigin,
-} from "@/lib/http-guards";
+import { createRateLimiter, isSameOrigin } from "@/lib/http-guards";
 import {
   buildResendPayload,
   renderContactNotification,
@@ -106,22 +102,16 @@ export async function POST(req: Request): Promise<Response> {
     unknown
   >;
 
-  // 4. Honeypot: a filled hidden field means a bot - drop silently, report 200
-  //    so it learns nothing.
-  if (isHoneypotFilled(input.company)) {
-    return NextResponse.json({ ok: true });
-  }
-
-  // 5. Validate + normalize.
+  // 4. Validate + normalize.
   const result = validateContact(input);
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
 
-  // 6. Rate limit, keyed on the real client IP. Counts every valid, same-origin
-  //    attempt that reaches here (honeypot/invalid requests returned earlier, so
-  //    they never populate the limiter). Best-effort: a transient send failure
-  //    still spends a slot, but the 5/10min budget leaves ample room to retry.
+  // 5. Rate limit, keyed on the real client IP. Counts every valid, same-origin
+  //    attempt that reaches here (invalid requests returned earlier, so they never
+  //    populate the limiter). Best-effort: a transient send failure still spends a
+  //    slot, but the 5/10min budget leaves ample room to retry.
   if (!limiter.check(clientIp(req))) {
     return NextResponse.json(
       { ok: false, error: "Too many messages - please try again shortly." },
@@ -129,7 +119,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 7. Config from server-only env. Missing => fail closed, never leak which.
+  // 6. Config from server-only env. Missing => fail closed, never leak which.
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.CONTACT_TO_EMAIL;
   const from =
@@ -144,7 +134,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 8. Send the notification (primary action). Render the on-brand HTML body with
+  // 7. Send the notification (primary action). Render the on-brand HTML body with
   //    the (escaped) form data, then hand it to Resend. A failure here 500s, since
   //    the visitor's message would otherwise be lost.
   const date = new Date().toLocaleString("en-CA", {
@@ -169,7 +159,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 9. Record the sender in Constant Contact (spec 0032). BEST-EFFORT: the message
+  // 8. Record the sender in Constant Contact (spec 0032). BEST-EFFORT: the message
   //    already went out, so any CTCT failure is logged and swallowed rather than
   //    failing the request. Skipped cleanly when the CTCT env is unset.
   //      - opt-in ticked -> subscribe (sign_up_form) to the blog + Website Contact

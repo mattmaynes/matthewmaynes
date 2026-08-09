@@ -108,7 +108,7 @@ What the product does. Status: ✅ live · 🚧 placeholder · 📋 planned.
 ## Contact & subscribe (specs 0008, 0018, 0032, 0041)
 
 - Both are thin versioned routes (`POST /v1/contact`, `POST /v1/subscribe`) over pure, fs-free cores,
-  sharing one layered spam-guard set (`http-guards.js`: honeypot, validation + length caps, per-IP
+  sharing one layered spam-guard set (`http-guards.js`: validation + length caps, per-IP
   rate limit, same-origin). Secrets are server-env-only, never in the bundle or repo.
 - **Contact** relays an on-brand HTML notification via Resend and records the sender in Constant
   Contact (unsubscribed by default; an opt-in checkbox subscribes instead). **Subscribe** adds the

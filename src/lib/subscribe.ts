@@ -7,7 +7,7 @@
  * same testable-seam pattern as `src/lib/contact.ts`). No secrets live here: the
  * Constant Contact client id, refresh token, and list id are read from env in the
  * route and passed in. `fetch` and `now` are injectable so the network and clock
- * are mocked in tests. The generic honeypot / same-origin / rate-limit guards live
+ * are mocked in tests. The generic same-origin / rate-limit guards live
  * in `./http-guards.ts` and are used directly by the route.
  */
 

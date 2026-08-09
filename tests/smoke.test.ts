@@ -798,9 +798,9 @@ test("the footer links /links, shown on desktop only (hidden sm:inline)", async 
 });
 
 // Contact endpoint guards (spec 0008). We exercise every path that does NOT send
-// email - cross-origin, honeypot, invalid body, wrong method - so the suite needs
-// no Resend key and never sends a real message. The happy path (which would send)
-// is unit-tested in tests/contact.test.mjs with an injected fetch.
+// email - cross-origin, invalid body, wrong method - so the suite needs no Resend
+// key and never sends a real message. The happy path (which would send) is
+// unit-tested in tests/contact.test.mjs with an injected fetch.
 test("POST /v1/contact rejects a cross-origin request (403)", async () => {
   const res = await fetch(BASE + "/v1/contact", {
     method: "POST",
@@ -808,21 +808,6 @@ test("POST /v1/contact rejects a cross-origin request (403)", async () => {
     body: JSON.stringify({ name: "A", email: "a@b.co", message: "hi" }),
   });
   assert.equal(res.status, 403, "expected 403 for a cross-origin POST");
-});
-
-test("POST /v1/contact silently drops a honeypot hit (200, no send)", async () => {
-  const res = await fetch(BASE + "/v1/contact", {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: BASE },
-    body: JSON.stringify({
-      name: "A",
-      email: "a@b.co",
-      message: "hi",
-      company: "i am a bot",
-    }),
-  });
-  assert.equal(res.status, 200, "expected 200 for a honeypot hit");
-  assert.equal((await res.json()).ok, true, "expected { ok: true } (silent drop)");
 });
 
 test("POST /v1/contact rejects an invalid body (400)", async () => {
@@ -885,11 +870,11 @@ test("POST /v1/contact fails closed (500) when unconfigured, without leaking con
 });
 
 // Subscribe endpoint guards (spec 0018). Same shape as the contact guards: we
-// exercise every path that does NOT call Constant Contact - cross-origin, honeypot,
-// invalid body, wrong method, rate limit, and the unconfigured 500 - so the suite
-// needs no CTCT creds and never touches the real API. The happy path (which would
-// call Constant Contact) is unit-tested in tests/subscribe.test.mjs with an
-// injected fetch.
+// exercise every path that does NOT call Constant Contact - cross-origin, invalid
+// body, wrong method, rate limit, and the unconfigured 500 - so the suite needs no
+// CTCT creds and never touches the real API. The happy path (which would call
+// Constant Contact) is unit-tested in tests/subscribe.test.mjs with an injected
+// fetch.
 test("POST /v1/subscribe rejects a cross-origin request (403)", async () => {
   const res = await fetch(BASE + "/v1/subscribe", {
     method: "POST",
@@ -897,16 +882,6 @@ test("POST /v1/subscribe rejects a cross-origin request (403)", async () => {
     body: JSON.stringify({ email: "a@b.co" }),
   });
   assert.equal(res.status, 403, "expected 403 for a cross-origin POST");
-});
-
-test("POST /v1/subscribe silently drops a honeypot hit (200, no call)", async () => {
-  const res = await fetch(BASE + "/v1/subscribe", {
-    method: "POST",
-    headers: { "content-type": "application/json", origin: BASE },
-    body: JSON.stringify({ email: "a@b.co", company: "i am a bot" }),
-  });
-  assert.equal(res.status, 200, "expected 200 for a honeypot hit");
-  assert.equal((await res.json()).ok, true, "expected { ok: true } (silent drop)");
 });
 
 test("POST /v1/subscribe rejects an invalid email (400)", async () => {

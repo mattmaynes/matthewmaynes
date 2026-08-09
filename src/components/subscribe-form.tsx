@@ -11,14 +11,13 @@ import {
 /**
  * The blog subscribe box (spec 0018). A thin app wrapper around Canopy's
  * `SubscribeForm` Branch (`@rogueoak/canopy/branches`, spec 0035), which owns the
- * layout, the submit/success/error state machine, the optional-Name reveal, the
- * honeypot, and the a11y wiring. This wrapper injects only the app-specific parts:
+ * layout, the submit/success/error state machine, the optional-Name reveal, and
+ * the a11y wiring. This wrapper injects only the app-specific parts:
  * the transport (`onSubscribe` posts to `POST /v1/subscribe`), the analytics
  * (`onEvent` -> PostHog, PII-free), and the copy.
  *
  * The Constant Contact credentials live only in server env behind that route -
- * nothing here knows them. `onSubscribe` forwards the honeypot (`company`) value so
- * the server can still drop naive bots.
+ * nothing here knows them.
  */
 /**
  * Which surface a subscribe form instance renders on - a PII-free analytics
@@ -71,16 +70,16 @@ export function SubscribeForm({
     if (clientAnalyticsEnabled()) posthog?.capture(EVENTS[phase], props);
   }
 
-  // Perform the subscription. Posts the collected values (including the honeypot)
-  // to the server route, which holds the Constant Contact secrets. Rejects with the
-  // user-facing message and a machine `reason` (surfaced to `onEvent('failed')`).
-  async function onSubscribe({ email, name, company }: SubscribeValues) {
+  // Perform the subscription. Posts the collected values to the server route,
+  // which holds the Constant Contact secrets. Rejects with the user-facing message
+  // and a machine `reason` (surfaced to `onEvent('failed')`).
+  async function onSubscribe({ email, name }: SubscribeValues) {
     let res: Response;
     try {
       res = await fetch("/v1/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, company }),
+        body: JSON.stringify({ email, name }),
       });
     } catch {
       throw Object.assign(new Error("Could not reach the server. Please try again."), {
