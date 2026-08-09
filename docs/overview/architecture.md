@@ -101,7 +101,7 @@
 
 - **`POST /v1/contact`** and **`POST /v1/subscribe`** are thin HTTP shells over pure, fs-free cores
   (`contact.js`, `subscribe.js`) unit-tested without a server; the route only maps request/env/outcomes
-  to status codes (400/403/413/429/500, honeypot → silent 200). Shared spam guards (honeypot, validation,
+  to status codes (400/403/413/429/500). Shared spam guards (validation,
   per-IP rate limit, same-origin) live in `http-guards.js`, imported by both. Secrets are env-only, so
   they can't reach the bundle or repo (guarded structurally).
 - **Contact** sends an on-brand HTML notification via Resend (`fetch`, no SDK) rendered from

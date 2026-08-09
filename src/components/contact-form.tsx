@@ -17,7 +17,7 @@ import {
  * boundary via `@/components/ui`, per overview/learnings) that posts JSON to
  * `POST /v1/contact` and reflects submitting / success / error state. The
  * destination address lives only in server env behind that route - nothing here
- * knows it. A hidden honeypot field (`company`) catches naive bots.
+ * knows it.
  */
 type Status =
   | { kind: "idle" }
@@ -57,7 +57,6 @@ export function ContactForm() {
           email: data.get("email"),
           message: data.get("message"),
           subscribe,
-          company: data.get("company"), // honeypot
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -147,15 +146,6 @@ export function ContactForm() {
           />
         </FormFieldControl>
       </FormField>
-
-      {/* Honeypot: hidden from users and assistive tech; a naive bot that fills
-          every input trips it and the server drops the message silently. */}
-      <div className="hidden" aria-hidden>
-        <label>
-          Company
-          <input type="text" name="company" tabIndex={-1} autoComplete="off" />
-        </label>
-      </div>
 
       <div className="flex flex-wrap items-center gap-4">
         <Button type="submit" disabled={submitting} className="w-fit">

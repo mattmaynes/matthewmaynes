@@ -1,8 +1,8 @@
 // Unit tests for the contact endpoint's pure core (src/lib/contact.js): input
-// validation, the honeypot + same-origin spam checks, the rate limiter, and the
-// Resend payload shaping + send. No server, no network - the send path injects a
-// fake fetch. The route handler (app/v1/contact) is a thin shell over these and
-// its HTTP behavior is covered by the smoke test.
+// validation, the same-origin spam check, the rate limiter, and the Resend payload
+// shaping + send. No server, no network - the send path injects a fake fetch. The
+// route handler (app/v1/contact) is a thin shell over these and its HTTP behavior
+// is covered by the smoke test.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -14,11 +14,7 @@ import {
   buildResendPayload,
   sendViaResend,
 } from "../src/lib/contact.ts";
-import {
-  isHoneypotFilled,
-  isSameOrigin,
-  createRateLimiter,
-} from "../src/lib/http-guards.ts";
+import { isSameOrigin, createRateLimiter } from "../src/lib/http-guards.ts";
 
 test("validateContact accepts and trims a good submission", () => {
   const r = validateContact({
@@ -93,14 +89,6 @@ test("validateContact accepts values exactly at the caps (guards > vs >=)", () =
 
 test("validateContact ignores non-string inputs", () => {
   assert.equal(validateContact({ name: 5, email: {}, message: [] }).ok, false);
-});
-
-test("isHoneypotFilled is true only for a non-empty string", () => {
-  assert.equal(isHoneypotFilled("bot"), true);
-  assert.equal(isHoneypotFilled("  "), false);
-  assert.equal(isHoneypotFilled(""), false);
-  assert.equal(isHoneypotFilled(undefined), false);
-  assert.equal(isHoneypotFilled(1), false);
 });
 
 test("isSameOrigin matches host, ignores scheme, and needs a source", () => {

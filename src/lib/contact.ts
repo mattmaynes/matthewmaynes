@@ -4,8 +4,8 @@
  * Next / request objects so it is unit-tested without booting a server (the
  * `app/v1/contact` route handler is a thin shell over this - the same testable-seam
  * pattern as `src/lib/theme.ts`). No secrets or PII live here: the destination
- * address is read from env in the route and passed in. The generic honeypot /
- * same-origin / rate-limit guards live in `./http-guards.ts` (shared with
+ * address is read from env in the route and passed in. The generic same-origin /
+ * rate-limit guards live in `./http-guards.ts` (shared with
  * `/v1/subscribe`, spec 0018); callers import them from there directly - this module
  * owns only the contact-specific logic.
  */
