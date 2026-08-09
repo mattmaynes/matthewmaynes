@@ -18,6 +18,9 @@ the PWA install icon.
   emails).
 - A vector source of truth now exists (`public/brand/logo-m.svg`); the raster master and the
   full icon set are regenerated from it, unchanged pipeline otherwise.
+- The vector is also shipped as the favicon itself (`src/app/icon.svg`), so the mark stays sharp
+  at whatever size a tab, bookmark bar, or history row asks for, on any display density. The
+  rasters remain as fallbacks for clients without SVG-favicon support.
 - Nothing else changes: the header brand is a text wordmark and the OG cards / emails use the
   headshot, so the "M" only surfaces as the favicon/app-icon set.
 
@@ -28,9 +31,9 @@ the PWA install icon.
 - Add `public/brand/logo-m.svg` - the vector mark (512 viewBox, full-bleed Harbor-dark
   background, blue node-graph "M", gold accent node).
 - Replace `public/brand/logo-m.png` with a 1024x1024 full-bleed master rendered from the SVG.
-- Regenerate the derived set via `node scripts/build-icons.ts`: `src/app/icon.png` (512),
-  `src/app/apple-icon.png` (180), `public/icon-192.png`, `public/icon-512.png`, and
-  `src/app/favicon.ico` (16/32/48).
+- Regenerate the derived set via `node scripts/build-icons.ts`: `src/app/icon.svg` (a copy of the
+  vector source), `src/app/icon.png` (512), `src/app/apple-icon.png` (180), `public/icon-192.png`,
+  `public/icon-512.png`, and `src/app/favicon.ico` (16/32/48).
 - Update the `build-icons.ts` header comment to name the SVG as the vector source and record
   the `qlmanage` render step for the PNG master.
 
@@ -51,8 +54,11 @@ re-run the script.
 
 ## Acceptance
 
-- All six icon assets regenerate at their expected dimensions; `favicon.ico` carries 16/32/48
-  frames.
+- All seven icon assets regenerate at their expected dimensions; `favicon.ico` carries 16/32/48
+  frames and `src/app/icon.svg` matches the vector source byte for byte.
+- The rendered page links the vector favicon:
+  `<link rel="icon" href="/icon.svg" sizes="any" type="image/svg+xml">`, with the `.ico` and
+  512 px `.png` still linked as fallbacks.
 - The mark reads as an "M" at 512 down to 16 px (subtle at 16 px, as expected for a
   blue-on-dark mark, but distinguishable in a tab).
 - `npm run lint` and `npm run build` pass.

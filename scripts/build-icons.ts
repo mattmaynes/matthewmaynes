@@ -12,19 +12,26 @@
 //
 // Outputs (committed, do not hand-edit):
 //   src/app/favicon.ico    - 16/32/48 multi-res, legacy + scraper fallback
+//   src/app/icon.svg       - vector favicon, copied straight from the SVG source
 //   src/app/icon.png       - 512, modern PNG favicon (Next links it)
 //   src/app/apple-icon.png - 180, iOS home-screen tile
 //   public/icon-192.png    - manifest icon
 //   public/icon-512.png    - manifest icon / PWA install
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const master = join(root, "public/brand/logo-m.png");
+const vector = join(root, "public/brand/logo-m.svg");
+
+// The vector favicon is the SVG source itself - no render step, so it stays
+// pixel-perfect at whatever size a tab, bookmark bar, or history row asks for.
+// Browsers without SVG-favicon support fall back to the rasters below.
+copyFileSync(vector, join(root, "src/app/icon.svg"));
 
 // `-Z N` fits the image within an NxN box, preserving the square aspect ratio.
 function resize(size: number, out: string): void {

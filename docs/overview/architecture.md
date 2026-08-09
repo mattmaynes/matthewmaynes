@@ -67,7 +67,8 @@
 
 ## Metadata & sharing (specs 0004/0040)
 
-- **Next file conventions, not hand-rolled `<head>`:** `app/{favicon.ico,icon,apple-icon}`,
+- **Next file conventions, not hand-rolled `<head>`:** `app/{favicon.ico,icon.svg,icon.png,apple-icon}`
+  (the `.svg` and `.png` icons coexist - Next links both, and browsers prefer the vector),
   `app/opengraph-image.tsx` (+ re-exporting `twitter-image.tsx`), `app/{robots,sitemap,manifest}.ts`.
   `layout.tsx` carries the default OG/Twitter/robots metadata, `themeColor`, and the site-wide JSON-LD
   `Person`. Every indexable page sets a self-referential `alternates.canonical` (path-relative,
