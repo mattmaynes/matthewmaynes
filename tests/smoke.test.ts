@@ -996,10 +996,23 @@ test("a before/after project has an unlinked detail stub with both images", asyn
 test("home page exposes the sharing + SEO metadata", async () => {
   const html = await (await fetch(BASE + "/")).text();
 
-  // Favicon link, and the icon it points at actually resolves to an image.
-  const iconLink = html.match(/<link[^>]+rel="icon"[^>]*href="([^"]+)"/);
-  assert.ok(iconLink, "expected a favicon <link> with an href");
-  await assertIsImage(await fetchLocal(iconLink[1]), "the favicon");
+  // Favicon links, and every icon they point at actually resolves to an image.
+  // Matched with matchAll, not match: the first rel="icon" is the .ico, so a
+  // single match would stay green if the vector or PNG link ever vanished.
+  const iconLinks = [
+    ...html.matchAll(/<link[^>]+rel="icon"[^>]*href="([^"]+)"/g),
+  ];
+  assert.ok(iconLinks.length, "expected a favicon <link> with an href");
+  for (const link of iconLinks) {
+    await assertIsImage(await fetchLocal(link[1]), `the favicon ${link[1]}`);
+  }
+  // The vector favicon (spec 0037) is what keeps the mark sharp in tabs,
+  // bookmarks, and history at any display density; the rasters are fallbacks.
+  assert.match(
+    html,
+    /<link[^>]+rel="icon"[^>]*type="image\/svg\+xml"/,
+    "expected a vector favicon <link> (type=image/svg+xml)",
+  );
 
   // Open Graph image: present, and it renders (catches font/logo load failures).
   const ogImage = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/);

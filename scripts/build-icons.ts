@@ -1,37 +1,103 @@
 // Regenerate the favicon / app-icon set from the brand master.
 //
-// Vector source of truth: public/brand/logo-m.svg (the node-graph "M", Harbor
-// palette). Raster master: public/brand/logo-m.png (1024x1024, full-bleed dark),
-// rendered from the SVG on macOS with `qlmanage -t -s 1024 -o <dir> logo-m.svg`.
-// After editing the SVG, re-render the PNG master, then run this script.
-// Dependency-free: macOS `sips` resizes, Node stdlib packs the multi-res ICO
-// (PNG-payload ICO, supported by every modern browser). No ImageMagick, no npm
-// dependency, so the icons are reproducible from one command:
+// Single source of truth: public/brand/logo-m.svg (the node-graph "M", Harbor
+// palette). Everything else is derived - the script renders the 1024 raster
+// master (public/brand/logo-m.png) from it with Quick Look, then fans that out
+// to every size. Editing the mark is therefore edit the SVG, run this script;
+// there is no manual render step to forget, and no way to ship a vector favicon
+// that disagrees with the rasters.
+// Dependency-free: macOS `qlmanage` renders, `sips` resizes, Node stdlib packs
+// the multi-res ICO (PNG-payload ICO, supported by every modern browser). No
+// ImageMagick, no npm dependency, so the icons are reproducible from one command:
 //
-//   node scripts/build-icons.ts
+//   node scripts/build-icons.ts           Regenerate every output below.
+//   node scripts/build-icons.ts --check   Fail if icon.svg drifted from the source.
+//
+// `--check` is a byte compare only - no macOS tooling - so CI (ubuntu) can run
+// it to catch an SVG edit that was never regenerated, the same freshness guard
+// `resume:pdf:check` and `privacy:check` apply to their generated artifacts.
 //
 // Outputs (committed, do not hand-edit):
-//   src/app/favicon.ico    - 16/32/48 multi-res, legacy + scraper fallback
-//   src/app/icon.svg       - vector favicon, copied straight from the SVG source
-//   src/app/icon.png       - 512, modern PNG favicon (Next links it)
-//   src/app/apple-icon.png - 180, iOS home-screen tile
-//   public/icon-192.png    - manifest icon
-//   public/icon-512.png    - manifest icon / PWA install
+//   public/brand/logo-m.png - 1024 raster master, rendered from the SVG
+//   src/app/favicon.ico     - 16/32/48 multi-res, legacy + scraper fallback
+//   src/app/icon.svg        - vector favicon, copied straight from the SVG source
+//   src/app/icon.png        - 512, modern PNG favicon (Next links it)
+//   src/app/apple-icon.png  - 180, iOS home-screen tile
+//   public/icon-192.png     - manifest icon
+//   public/icon-512.png     - manifest icon / PWA install
 
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const master = join(root, "public/brand/logo-m.png");
 const vector = join(root, "public/brand/logo-m.svg");
+const iconSvg = join(root, "src/app/icon.svg");
+
+// --- --check mode: cheap, compare only (used by CI) ------------------------
+if (process.argv.includes("--check")) {
+  const source = readFileSync(vector);
+  let shipped: Buffer;
+  try {
+    shipped = readFileSync(iconSvg);
+  } catch {
+    fail("src/app/icon.svg is missing.");
+  }
+  if (!source.equals(shipped!)) {
+    fail("src/app/icon.svg no longer matches public/brand/logo-m.svg.");
+  }
+  console.log("icon.svg matches the vector source.");
+  process.exit(0);
+}
+
+function fail(message: string): never {
+  console.error(`${message} Run \`npm run icons\` and commit the result.`);
+  process.exit(1);
+}
 
 // The vector favicon is the SVG source itself - no render step, so it stays
 // pixel-perfect at whatever size a tab, bookmark bar, or history row asks for.
 // Browsers without SVG-favicon support fall back to the rasters below.
-copyFileSync(vector, join(root, "src/app/icon.svg"));
+//
+// It is served verbatim from the site origin at /icon.svg, so assert it is
+// inert before copying: an SVG is a document, and script / external references
+// smuggled into the brand file would otherwise ship as first-party content.
+function assertInert(svg: string): void {
+  const banned =
+    /<script|<foreignObject|<use\b|<image\b|<!ENTITY|\son\w+\s*=|href\s*=|data:/i;
+  const match = svg.match(banned);
+  if (match) {
+    console.error(
+      `${basename(vector)} contains "${match[0]}", which is not inert. The ` +
+        "vector favicon is served from the site origin, so it must be plain " +
+        "shapes: no script, external references, or event handlers.",
+    );
+    process.exit(1);
+  }
+}
+
+assertInert(readFileSync(vector, "utf8"));
+
+// Render the raster master from the vector with Quick Look. `-t` writes a
+// thumbnail named <source>.png into the output directory.
+const render = mkdtempSync(join(tmpdir(), "logo-"));
+try {
+  execFileSync("qlmanage", ["-t", "-s", "1024", "-o", render, vector], {
+    stdio: "ignore",
+  });
+  copyFileSync(join(render, `${basename(vector)}.png`), master);
+} finally {
+  rmSync(render, { recursive: true, force: true });
+}
 
 // `-Z N` fits the image within an NxN box, preserving the square aspect ratio.
 function resize(size: number, out: string): void {
@@ -42,6 +108,7 @@ function resize(size: number, out: string): void {
   );
 }
 
+copyFileSync(vector, iconSvg);
 resize(512, join(root, "src/app/icon.png"));
 resize(180, join(root, "src/app/apple-icon.png"));
 resize(192, join(root, "public/icon-192.png"));
@@ -89,4 +156,4 @@ function buildIco(frames: { size: number; buf: Buffer }[]): Buffer {
   return Buffer.concat([header, entries, ...bodies]);
 }
 
-console.log("Icons regenerated from public/brand/logo-m.png");
+console.log("Icons regenerated from public/brand/logo-m.svg");
