@@ -7,7 +7,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { assembleStandalone } from "../scripts/lib/standalone.ts";
@@ -124,6 +124,16 @@ before(async () => {
   }
   const serverDir = dirname(serverJs);
   assembleStandalone(root, serverDir);
+  // Start COLD. next/image writes its optimized variants under the server's own
+  // .next/cache/images, which survives both the server exiting and the build
+  // being reused above - so on any second run against the same build, the
+  // "cold" request below HITs and the test fails on stale state rather than on
+  // a real regression. CI never sees it (it builds fresh every time), which is
+  // exactly why it has to be reset here instead of left to the environment.
+  rmSync(join(serverDir, ".next", "cache", "images"), {
+    recursive: true,
+    force: true,
+  });
   server = spawn("node", ["server.js"], {
     cwd: serverDir,
     stdio: "inherit",
