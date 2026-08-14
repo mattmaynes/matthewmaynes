@@ -1,0 +1,72 @@
+---
+title: Anyone Can Build It Now. Almost No One Finishes It Properly
+date: 2026-08-13
+tags: [AI Slop, Product Quality, Data Rights]
+category: Engineering
+excerpt: You can build anything with AI now, so everyone is. I've been testing what they ship, and the same gaps keep showing up, no way to delete your account, privacy policies that never mention what the vendors do with your data, and welcome emails that break mid-sentence on a phone. Here is what finishing a product properly still takes.
+cover: ai-sameness-dashboards.png
+coverCaption: Four different products. One model's taste.
+draft: true
+---
+
+_You can build anything these days with AI, the hard part is getting noticed._
+
+I've been hearing this advice all over the internet lately. There is some truth in this statement but it also significantly undercuts the reality of turning a proof of concept into a viable product. A software product is more than a flashy demo. When a customer buys a software product, there are expectations about data integrity, performance, security and reliability.
+
+AI has come a long way in a few short months, but there are lots of things it cannot do. If you are unclear with your intention and do not fully comprehend the code that is being generated, it is all too easy for security vulnerabilities to slip through the cracks. There are ways to mitigate this, but the risk is continually increasing. And now there is a new problem, abundance.
+
+Even if you manage to build something, it is very hard to get noticed. You are now competing with everyone that has an AI subscription. App Store submissions are up 84% year over year in 2026, mostly driven by apps built with Claude Code and OpenAI Codex.
+
+You are also competing against diminishing SEO returns. It used to be that potential users could Google their problem and find your product. Now they likely get an AI overview where the chat will decide what information the user sees. But if a potential customer does make it to your product, you need to stand out. It turns out that might be the easiest part.
+
+With so many apps being developed by the same models, the apps on the internet, our phones and our computers are starting to look the same. Sparkle icons, text layered visually on cards with perfect colour ramps presenting bold, unfounded claims. AI has no taste, it is uniform and predictable. And now, companies like Anthropic are generating text watermarks so that text generated with their models can be detected in the wild. To stand out, you need to bring your own taste to the table. You need to make your own style decisions and not default to the model being the choice engine.
+
+The software product landscape has undeniably changed. I'm currently building my own software product, [Famlistry](https://famlistry.com), and I'm encountering these issues myself.
+
+<PostSubscribe />
+
+## Building quality
+
+Frontier AI models such as Opus 5, Fable 5, Sol 5.6 and others have made tremendous strides in building for security, but no matter how good the models become, they are only as capable as the context they are provided. Many apps these days are being built by non-developers who do not understand the code that is being generated. Or in some cases, they are being built by developers who do understand the code but are not reviewing it. Or worse yet, the developer is reviewing the code and thinks they understand it but they don't, which leads to a false sense of security. In either case, the result is the same: blind faith that the model handled everything needed to harden the product's boundaries.
+
+There are a few categories I consistently see missed. Generally I see the same missing data access points, the same gaps in policies and terms, and the same rough edges or oversights in the product. Hopefully I can draw attention to them so that others don't make the same mistakes.
+
+### Data rights
+
+Not all products need the same level of data access that General Data Protection Regulation (GDPR) or California Consumer Privacy Act (CCPA) require, but if you are operating in a global market, it is a good idea to build these in from the start. I've been testing AI apps to see how others are building things, and I am frequently seeing this be omitted. Building it in from the start is much easier than trying to build it later.
+
+It doesn't require a lot. Being compliant simply means ensuring you are only storing the data you absolutely need, being transparent about it, and allowing users to download, correct and delete their data. It is also a sign of respect to the user that you are putting them first. Data is precious. If you want my name, email and birthday, prove to me that you intend to use it for my benefit, not yours.
+
+Lastly, give me a way to delete my account. When I'm reviewing an app, this is a staple of my checklist. I immediately deduct a full star if you won't let me erase the information I gave you, and I'll leave a public comment so that those that follow don't fall into your data trap. I'm thankful Apple has a Hide My Email feature. At this point, I'd have given my real information away a dozen times otherwise.
+
+### Policies and terms
+
+Since I've been reviewing apps with an interest in how they're built, I've also been spending time reviewing their privacy policy and terms and conditions, the boring stuff that everyone accepts and no one reads. Likely not a surprise, but many of these are clearly AI-generated as well. I'm completely fine with the content being AI-generated for these documents, but it needs to be accurate.
+
+Over the past few weeks, I've been trying several voice note apps as well as multiple story-sharing apps. Most of these apps have some element of AI in the product itself. Depending on the tier and API used to integrate AI, it can be the case that the vendor for the model might use the data it processed for training. At the very least, it will have a trace of the data it received. This must be correctly disclosed to the end user.
+
+Where I'm mostly seeing gaps is the second-order data use that isn't being included. As in, you disclose that you are using a vendor, but not what that vendor does with the data. I've accidentally been a culprit of this myself. I was building a browser-based product with a team where we wanted to capture replays of how users interacted with the interface. We wired up Microsoft Clarity to the UI to capture interaction. In our privacy policy, we disclosed that we were recording interaction, but we unintentionally omitted the fact that Microsoft uses that recording data to train its own models.
+
+When AI writes these policies, it can do a good job of disclosing everything inside your product, but you have to make it clear what your dependencies are doing as well, to have a comprehensive disclosure to your users.
+
+### Rough edges
+
+Beyond data and policies, many of the products I tried shared the same rough edges. These were small details that didn't necessarily break any workflow, but they started to become patterns, and noticing them would cause me to immediately lose trust in the product. If I noticed any of these details, I became skeptical of the quality of the app. It put that app in a category of "careless," and it would make me wonder what else the developer wasn't paying attention to.
+
+Sometimes the edge was as simple as a missing favicon, the browser tab icon that shows what page you are on at a glance. It would be a default Next.js icon or just a missing icon altogether. Other times it was emojis as icons or colour ramps and gradients that were always the same.
+
+A weird case I've been seeing a lot of lately is a series of welcome emails for the product that have fixed line breaks that don't fit on mobile. It is a bit tricky to explain but very easy to show. Below is a snippet of one of those emails.
+
+> I won't repeat yesterday's breakdown. The short version: tomorrow
+>
+> morning, your account moves to the free plan, and everything you've
+>
+> already saved stays exactly where it is
+
+The sentences jump to the next line in the middle of a thought. And it isn't one app doing this. I've seen this on at least four apps in the last two weeks. It's a clear lack of attention to detail that leaves me without trust in the product.
+
+## Building for success
+
+I do think building a digital product in 2026 is easier than ever, but building something of quality still takes time and attention to detail. It used to be that the upfront human effort was the hard part. Now you can ask AI to build you a social media platform and it will do it in a couple of days. But if you don't invest the time to understand what you are building and provide your own taste to the product, you'll end up with a carbon copy of what ten other people built yesterday.
+
+I'm trying to be conscious of all of this as I build, to avoid these pitfalls. However, I know that building is only a small part of the battle. The next challenge is distribution and finding an audience. In an upcoming post, I'll outline some strategies I'm seeing and what I'm going to use myself.

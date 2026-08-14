@@ -1221,6 +1221,20 @@ test("a draft is reachable + marked + noindex under /blog/drafts, and the routes
     "the draft body must NOT be served on the public teaser (no session)",
   );
 
+  // Both body heading levels carry their own type scale from the post-body MDX map.
+  // An UNMAPPED heading falls through to the Tailwind preflight reset, which strips
+  // size and margin and renders it as plain body text - indistinguishable from a
+  // paragraph, and a silent regression, since the markup still says <h3>. Key on the
+  // class, not the tag, so a dropped map entry reddens here.
+  assert.ok(
+    /<h2 class="[^"]*text-h2[^"]*">A sample section<\/h2>/.test(draftHtml),
+    "expected the post body's h2 to render with its text-h2 styling",
+  );
+  assert.ok(
+    /<h3 class="[^"]*text-h3[^"]*">A sample subsection<\/h3>/.test(draftHtml),
+    "expected the post body's h3 to render with its text-h3 styling",
+  );
+
   // The published route refuses a draft slug (the draft lives at /blog/drafts/<slug>).
   const wrongPublished = await fetch(BASE + `/blog/${draft.slug}`);
   assert.equal(wrongPublished.status, 404, "a draft slug must 404 at /blog/<slug>");
