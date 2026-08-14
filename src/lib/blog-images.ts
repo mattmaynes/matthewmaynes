@@ -21,6 +21,7 @@ import sheaAndSasha from "../../public/images/blog/shea-and-sasha.jpg";
 import sheaPlayGym from "../../public/images/blog/shea-play-gym.jpg";
 import sashaRunning from "../../public/images/blog/sasha-running.jpg";
 import aiIdentityDesk from "../../public/images/blog/ai-identity-desk.png";
+import aiSamenessDashboards from "../../public/images/blog/ai-sameness-dashboards.png";
 import memoryKeeperIdeaBrowser from "../../public/images/blog/memory-keeper-idea-browser.png";
 import memoryKeeperLogin from "../../public/images/blog/memory-keeper-login.png";
 import memoryKeeperHome from "../../public/images/blog/memory-keeper-home.png";
@@ -105,6 +106,10 @@ export const blogImages = {
   "ai-identity-desk.png": {
     ...aiIdentityDesk,
     alt: "An open laptop on a wooden desk by a sunlit window, its screen filled with code in a dark editor, a quiet home office with bookshelves behind it.",
+  },
+  "ai-sameness-dashboards.png": {
+    ...aiSamenessDashboards,
+    alt: "A widescreen monitor on a wooden desk showing four near-identical app dashboards side by side - Zenflow, Aura, Flowstate and Vibestream - each a purple-to-pink gradient grid of rounded cards with sparkle icons and emoji buttons, a desk lamp, potted plants, a backlit keyboard and a mug around it.",
   },
   "memory-keeper-idea-browser.png": {
     ...memoryKeeperIdeaBrowser,

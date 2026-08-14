@@ -194,6 +194,13 @@ const components = {
       {...props}
     />
   ),
+  // A subsection inside an h2 section. Deliberately quieter than the h2 above:
+  // no border rule and a smaller top margin, so the two levels stay legible as a
+  // hierarchy. Without this entry an h3 falls through to the Tailwind preflight
+  // reset, which strips heading size and margin and renders it as plain body text.
+  h3: (props: ComponentProps<"h3">) => (
+    <h3 className="mt-8 text-h3 font-semibold text-text" {...props} />
+  ),
   p: (props: ComponentProps<"p">) => (
     <p className="mt-5 text-body-lg text-text-muted" {...props} />
   ),

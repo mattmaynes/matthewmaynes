@@ -264,6 +264,11 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   drops real users** (a false negative invisible to both sides). Prefer guards that can't misfire on a
   legitimate submission - same-origin + rate limit - over a hidden-field trap; when a shared component
   drops such a trap, mirror the removal in any hand-rolled forms that copied it. (0028)
+- **A component map keyed to what callers use TODAY degrades silently the first time one reaches past
+  it** - an unmapped MDX element is not an error, it renders bare and the preflight reset strips it to
+  body text, so the build stays green and only the rendered page shows it. Cover the elements the
+  authoring surface ALLOWS, not the subset in use, and keep one of each in a fixture so a smoke test
+  asserts the coverage (key on the style class - the tag is present either way). (0029)
 
 ## Worktree
 

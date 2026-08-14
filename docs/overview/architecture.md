@@ -21,7 +21,11 @@
   registries that mirror the `site.ts` map: `blog-images.ts` (static-imported, blur placeholder,
   `pixelated` flag) and `blog-videos.ts` (self-hosted H.264 + poster + intrinsic dimensions). A
   `<PostImage>`/`<PostVideo>` throws on an unknown name, so a typo fails the build. The map also
-  carries `<PostSubscribe>` (spec 0041), a zero-prop mid-article subscribe aside. Captions get a
+  carries `<PostSubscribe>` (spec 0041), a zero-prop mid-article subscribe aside, and the styled
+  prose elements a post may use - `h2`/`h3` (two heading levels), `p`, `a`, `hr`, `strong`, `em`,
+  `blockquote`. An element MISSING from the map is not an error: it renders bare and the preflight
+  reset strips it to body text, so the fixture draft carries one of each heading level and smoke
+  asserts the type-scale class (feedback 0029). Captions get a
   **narrower** map: `InlineMdx` compiles the `coverCaption` frontmatter with an inline subset
   (`a`/`strong`/`em`) so block-level components cannot be nested into a `<figcaption>`.
 - Pure, fs-free view helpers live in `blog-view.js` (the one `slugify`, `tagSlug`/`tagFromSlug`,
