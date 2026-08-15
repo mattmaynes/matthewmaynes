@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { NextResponse } from "next/server";
-import { createRateLimiter, isSameOrigin } from "@/lib/http-guards";
+import {
+  CAPTCHA_SCOPE_CONTACT,
+  createNonceStore,
+  verifyCaptchaToken,
+} from "@/lib/captcha";
+import { clientIp, createRateLimiter, isSameOrigin } from "@/lib/http-guards";
+import { captureServerEvent } from "@/lib/posthog-server";
 import {
   buildResendPayload,
   renderContactNotification,
@@ -20,9 +26,11 @@ import {
  * address to the client, and records the sender in Constant Contact (spec 0032):
  * always as an `unsubscribed` contact on the Website Contact list, and - if the
  * opt-in box was ticked - also subscribed to the blog list. The `/v1/` prefix
- * versions the contract. The pure logic lives in the unit-tested `@/lib/contact`
- * and `@/lib/subscribe`; this handler bridges the HTTP request, reads server-only
- * secrets, and maps outcomes to status codes. Other methods 405 automatically.
+ * versions the contract. A submission must carry a single-use captcha token
+ * (spec 0043) before any of that happens. The pure logic lives in the unit-tested
+ * `@/lib/contact`, `@/lib/subscribe` and `@/lib/captcha`; this handler bridges the
+ * HTTP request, reads server-only secrets, and maps outcomes to status codes.
+ * Other methods 405 automatically.
  */
 
 // Best-effort per-IP limiter, module-scoped so it persists across requests in
@@ -33,6 +41,11 @@ const limiter = createRateLimiter({ max: 5, windowMs: 10 * 60 * 1000 });
 // reuse it across requests until shortly before expiry (spec 0018), shared by the
 // record + subscribe paths below. A deploy/restart just re-mints.
 const ctctTokenCache = createTokenCache();
+
+// Module-scoped replay guard for the captcha token (spec 0043), so a token that
+// has already sent a message cannot send a second one. Persists for the life of
+// the process; a restart re-arms it (see `createNonceStore`).
+const captchaNonceStore = createNonceStore();
 
 // The on-brand HTML notification body, read once at module load. It lives in
 // `emails/templates/` (single source of truth, previewable); `next.config.ts`
@@ -59,16 +72,6 @@ function loadNotificationTemplate(): string {
 // Reject bodies larger than this before parsing (message cap is 5000 chars; this
 // leaves generous headroom for UTF-8 + the other fields yet bounds the parse).
 const MAX_BODY_BYTES = 32 * 1024;
-
-function clientIp(req: Request): string {
-  // Our Caddy reverse proxy APPENDS the real client IP as the LAST X-Forwarded-For
-  // entry, so any client-supplied (spoofable) values sit earlier - take the last
-  // entry, not the first, or a bot could rotate a forged prefix past the limiter.
-  const fwd = req.headers.get("x-forwarded-for");
-  if (!fwd) return "unknown";
-  const parts = fwd.split(",");
-  return parts[parts.length - 1]?.trim() || "unknown";
-}
 
 export async function POST(req: Request): Promise<Response> {
   // 1. Same-origin: this endpoint is public, so reject cross-origin drive-bys.
@@ -108,7 +111,49 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
 
-  // 5. Rate limit, keyed on the real client IP. Counts every valid, same-origin
+  // 5. Captcha (spec 0043). Deliberately AFTER validation, so a malformed body
+  //    still fails fast and cheaply and a hard-won token is never spent on a
+  //    request that was going to 400 anyway - and before the rate limit, since a
+  //    tokenless scripted POST should not consume a real visitor's budget.
+  //
+  //    Only an explicit `rejected` verdict may 400. `errored` means the captcha
+  //    machinery is broken (no secret, a library fault), and a broken captcha
+  //    must not turn into every visitor seeing success while no message is ever
+  //    sent - the invisible failure feedback 0028 exists to prevent. So it fails
+  //    OPEN: the submission proceeds, the fault is logged at error level, and it
+  //    gets its own PostHog event rather than blending into the rejection counts.
+  const captcha = verifyCaptchaToken(
+    process.env.CAP_SECRET,
+    input.captchaToken,
+    { scope: CAPTCHA_SCOPE_CONTACT, store: captchaNonceStore },
+  );
+  if (captcha.status === "rejected") {
+    // Reason and source form only - never the email address. Subscriber
+    // addresses stay out of logs and analytics by design (see @/lib/subscribe).
+    captureServerEvent("captcha_rejected", {
+      reason: captcha.reason,
+      form: CAPTCHA_SCOPE_CONTACT,
+    });
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Please complete the human check and try again.",
+      },
+      { status: 400 },
+    );
+  }
+  if (captcha.status === "errored") {
+    console.error(
+      "contact: captcha verification is unavailable, letting the submission through:",
+      captcha.error,
+    );
+    captureServerEvent("captcha_unavailable", {
+      reason: "verify_failed",
+      form: CAPTCHA_SCOPE_CONTACT,
+    });
+  }
+
+  // 6. Rate limit, keyed on the real client IP. Counts every valid, same-origin
   //    attempt that reaches here (invalid requests returned earlier, so they never
   //    populate the limiter). Best-effort: a transient send failure still spends a
   //    slot, but the 5/10min budget leaves ample room to retry.
@@ -119,7 +164,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 6. Config from server-only env. Missing => fail closed, never leak which.
+  // 7. Config from server-only env. Missing => fail closed, never leak which.
   const apiKey = process.env.RESEND_API_KEY;
   const to = process.env.CONTACT_TO_EMAIL;
   const from =
@@ -134,7 +179,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 7. Send the notification (primary action). Render the on-brand HTML body with
+  // 8. Send the notification (primary action). Render the on-brand HTML body with
   //    the (escaped) form data, then hand it to Resend. A failure here 500s, since
   //    the visitor's message would otherwise be lost.
   const date = new Date().toLocaleString("en-CA", {
@@ -159,7 +204,7 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  // 8. Record the sender in Constant Contact (spec 0032). BEST-EFFORT: the message
+  // 9. Record the sender in Constant Contact (spec 0032). BEST-EFFORT: the message
   //    already went out, so any CTCT failure is logged and swallowed rather than
   //    failing the request. Skipped cleanly when the CTCT env is unset.
   //      - opt-in ticked -> subscribe (sign_up_form) to the blog + Website Contact

@@ -33,6 +33,19 @@ export function isSameOrigin(
   }
 }
 
+/**
+ * The real client IP for rate-limiting, read from `X-Forwarded-For`. Our Caddy
+ * reverse proxy APPENDS the real client IP as the LAST entry, so any
+ * client-supplied (spoofable) values sit earlier - take the last entry, not the
+ * first, or a bot could rotate a forged prefix past the limiter.
+ */
+export function clientIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (!fwd) return "unknown";
+  const parts = fwd.split(",");
+  return parts[parts.length - 1]?.trim() || "unknown";
+}
+
 /** A per-key rate limiter: `check` returns true if allowed, false if over. */
 export type RateLimiter = { check(key: string, now?: number): boolean };
 
