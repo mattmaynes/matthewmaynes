@@ -29,6 +29,7 @@ import {
   filterByCategory,
 } from "../src/lib/blog-view.ts";
 import { signSession, COOKIE_NAME } from "../src/lib/preview-auth.ts";
+import { CAPTCHA_SCOPE_CONTACT, signCaptchaToken } from "../src/lib/captcha.ts";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = process.env.SMOKE_PORT ?? "3010";
@@ -45,6 +46,26 @@ process.env.BLOG_FIXTURES_DIR ??= FIXTURES_DIR;
 // The shared preview password the test server is booted with (see the before hook)
 // and the cookie the tests mint from it to reach the gated /blog/drafts area.
 const PREVIEW_PASSWORD = "test-secret";
+// The captcha secret the test server is booted with (spec 0043). Set here rather
+// than left blank on purpose: blank makes the captcha fail OPEN, which would let
+// every contact test pass without ever exercising the guard.
+const CAP_SECRET = "smoke-test-cap-secret-32-bytes-min";
+
+let captchaTokenCounter = 0;
+
+/**
+ * Mint a valid, unspent captcha token the way `/v1/captcha/redeem` does, so the
+ * contact tests can reach the guards behind it. Each call gets a fresh id
+ * because a token is single-use.
+ */
+function captchaToken(): string {
+  captchaTokenCounter += 1;
+  return signCaptchaToken(CAP_SECRET, {
+    scope: CAPTCHA_SCOPE_CONTACT,
+    expiresAtMs: Date.now() + 10 * 60 * 1000,
+    id: `smoke-${captchaTokenCounter}`,
+  });
+}
 
 // A request header object carrying a valid preview session cookie (spec 0036), for
 // the tests that need to reach the gated /blog/drafts preview area.
@@ -584,6 +605,9 @@ before(async () => {
       // password so the tests can mint a valid session cookie and exercise both
       // the gated (no cookie -> redirect) and authed (valid cookie -> 200) paths.
       PREVIEW_PASSWORD: PREVIEW_PASSWORD,
+      // The captcha secret (spec 0043), so /v1/contact really enforces the guard
+      // and the tests below mint tokens against the same key.
+      CAP_SECRET: CAP_SECRET,
       // Serve the draft/scheduled fixtures (kept out of live content) so the
       // dynamic preview pages resolve them at runtime (feedback 0022).
       BLOG_FIXTURES_DIR: FIXTURES_DIR,
@@ -838,9 +862,14 @@ test("POST /v1/contact rate-limits a burst from one IP (429)", async () => {
   let last;
   // Limit is 5 per window; the 6th valid submission from one IP is blocked. The
   // earlier ones return 500 (creds forced empty in the before hook), so no email
-  // is ever sent while exercising the limiter.
+  // is ever sent while exercising the limiter. Each carries its OWN captcha token
+  // (they are single-use), so the limiter is what blocks, not the captcha.
   for (let i = 0; i < 6; i++) {
-    last = await fetch(BASE + "/v1/contact", { method: "POST", headers, body });
+    last = await fetch(BASE + "/v1/contact", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...JSON.parse(body), captchaToken: captchaToken() }),
+    });
   }
   assert.equal(last.status, 429, "expected the 6th rapid submission to be rate-limited");
 });
@@ -857,6 +886,7 @@ test("POST /v1/contact fails closed (500) when unconfigured, without leaking con
       name: "Ada",
       email: "ada@example.com",
       message: "hello there",
+      captchaToken: captchaToken(),
     }),
   });
   assert.equal(res.status, 500, "expected 500 when the RESEND creds are unset");
@@ -867,6 +897,146 @@ test("POST /v1/contact fails closed (500) when unconfigured, without leaking con
     /RESEND|CONTACT_TO|api[_-]?key/i,
     "the error response must not name the missing config",
   );
+});
+
+// Captcha guard on the contact endpoint (spec 0043). The point of the spec is a
+// scripted POST straight at /v1/contact, so these assert exactly that: no token,
+// a forged token, and a re-used token all stop before anything is sent. A valid
+// token reaching the (forced-unset) config check at 500 is what proves the guard
+// sits between validation and the rate limit rather than swallowing good traffic.
+function contactBody(extra = {}) {
+  return JSON.stringify({
+    name: "Ada",
+    email: "ada@example.com",
+    message: "hello there",
+    ...extra,
+  });
+}
+
+test("POST /v1/contact rejects a submission with no captcha token (400)", async () => {
+  const res = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: BASE,
+      "x-forwarded-for": "203.0.113.20",
+    },
+    body: contactBody(),
+  });
+  assert.equal(res.status, 400, "a tokenless scripted POST must not send mail");
+  const json = await res.json();
+  assert.equal(json.ok, false);
+});
+
+test("POST /v1/contact rejects a forged captcha token (400)", async () => {
+  const forged = signCaptchaToken("a-completely-different-secret-32", {
+    scope: CAPTCHA_SCOPE_CONTACT,
+    expiresAtMs: Date.now() + 60_000,
+    id: "forged",
+  });
+  const res = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      origin: BASE,
+      "x-forwarded-for": "203.0.113.21",
+    },
+    body: contactBody({ captchaToken: forged }),
+  });
+  assert.equal(res.status, 400, "a token signed with another key must be refused");
+});
+
+test("POST /v1/contact spends a captcha token exactly once", async () => {
+  const token = captchaToken();
+  const headers = {
+    "content-type": "application/json",
+    origin: BASE,
+    "x-forwarded-for": "203.0.113.22",
+  };
+  const first = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers,
+    body: contactBody({ captchaToken: token }),
+  });
+  // 500 = the captcha passed and the request reached the config check, which the
+  // before hook forces to fail so no mail is ever sent from the suite.
+  assert.equal(first.status, 500, "a valid token must reach the guards behind it");
+  const replay = await fetch(BASE + "/v1/contact", {
+    method: "POST",
+    headers,
+    body: contactBody({ captchaToken: token }),
+  });
+  assert.equal(replay.status, 400, "the same token must not send a second message");
+});
+
+// Captcha endpoints (spec 0043).
+test("POST /v1/captcha/challenge issues an instrumented challenge", async () => {
+  const res = await fetch(BASE + "/v1/captcha/challenge", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+  });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.ok(json.token, "expected a Cap challenge token");
+  assert.ok(json.challenge?.c > 0, "expected a proof-of-work challenge spec");
+  // The instrumentation layer is what separates a real browser from a script, so
+  // it must actually be present in the deployed shape - not silently dropped.
+  assert.ok(
+    typeof json.instrumentation === "string" && json.instrumentation.length > 0,
+    "expected the browser-instrumentation program in the challenge",
+  );
+  assert.equal(
+    json.captchaUnavailable,
+    undefined,
+    "a configured server must not report the captcha as unavailable",
+  );
+});
+
+test("POST /v1/captcha/challenge rejects a cross-origin request (403)", async () => {
+  const res = await fetch(BASE + "/v1/captcha/challenge", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: "https://evil.example" },
+  });
+  assert.equal(res.status, 403);
+});
+
+test("GET /v1/captcha/challenge is not allowed (405)", async () => {
+  const res = await fetch(BASE + "/v1/captcha/challenge", { method: "GET" });
+  assert.equal(res.status, 405, "expected 405 for a non-POST method");
+});
+
+test("POST /v1/captcha/redeem refuses an unsolved challenge (400)", async () => {
+  const res = await fetch(BASE + "/v1/captcha/redeem", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE },
+    body: JSON.stringify({ token: "not-a-real-challenge", solutions: [1, 2, 3] }),
+  });
+  assert.equal(res.status, 400);
+  const json = await res.json();
+  assert.equal(json.success, false);
+});
+
+test("GET /v1/captcha/wasm serves the solver from this origin", async () => {
+  const res = await fetch(BASE + "/v1/captcha/wasm");
+  assert.equal(res.status, 200, "the wasm solver must be traced into the standalone build");
+  assert.equal(res.headers.get("content-type"), "application/wasm");
+  const bytes = Buffer.from(await res.arrayBuffer());
+  assert.equal(
+    bytes.subarray(0, 4).toString("latin1"),
+    "\0asm",
+    "expected the WebAssembly magic bytes",
+  );
+});
+
+test("GET /v1/captcha/pako serves the inflate fallback from this origin", async () => {
+  const res = await fetch(BASE + "/v1/captcha/pako");
+  assert.equal(res.status, 200, "pako must be traced into the standalone build");
+  assert.match(res.headers.get("content-type") ?? "", /^text\/javascript/);
+  const body = await res.text();
+  // The widget loads this as a classic script and then reads `window.pako.inflateRaw`,
+  // so what matters is that the file still defines that global, not just that the
+  // route answers. A major bump that reshaped the global would fail here.
+  assert.match(body, /inflateRaw/, "expected pako's inflateRaw in the served script");
 });
 
 // Subscribe endpoint guards (spec 0018). Same shape as the contact guards: we
@@ -2093,6 +2263,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   let sawSubscribeEvent = false;
   let sawCategoryFilterEvent = false;
   let sawSuccessBadge = false;
+  let sawCaptchaControl = false;
   while (stack.length) {
     const cur = stack.pop();
     let entries;
@@ -2117,6 +2288,7 @@ test("no personal PostHog key (phx_) in any client asset", () => {
         if (js.includes("blog_subscribe_submitted")) sawSubscribeEvent = true;
         if (js.includes("blog_category_filtered")) sawCategoryFilterEvent = true;
         if (js.includes("You are on the list")) sawSuccessBadge = true;
+        if (js.includes("cap-widget")) sawCaptchaControl = true;
       }
     }
   }
@@ -2146,6 +2318,13 @@ test("no personal PostHog key (phx_) in any client asset", () => {
   assert.ok(
     sawSuccessBadge,
     "expected a client chunk to carry the subscribe success badge copy (spec 0025)",
+  );
+  // The captcha control is a web component created after hydration, so it is
+  // absent from the SSR HTML for /contact - the only place a dropped control can
+  // be caught is the built island chunk (spec 0043).
+  assert.ok(
+    sawCaptchaControl,
+    "expected a client chunk to mount the cap-widget captcha control (spec 0043)",
   );
 });
 

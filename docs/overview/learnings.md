@@ -264,6 +264,16 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   drops real users** (a false negative invisible to both sides). Prefer guards that can't misfire on a
   legitimate submission - same-origin + rate limit - over a hidden-field trap; when a shared component
   drops such a trap, mirror the removal in any hand-rolled forms that copied it. (0028)
+- **"Self-hosted" describes where the package comes from, not where it fetches from at RUNTIME.** A
+  widget installed from npm can still reach a CDN once it is running - `cap-widget` fetches its wasm
+  solver from jsdelivr at import time, unprompted, and script-injects `pako` from another on a browser
+  with no `DecompressionStream` - so a "no third-party origins" property has to be verified against the
+  package's source, not inferred from the dependency list. Grep the whole dependency for its CDN host,
+  not just the path you traced: each reach usually has its own override hook (`CAP_CUSTOM_WASM_URL`,
+  `CAP_PAKO_URL`), and serving every asset yourself is what makes the property hold, rather than
+  holding on most browsers with a residual recorded for the rest. Set every hook BEFORE the module
+  evaluates - a rare fallback has to be configured unconditionally, because by the time it is needed it
+  is too late. (0043)
 - **A component map keyed to what callers use TODAY degrades silently the first time one reaches past
   it** - an unmapped MDX element is not an error, it renders bare and the preflight reset strips it to
   body text, so the build stays green and only the rendered page shows it. Cover the elements the

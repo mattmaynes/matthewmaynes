@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { clientAnalyticsEnabled } from "@/lib/posthog-browser";
+import { CaptchaField, type CaptchaGate } from "@/components/captcha-field";
 import {
   Button,
   FormField,
@@ -27,6 +28,12 @@ type Status =
 
 export function ContactForm() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  // The captcha gate (spec 0043): Send stays disabled until the challenge is
+  // solved, or until the control reports the captcha unavailable - in which case
+  // the token is null and the server fails open rather than losing the message.
+  const [captcha, setCaptcha] = useState<CaptchaGate>({ ready: false });
+  // Bumped after a send so the control re-arms: the token is single-use.
+  const [captchaResets, setCaptchaResets] = useState(0);
   const posthog = usePostHog();
 
   // Track the site's core conversion as explicit, PII-FREE events (spec 0014):
@@ -57,11 +64,14 @@ export function ContactForm() {
           email: data.get("email"),
           message: data.get("message"),
           subscribe,
+          captchaToken: captcha.ready ? captcha.token : null,
         }),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json?.ok) {
         form.reset();
+        setCaptcha({ ready: false });
+        setCaptchaResets((n) => n + 1);
         setStatus({ kind: "success" });
         track("contact_form_succeeded");
       } else {
@@ -84,6 +94,7 @@ export function ContactForm() {
   }
 
   const submitting = status.kind === "submitting";
+  const sendDisabled = submitting || !captcha.ready;
 
   return (
     // `ph-no-capture` masks this whole subtree in PostHog session replay and
@@ -147,8 +158,10 @@ export function ContactForm() {
         </FormFieldControl>
       </FormField>
 
+      <CaptchaField onChange={setCaptcha} resetSignal={captchaResets} />
+
       <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={submitting} className="w-fit">
+        <Button type="submit" disabled={sendDisabled} className="w-fit">
           {submitting ? "Sending..." : "Send"}
         </Button>
         {status.kind === "success" && (

@@ -15,9 +15,22 @@ const nextConfig: NextConfig = {
   // cannot detect it - include it explicitly here so `output: standalone` copies
   // it into `.next/standalone/emails/templates/`, which the Dockerfile ships. The
   // route resolves it via `process.cwd()`.
+  // The captcha's two CDN-bound assets - the wasm solver and the `pako` inflate
+  // fallback - are served from `/v1/captcha/wasm` and `/v1/captcha/pako` so the
+  // browser never reaches a third-party origin for either (spec 0043). Nothing
+  // imports either file, so the tracer cannot see them - same reason, same fix as
+  // the template.
   outputFileTracingIncludes: {
     "/v1/contact": ["./emails/templates/contact-notification.html"],
+    "/v1/captcha/wasm": ["./node_modules/@cap.js/wasm/browser/cap_wasm_bg.wasm"],
+    "/v1/captcha/pako": ["./node_modules/pako/dist/pako_inflate.min.js"],
   },
+  // `capjs-core` reaches for esbuild at runtime to compile each instrumentation
+  // program, through a dynamic import webpack cannot resolve to a bundleable
+  // module (esbuild is a native binary behind a JS shim). Leaving the package
+  // external keeps that import a real Node resolution at runtime and lets the
+  // tracer copy esbuild into the standalone output.
+  serverExternalPackages: ["capjs-core"],
   // WebP-only (NOT AVIF) on purpose. next/image optimizes on demand, so the first
   // visitor after each deploy pays the encode cost while the blur placeholder
   // shows. AVIF files are ~35% smaller but encode modestly slower per image
