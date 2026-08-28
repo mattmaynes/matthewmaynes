@@ -4,7 +4,7 @@ Static, on-brand HTML emails. No build step - each file is standalone and ready 
 ESP. They share the same look (Harbor palette, harbor-dark header with the headshot avatar, social
 icon footer) by construction; if you restyle one, mirror the change in the others.
 
-The folder is organized in two parts:
+The folder is organized in three parts:
 
 - **`templates/`** - the reusable starting points:
   - **`welcome-email.html`** - the "thanks for subscribing" welcome. Personalize with
@@ -17,6 +17,10 @@ The folder is organized in two parts:
     `next.config.ts` `outputFileTracingIncludes`.
 - **`blog/`** - the finished, filled-in announcement email for each published post (one file per
   post, named to match the post slug).
+- **`notes/`** - one-off notes to subscribers that are not tied to a post (a schedule change, a
+  short update). Start from `templates/welcome-email.html`, swap the eyebrow, heading, and body
+  copy, and drop the button block if the note is not asking the reader to go anywhere. Publish
+  with the same `ctct` steps as a post announcement.
 
 ## Announcing a post
 
