@@ -31,6 +31,7 @@ import leadershipBoardroom from "../../public/images/blog/leadership-boardroom.p
 import rise from "../../public/images/blog/rise.webp";
 import rogueInvitational from "../../public/images/blog/rogue-invitational.jpg";
 import familyPortrait from "../../public/images/blog/family-portrait.jpg";
+import architectureWhiteboard from "../../public/images/blog/architecture-whiteboard.jpg";
 
 import type { SiteImage } from "./site";
 
@@ -134,6 +135,10 @@ export const blogImages = {
   "leadership-boardroom.png": {
     ...leadershipBoardroom,
     alt: "An empty executive boardroom with a long polished wood table and high-backed black leather chairs, a floral lei and a grass skirt laid across the table, tall windows looking onto a parking lot beyond.",
+  },
+  "architecture-whiteboard.jpg": {
+    ...architectureWhiteboard,
+    alt: "A whiteboard in an open-plan office covered in a hand-drawn architecture diagram, a legacy system boxed off on the left and the current state sprawling to the right through an API gateway, microservices, a decision process and a feedback loop, with a laptop and notebook on the table in front of it and developers at their monitors behind.",
   },
   "rise.webp": {
     ...rise,
