@@ -30,6 +30,15 @@ Parenthetical refs (e.g. `0012`) point at the spec/feedback that taught the less
   the top) - it only proves both rendered. Assert that each marker's byte offset increases down the
   page so a reorder reddens; anchor on the FIRST occurrence when a marker (e.g. a social URL) also
   appears later in shared chrome like the footer. (0039)
+- **A substring match over a whole Next-rendered document is not an assertion about the page.** Every
+  string is served twice - escaped in the markup React renders, and RAW in the RSC flight payload at
+  the end of the document - so `includes` can pass on a copy no reader sees, and `indexOf` can order
+  results by where the serializer put them rather than where they render. A byte-offset ordering
+  assertion is only as sound as the text it indexes. Reduce the response to visible text first (strip
+  `<script>`, decode React's entities) and match that. This one hid for a year because it needed a
+  title with an apostrophe sharing a tag with an older post; when one test in a file already
+  compensates for an encoding hazard, that is a property of the surface - apply it everywhere the
+  surface is matched, not just where it first bit. (0030)
 - **Test collection logic against a MULTI-ITEM fixture via a pure exported function**, not production
   data or a single item - a one-item fixture never runs the sort/filter/dedup loop, so an inverted
   comparator passes green. Assert order *and* non-mutation. (0009)
