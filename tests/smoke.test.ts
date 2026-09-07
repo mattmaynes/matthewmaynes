@@ -46,6 +46,22 @@ process.env.BLOG_FIXTURES_DIR ??= FIXTURES_DIR;
 // and the cookie the tests mint from it to reach the gated /blog/drafts area.
 const PREVIEW_PASSWORD = "test-secret";
 
+// The visible text of a fetched page. Two things break a naive substring match for
+// a post title: the RSC flight payload repeats every title UNESCAPED and out of
+// document order (so `indexOf` can resolve to the payload copy near the end of the
+// document, not the rendered listing row), and React escapes the apostrophes real
+// titles carry ("Leadership Isn't a Title"). Strip <script> first, then decode the
+// entities React emits, so both `includes` and `indexOf` see the rendered order.
+function visibleText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
 // A request header object carrying a valid preview session cookie (spec 0036), for
 // the tests that need to reach the gated /blog/drafts preview area.
 async function previewCookie(): Promise<{ cookie: string }> {
@@ -1746,7 +1762,7 @@ test("a tag archive lists its posts with a route-unique title; unknown tag 404s"
   const withTag = posts.find((p) => p.tags.includes(tag));
   assert.ok(withTag, "fixture sanity: some post carries the first tag");
   assert.ok(
-    html.includes(withTag.title),
+    visibleText(html).includes(withTag.title),
     `expected the "${tag}" archive to list "${withTag.title}"`,
   );
 
@@ -1779,7 +1795,8 @@ test("a tag archive lists its posts with a route-unique title; unknown tag 404s"
       await fetch(BASE + `/blog/tags/${tagSlug(multiTag)}`)
     ).text();
     const inTag = posts.filter((p) => p.tags.includes(multiTag)); // newest-first
-    const positions = inTag.map((p) => multiHtml.indexOf(p.title));
+    const rendered = visibleText(multiHtml);
+    const positions = inTag.map((p) => rendered.indexOf(p.title));
     for (let i = 1; i < positions.length; i++) {
       assert.ok(
         positions[i - 1] >= 0 && positions[i - 1] < positions[i],
@@ -1821,7 +1838,7 @@ test("a category archive lists its posts with a route-unique title; badge links 
   const inCategory = posts.find((p) => p.category === category);
   assert.ok(inCategory, "fixture sanity: some post is in the first category");
   assert.ok(
-    html.includes(inCategory.title),
+    visibleText(html).includes(inCategory.title),
     `expected the "${category}" archive to list "${inCategory.title}"`,
   );
 
@@ -1846,7 +1863,8 @@ test("a category archive lists its posts with a route-unique title; badge links 
       await fetch(BASE + `/blog/categories/${categorySlug(multi)}`)
     ).text();
     const inMulti = filterByCategory(posts, multi, ""); // newest-first
-    const positions = inMulti.map((p) => multiHtml.indexOf(p.title));
+    const rendered = visibleText(multiHtml);
+    const positions = inMulti.map((p) => rendered.indexOf(p.title));
     for (let i = 1; i < positions.length; i++) {
       assert.ok(
         positions[i - 1] >= 0 && positions[i - 1] < positions[i],
