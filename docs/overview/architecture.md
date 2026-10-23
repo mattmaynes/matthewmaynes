@@ -101,7 +101,7 @@
   ICO writer, no ImageMagick). The OG card loads woff fonts (satori can't read woff2) via
   `new URL(.., import.meta.url)` so they trace into the standalone build.
 
-## Endpoints (specs 0008/0018/0032)
+## Endpoints (specs 0008/0018/0032/0043)
 
 - **`POST /v1/contact`** and **`POST /v1/subscribe`** are thin HTTP shells over pure, fs-free cores
   (`contact.js`, `subscribe.js`) unit-tested without a server; the route only maps request/env/outcomes
@@ -114,6 +114,35 @@
   refresh token, cached in module scope with **in-flight-mint dedup** and a **401 self-heal** (clear +
   re-mint + retry once); the add hits the create-or-update `sign_up_form` endpoint (idempotent) and
   throws status-only (never the body, which can echo the email).
+- **Captcha, two tokens (spec 0043):** `capjs-core` exports a challenge generator and a challenge
+  validator and **nothing that re-verifies what the validator returns**, so the flow needs two tokens.
+  `POST /v1/captcha/challenge` mints a Cap challenge (scope `contact`, instrumentation on);
+  `POST /v1/captcha/redeem` validates the solution and, through the library's `signToken` hook, swaps
+  it for **our own** compact HMAC token (`c1.<scope>.<expiry>.<id>.<sig>`, keyed on `CAP_SECRET`);
+  `POST /v1/contact` verifies that token and spends it. Both hops go through a module-scoped
+  `createNonceStore` (a Map with TTL sweeping, same shape and same single-container limitation as the
+  rate limiter): a challenge redeems once and a token sends once. State is lost on restart, so the
+  residual exposure is a brief post-restart replay window, bounded by each key's own TTL - the same
+  trade 0008 accepted for the limiter. The pure core is `captcha.js`, with `capjs-core`'s two entry
+  points and the clock injected so tests never call the real library.
+- **Captcha fail-open policy (spec 0043, applying feedback 0028):** every verdict is `valid`,
+  `rejected`, or `errored`, and **only `rejected` may 400**. `errored` (no secret, a library call that
+  threw) lets the submission through, logs at error level, and fires its own `captcha_unavailable`
+  event, so a broken captcha is loud instead of invisibly eating every message. The two are kept
+  apart even inside the instrumentation failures `capjs-core` lumps together: `instr_corrupted` /
+  `instr_expired` are our faults and fail open, while the client-reported ones (`instr_missing`,
+  `instr_timeout`, `instr_failed`, `instr_automated_browser`) reject - failing open on those would let
+  a script claim a timeout and skip the DOM work entirely. If the instrumentation layer cannot be
+  built at all, the challenge degrades to proof-of-work only rather than disappearing.
+- **`GET /v1/captcha/wasm` and `GET /v1/captcha/pako`** serve the widget's two CDN-bound assets from
+  this origin (both traced in via `outputFileTracingIncludes`, like the email template). Left alone
+  `cap-widget` fetches its proof-of-work solver from a public CDN at import time, and script-injects
+  `pako` from another on a browser with no `DecompressionStream` (pre-2023 Safari/Firefox) - between
+  them the site's only third-party requests and the first exceptions a future CSP would need. Each has
+  an override global (`CAP_CUSTOM_WASM_URL`, `CAP_PAKO_URL`), both set in `captcha-field.tsx` before
+  the widget's dynamic `import()` resolves, so neither CDN default is ever read. `pako` is pinned to
+  exactly `2.1.0` (no caret): it loads as a classic script and the widget asserts the global shape
+  (`window.pako.inflateRaw`) it was built against.
 - **Preview login gate (spec 0036, refined by feedback 0022):** `src/proxy.ts` (the Next "proxy"
   convention, successor to middleware; Edge) gates ONLY the `/blog/drafts` INDEX (which enumerates all
   not-yet-public posts) - no valid session → redirect to `/login`. Each per-post preview PAGE
@@ -167,9 +196,13 @@
 - Env (all server-only, provided at runtime, `.env.local` locally): `SITE_URL`; contact
   (`RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `CONTACT_FROM_EMAIL`); CTCT (`CTCT_CLIENT_ID`,
   `CTCT_REFRESH_TOKEN`, `CTCT_LIST_ID`, `CTCT_WEBSITE_LIST_ID`) powering both subscribe and the contact
-  record/opt-in; and `PREVIEW_PASSWORD` (spec 0036) - the shared password gating the `/blog/drafts`
-  preview area (unset → the gate fails closed, so previews are locked, not leaked). On the host they
-  live in a git-ignored `deploy/docker/.env.site` (survives the deploy's `git reset --hard`).
+  record/opt-in; `PREVIEW_PASSWORD` (spec 0036) - the shared password gating the `/blog/drafts`
+  preview area (unset → the gate fails closed, so previews are locked, not leaked); and `CAP_SECRET`
+  (spec 0043) - one high-entropy key for both captcha tokens, which must be identical across every
+  process and, unset, fails **open** rather than closed (a locked preview is safe; a silently
+  swallowed message is not). On the host they live in a git-ignored `deploy/docker/.env.site`
+  (survives the deploy's `git reset --hard`); no compose change was needed, since the service already
+  reads that file via `env_file`.
 - **Exception:** `NEXT_PUBLIC_POSTHOG_*` is **inlined by `next build`**, not read at runtime, so the
   "config-free image" rule doesn't apply - the key is PostHog's publishable client token, carried as a
   committed default so CI/Docker need no new secret.

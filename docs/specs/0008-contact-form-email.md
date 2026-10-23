@@ -63,7 +63,9 @@ In:
 
 Out:
 - CAPTCHA / Cloudflare Turnstile - the honeypot + rate limit cover launch; add a
-  challenge later only if bots get through. (Follow-up.)
+  challenge later only if bots get through. (Follow-up.) **Bots got through, and
+  the honeypot is gone (feedback 0028), so the challenge shipped in spec 0043 -
+  self-hosted Cap, proof-of-work plus browser instrumentation, no third party.**
 - A durable/shared rate-limit store (Redis, etc.). One container, low traffic - an
   in-process limiter is enough; its reset-on-restart limitation is documented, not
   solved here.

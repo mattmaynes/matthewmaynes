@@ -19,18 +19,22 @@
     "theme:build": "roots-brand brand/harbor/brand.config.json"
   },
   "dependencies": {
+    "@cap.js/wasm": "0.0.7",
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@rogueoak/canopy": "^1.4.0",
     "@rogueoak/icons": "^0.10.1",
     "@rogueoak/roots": "^0.10.1",
+    "cap-widget": "^0.1.57",
+    "capjs-core": "0.1.2",
     "next": "16.2.9",
     "next-mdx-remote": "6.0.0",
-    "video.js": "^8.23.4",
+    "pako": "2.1.0",
     "posthog-js": "^1.396.3",
     "posthog-node": "^5.39.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "video.js": "^8.23.4"
   },
   "devDependencies": {
     "@fontsource/figtree": "^5.2.10",
